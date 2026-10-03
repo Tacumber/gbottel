@@ -10,11 +10,15 @@ export type ThemedTextProps = TextProps & {
 
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  // linkPrimary usa el color de marca (primary) en vez de un hex fijo:
+  // antes estaba hardcodeado a un azul que no era el rojo real de
+  // GBOTtel y que además ignoraba el theme por completo.
+  const colorPorTipo = type === 'linkPrimary' ? theme.primary : theme[themeColor ?? 'text'];
 
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? 'text'] },
+        { color: colorPorTipo },
         type === 'default' && styles.default,
         type === 'title' && styles.title,
         type === 'small' && styles.small,
@@ -63,7 +67,6 @@ const styles = StyleSheet.create({
   linkPrimary: {
     lineHeight: 30,
     fontSize: 14,
-    color: '#3c87f7',
   },
   code: {
     fontFamily: Fonts.mono,

@@ -1,56 +1,69 @@
-# Welcome to your Expo app 👋
+# GBOTtel
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App de gestión para servicios técnicos de COPEXTEL (Las Tunas): tarifario, órdenes de trabajo, técnicos y reportes. Offline-first, React Native + Expo, SQLite local.
 
-## Get started
+## Estado del proyecto
 
-1. Install dependencies
+| Módulo | Estado |
+|---|---|
+| Tarifario (1858 servicios reales, búsqueda FTS5, filtro por categoría) | Funcional |
+| Tablero (estadísticas reales del catálogo) | Funcional |
+| Órdenes de trabajo | Funcional |
+| Técnicos | Funcional |
+| Reportes / Ajustes | Parcial / en evolución |
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Arrancar
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+La primera vez que se abre la app se crea la base SQLite local y se importan los 1858 servicios desde `src/data/servicios_seed.json`. Los arranques siguientes no vuelven a importar si el catálogo ya existe. La base actual se llama `gbottel.db`.
 
-### Other setup steps
+## Estructura
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```
+src/
+  app/            rutas de expo-router (una pantalla por archivo)
+  components/     componentes compartidos (Themed*, tabs, etc.)
+  database/       schema SQL + apertura de conexión SQLite
+  services/       lógica de acceso a datos (tarifarioService, etc.)
+  theme/          tokens de marca (color, spacing, tipografía)
+  constants/      puente entre theme/tokens.ts y React Native
+  types/          tipos TypeScript del dominio
+  scripts/        scripts de importación/verificación (corren dentro de la app, no por CLI)
+```
 
-## Learn more
+## Decisiones pendientes
 
-To learn more about developing your project with Expo, look at the following resources:
+- **Nombre de la app**: `theme/tokens.ts` documenta 3 nombres distintos encontrados en el código fuente original (GBOTtel, COPEXTEL Gestión Empresarial, Gestor Pro COPEXTEL). Se usó "GBOTtel" de forma consistente — confirmar si es el correcto.
+- **`android.package`** en `app.json`: puesto como `cu.copextel.gbottel`. Es la identidad permanente del app una vez publicada — confirmar antes del primer build real.
+- **Categorías del tarifario**: "Modalidad 1"–"Modalidad 4" son los nombres del archivo original de COPEXTEL. Renombrar con `renombrarCategoria()` en `tarifarioService.ts` una vez se sepan los nombres reales.
+- **Modo oscuro**: no está diseñado todavía. `constants/theme.ts` usa la misma paleta para claro y oscuro a propósito, para no inventar una versión oscura no oficial.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Verificación de instalación
 
-## Join the community
+`src/scripts/verificarInstalacion.ts` es una prueba de humo que corre dentro de la app (no es un script de terminal — `expo-sqlite` es un módulo nativo, no corre bajo Node puro). Limpia sus propios datos de prueba al terminar.
 
-Join our community of developers creating universal apps.
+## V5 — estabilidad y cambios funcionales
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Esta versión fija la estructura definitiva de Técnicos, soporte de brigadas, selector desplegable de estado en Orden de Servicio y selección robusta del Tarifario.
+
+### Validación recomendada
+
+```cmd
+npm install
+npx expo-doctor
+npm run check:syntax
+npm run type-check
+npx expo start --clear
+```
+
+Si Expo Go SDK 57 se cierra con `SIGSEGV` en `mqt_v_js`/`libworklets.so`, prueba el binario propio:
+
+```cmd
+eas build --platform android --profile preview
+```
+
+Ese paso es importante porque existe un problema público de Expo Go SDK 57 con una firma de crash equivalente. No se debe seguir modificando la lógica de la app para intentar corregir un `SIGSEGV` que pertenece al runtime de Expo Go sin aislar primero el binario propio.
