@@ -89,8 +89,14 @@ export async function importarRespaldoCompleto(): Promise<{ importado: boolean }
   if (contenido === null) return { importado: false };
 
   const datos = JSON.parse(contenido) as RespaldoCompleto;
-  if (!datos?.tablas) {
-    throw new Error('El archivo no tiene el formato esperado de un respaldo de GBOTtel.');
+  const tablasEsperadas = ['servicios', 'tecnicos', 'configuracion', 'ordenes', 'orden_materiales', 'orden_servicios', 'orden_tecnicos'] as const;
+
+  if (datos?.version !== VERSION_RESPALDO) {
+    throw new Error('Version de respaldo no compatible. Se esperaba ' + VERSION_RESPALDO + '.');
+  }
+
+  if (!datos?.tablas || tablasEsperadas.some((tabla) => !Array.isArray(datos.tablas[tabla]))) {
+    throw new Error('El archivo no tiene el formato esperado de un respaldo de GBOTtel. Faltan tablas o alguna tabla no es valida.');
   }
 
   const db = await getDatabase();
@@ -150,6 +156,7 @@ const COLUMNAS_POR_TABLA: Record<string, Set<string>> = {
     'correo',
     'salarioBasico',
     'aportesONAT',
+    'planMensualCUP',
     'estado',
     'creadoEn',
   ]),
