@@ -1,6 +1,6 @@
-# GBOTtel — reparación integral 2026-10-07
+# GBOTtel — reparación integral 2026-10-07 · corrección posterior a auditoría
 
-Esta rama contiene la reparación integral sobre `main` sin modificar la implementación interna de Tarifario.
+Esta rama contiene la reparación integral posterior a la auditoría de Claude, manteniendo intacta la implementación interna de Tarifario.
 
 ## Cambios principales
 
@@ -32,5 +32,6 @@ Esta rama contiene la reparación integral sobre `main` sin modificar la impleme
 4. Conserva cualquier secreto/keystore local que no esté versionado.
 5. No se modificó Tarifario internamente.
 
-Rama: `chatgpt/reparacion-integral-2026-10-07`
-Commit: `b14c9b526dd87794ed908f4604de3ae5eb7d8643`
+Rama base: `chatgpt/reparacion-integral-2026-10-07`
+Rama corregida: `chatgpt/reparacion-integral-2026-10-07-fixed`
+El ZIP final incluye un `package-lock.json` regenerado por `npm install --package-lock-only` durante la validación.
