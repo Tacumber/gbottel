@@ -7,6 +7,7 @@ import DateTimePicker, {
 import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { formatearFecha } from "@/utils/fechas";
 
 function pad(n: number) {
   return n < 10 ? `0${n}` : `${n}`;
@@ -14,7 +15,18 @@ function pad(n: number) {
 
 function aFecha(iso: string): Date {
   if (!iso) return new Date();
-  const d = new Date(iso.replace(" ", "T"));
+
+  // Una fecha "YYYY-MM-DD" no debe pasar por new Date(string): JavaScript
+  // la interpreta como UTC y en Cuba puede terminar mostrando el día anterior.
+  const soloFecha = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(iso.trim());
+  if (soloFecha) {
+    const [, y, m, d] = soloFecha;
+    const local = new Date(Number(y), Number(m) - 1, Number(d));
+    return Number.isNaN(local.getTime()) ? new Date() : local;
+  }
+
+  // Los datetimes guardados por GBOTtel son locales: YYYY-MM-DD HH:mm.
+  const d = new Date(iso.trim().replace(" ", "T"));
   return Number.isNaN(d.getTime()) ? new Date() : d;
 }
 
@@ -74,7 +86,7 @@ export function CampoFecha({
           ]}
         >
           <ThemedText style={!valorISO ? { color: theme.textMuted } : undefined}>
-            {valorISO || (modo === "datetime" ? "Elegir fecha y hora" : "Elegir fecha")}
+            {valorISO ? formatearFecha(valorISO, modo === "datetime") : modo === "datetime" ? "Elegir fecha y hora" : "Elegir fecha"}
           </ThemedText>
         </View>
       </Pressable>

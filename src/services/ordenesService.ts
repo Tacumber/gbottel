@@ -6,6 +6,8 @@ import type {
   NuevoOrdenMaterial,
   NuevoOrdenServicio,
   NuevoOrdenTecnico,
+  NuevoOrdenEquipo,
+  OrdenEquipo,
   Orden,
   OrdenCompleta,
   OrdenMaterial,
@@ -56,11 +58,28 @@ const COLUMNAS_ORDEN = new Set<string>([
   'clienteFirmado',
 ]);
 
+async function siguienteNumeroOrden(db: Awaited<ReturnType<typeof getDatabase>>): Promise<string> {
+  const fila = await db.getFirstAsync<{ maximo: number | null }>(
+    `SELECT MAX(CAST(numeroOrden AS INTEGER)) maximo
+     FROM ordenes
+     WHERE TRIM(numeroOrden) GLOB '[0-9]*'`,
+  );
+  let siguiente = Math.max(1, (fila?.maximo ?? 0) + 1);
+  while (true) {
+    const folio = String(siguiente).padStart(6, '0');
+    const existe = await db.getFirstAsync<{ encontrado: number }>(
+      `SELECT 1 encontrado FROM ordenes WHERE numeroOrden = ? LIMIT 1`,
+      folio,
+    );
+    if (!existe) return folio;
+    siguiente += 1;
+  }
+}
+
 /**
- * Crea una orden y le asigna folio automático (el id interno, con ceros a
- * la izquierda hasta 6 dígitos: 000001, 000002...). Si tenés que continuar
- * una numeración específica de un sistema anterior, es un ajuste de una
- * línea acá, no una migración de datos.
+ * Crea una orden y asigna el siguiente folio disponible según la secuencia
+ * almacenada en la base. La búsqueda parte del máximo numérico existente y
+ * comprueba la unicidad antes de insertar.
  */
 export async function crearOrden(datos: NuevaOrden): Promise<number> {
   const db = await getDatabase();
@@ -72,15 +91,15 @@ export async function crearOrden(datos: NuevaOrden): Promise<number> {
   const marcadores = columnas.map(() => '?').join(', ');
   const valores = entradas.map(([, valor]) => valor);
 
+  const folio = await siguienteNumeroOrden(db);
   const resultado = await db.runAsync(
     `INSERT INTO ordenes (numeroOrden, compania${columnas.length ? ', ' + columnas.join(', ') : ''})
-     VALUES ('', 'COPEXTEL'${columnas.length ? ', ' + marcadores : ''})`,
+     VALUES (?, 'COPEXTEL'${columnas.length ? ', ' + marcadores : ''})`,
+    folio,
     ...valores
   );
 
   const id = resultado.lastInsertRowId;
-  const folio = String(id).padStart(6, '0');
-  await db.runAsync(`UPDATE ordenes SET numeroOrden = ? WHERE id = ?`, folio, id);
   return id;
 }
 
@@ -106,13 +125,14 @@ export async function obtenerOrden(id: number): Promise<OrdenCompleta | null> {
   const orden = await db.getFirstAsync<Orden>(`SELECT * FROM ordenes WHERE id = ?`, id);
   if (!orden) return null;
 
-  const [materiales, servicios, tecnicos] = await Promise.all([
+  const [equipos, materiales, servicios, tecnicos] = await Promise.all([
+    db.getAllAsync<OrdenEquipo>(`SELECT * FROM orden_equipos WHERE ordenId = ? ORDER BY id ASC`, id),
     db.getAllAsync<OrdenMaterial>(`SELECT * FROM orden_materiales WHERE ordenId = ? ORDER BY id ASC`, id),
     db.getAllAsync<OrdenServicio>(`SELECT * FROM orden_servicios WHERE ordenId = ? ORDER BY id ASC`, id),
     db.getAllAsync<OrdenTecnico>(`SELECT * FROM orden_tecnicos WHERE ordenId = ? ORDER BY id ASC`, id),
   ]);
 
-  return { ...orden, materiales, servicios, tecnicos };
+  return { ...orden, equipos, materiales, servicios, tecnicos };
 }
 
 export async function listarOrdenes(opciones: { estado?: EstadoOrden; limite?: number } = {}): Promise<Orden[]> {
@@ -136,6 +156,7 @@ export async function eliminarOrden(id: number): Promise<void> {
 
 export interface OrdenCompletaParaGuardar {
   datos: NuevaOrden;
+  equipos: NuevoOrdenEquipo[];
   materiales: NuevoOrdenMaterial[];
   servicios: ServicioParaGuardar[];
   tecnicos: NuevoOrdenTecnico[];
@@ -149,21 +170,13 @@ export interface OrdenCompletaParaGuardar {
  * guardada. SQLite garantiza aquí un commit único: o se guarda todo o no se
  * modifica nada.
  */
-export async function guardarOrdenCompleta(
+export async function guardarOrdenCompletaEnTransaccion(
+  db: Awaited<ReturnType<typeof getDatabase>>,
   ordenId: number | null,
-  payload: OrdenCompletaParaGuardar
+  payload: OrdenCompletaParaGuardar,
 ): Promise<number> {
-  const db = await getDatabase();
-
-  // withTransactionAsync() de expo-sqlite no propaga el valor de retorno de
-  // su callback (su firma es () => Promise<void>): un `return id` de adentro
-  // se descarta y la función terminaba devolviendo siempre `undefined` pese a
-  // estar tipada como Promise<number> (lo detectó tsc, no una prueba manual).
-  // `id` vive en este scope externo para poder devolverlo una vez la
-  // transacción ya confirmó.
+  validarPayloadOrden(payload);
   let id = ordenId;
-
-  await db.withTransactionAsync(async () => {
 
     if (id === null) {
       const entradas = Object.entries(payload.datos).filter(
@@ -173,14 +186,14 @@ export async function guardarOrdenCompleta(
       const marcadores = columnas.map(() => '?').join(', ');
       const valores = entradas.map(([, valor]) => valor);
 
+      const folio = await siguienteNumeroOrden(db);
       const resultado = await db.runAsync(
         `INSERT INTO ordenes (numeroOrden, compania${columnas.length ? ', ' + columnas.join(', ') : ''})
-         VALUES ('', 'COPEXTEL'${columnas.length ? ', ' + marcadores : ''})`,
+         VALUES (?, 'COPEXTEL'${columnas.length ? ', ' + marcadores : ''})`,
+        folio,
         ...valores
       );
       id = resultado.lastInsertRowId;
-      const folio = String(id).padStart(6, '0');
-      await db.runAsync(`UPDATE ordenes SET numeroOrden = ? WHERE id = ?`, folio, id);
     } else {
       const entradas = Object.entries(payload.datos).filter(
         ([campo, valor]) => valor !== undefined && COLUMNAS_ORDEN.has(campo)
@@ -194,6 +207,17 @@ export async function guardarOrdenCompleta(
           id
         );
       }
+    }
+
+    await db.runAsync(`DELETE FROM orden_equipos WHERE ordenId = ?`, id);
+    for (const e of payload.equipos) {
+      await db.runAsync(
+        `INSERT INTO orden_equipos (ordenId, marca, modelo, nroSerie) VALUES (?, ?, ?, ?)`,
+        id,
+        e.marca ?? null,
+        e.modelo ?? null,
+        e.nroSerie ?? null,
+      );
     }
 
     await db.runAsync(`DELETE FROM orden_materiales WHERE ordenId = ?`, id);
@@ -240,12 +264,49 @@ export async function guardarOrdenCompleta(
         t.firmado ?? 0
       );
     }
-
-  });
-
   if (id === null) {
     throw new Error('guardarOrdenCompleta: no se pudo determinar el id de la orden guardada.');
   }
+  return id;
+}
+
+function validarPayloadOrden(payload: OrdenCompletaParaGuardar): void {
+  if (payload.datos.modalidadMultiple === 1 && payload.equipos.length < 2) {
+    throw new Error('Una orden en modalidad múltiple debe contener al menos dos equipos atendidos.');
+  }
+
+  for (const material of payload.materiales) {
+    if (material.cantidad == null || !Number.isFinite(material.cantidad) || material.cantidad <= 0) {
+      throw new Error('La cantidad de cada material debe ser mayor que cero.');
+    }
+    if (!Number.isFinite(material.importeCUP ?? 0) || (material.importeCUP ?? 0) < 0 ||
+        !Number.isFinite(material.importeUSD ?? 0) || (material.importeUSD ?? 0) < 0) {
+      throw new Error('Los importes de los materiales no son válidos.');
+    }
+  }
+
+  for (const servicio of payload.servicios) {
+    if (!Number.isFinite(servicio.cantidad) || servicio.cantidad <= 0) {
+      throw new Error('La cantidad de cada servicio debe ser mayor que cero.');
+    }
+    if (!Number.isFinite(servicio.importeCUP) || servicio.importeCUP < 0 ||
+        !Number.isFinite(servicio.importeUSD) || servicio.importeUSD < 0) {
+      throw new Error('Los importes de los servicios no son válidos.');
+    }
+  }
+}
+
+export async function guardarOrdenCompleta(
+  ordenId: number | null,
+  payload: OrdenCompletaParaGuardar
+): Promise<number> {
+  validarPayloadOrden(payload);
+  const db = await getDatabase();
+  let id: number | null = ordenId;
+  await db.withTransactionAsync(async () => {
+    id = await guardarOrdenCompletaEnTransaccion(db, ordenId, payload);
+  });
+  if (id === null) throw new Error('guardarOrdenCompleta: no se pudo determinar el id de la orden guardada.');
   return id;
 }
 
@@ -329,11 +390,15 @@ export async function eliminarServicioDeOrden(id: number): Promise<void> {
 }
 
 /** Suma materiales + servicios en CUP y USD — para la sección 8 (Totales Generales). */
+function cantidadValida(valor: number): number {
+  return Number.isFinite(valor) && valor > 0 ? valor : 0;
+}
+
 export function calcularTotales(materiales: OrdenMaterial[], servicios: OrdenServicio[]): TotalesOrden {
-  const materialesCUP = materiales.reduce((acc, m) => acc + m.importeCUP * (m.cantidad || 1), 0);
-  const materialesUSD = materiales.reduce((acc, m) => acc + m.importeUSD * (m.cantidad || 1), 0);
-  const serviciosCUP = servicios.reduce((acc, s) => acc + s.importeCUP * (s.cantidad || 1), 0);
-  const serviciosUSD = servicios.reduce((acc, s) => acc + s.importeUSD * (s.cantidad || 1), 0);
+  const materialesCUP = materiales.reduce((acc, m) => acc + m.importeCUP * cantidadValida(m.cantidad), 0);
+  const materialesUSD = materiales.reduce((acc, m) => acc + m.importeUSD * cantidadValida(m.cantidad), 0);
+  const serviciosCUP = servicios.reduce((acc, s) => acc + s.importeCUP * cantidadValida(s.cantidad), 0);
+  const serviciosUSD = servicios.reduce((acc, s) => acc + s.importeUSD * cantidadValida(s.cantidad), 0);
   return {
     materialesCUP,
     materialesUSD,

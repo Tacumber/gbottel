@@ -110,6 +110,16 @@ export interface OrdenServicio {
 
 export type NuevoOrdenServicio = Partial<Omit<OrdenServicio, "id" | "ordenId">>;
 
+export interface OrdenEquipo {
+  id: number;
+  ordenId: number;
+  marca: string | null;
+  modelo: string | null;
+  nroSerie: string | null;
+}
+
+export type NuevoOrdenEquipo = Partial<Omit<OrdenEquipo, "id" | "ordenId">>;
+
 export interface OrdenTecnico {
   id: number;
   ordenId: number;
@@ -123,6 +133,7 @@ export interface OrdenTecnico {
 export type NuevoOrdenTecnico = Partial<Omit<OrdenTecnico, "id" | "ordenId">>;
 
 export interface OrdenCompleta extends Orden {
+  equipos: OrdenEquipo[];
   materiales: OrdenMaterial[];
   servicios: OrdenServicio[];
   tecnicos: OrdenTecnico[];

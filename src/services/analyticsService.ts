@@ -15,13 +15,20 @@ export type ServicioRendimiento = { servicio: string; codigo: string; cantidad: 
 
 const REVENUE_STATES = `('finalizada','facturada')`;
 
-const TOTAL_CUP = `(SELECT COALESCE(SUM(os.importeCUP),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeCUP),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
-const TOTAL_USD = `(SELECT COALESCE(SUM(os.importeUSD),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeUSD),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
+const TOTAL_CUP = `(SELECT COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeCUP * COALESCE(om.cantidad,1)),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
+const TOTAL_USD = `(SELECT COALESCE(SUM(os.importeUSD * COALESCE(os.cantidad,1)),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeUSD * COALESCE(om.cantidad,1)),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
+
+function inicioMesISO(meses: number): string {
+  const hoy = new Date();
+  const d = new Date(hoy.getFullYear(), hoy.getMonth() - Math.max(0, meses - 1), 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
 
 export async function obtenerResumenDashboard() {
   const db = await getDatabase();
   const esteMes = `substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7)=strftime('%Y-%m','now','localtime')`;
-  const [ordenes, completadas, pendientes, progreso, facturadas, tecnicos, ingresoMes, ingresoAnual, ordenesAnual, plan] = await Promise.all([
+  const [ordenes, completadas, pendientes, progreso, facturadas, tecnicos, tecnicosRegistrados, ingresoMes, ingresoAnual, ordenesAnual, plan] = await Promise.all([
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes`),
     // Completadas resetea cada mes (cuenta solo lo finalizado/facturado
     // ESTE mes) — a diferencia de Órdenes activas, que es un estado
@@ -32,6 +39,7 @@ export async function obtenerResumenDashboard() {
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes WHERE estado='en_progreso'`),
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes o WHERE o.estado='facturada' AND ${esteMes}`),
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM tecnicos WHERE estado='activo'`),
+    db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM tecnicos`),
     db.getFirstAsync<{ cup: number; usd: number }>(`SELECT COALESCE(SUM(${TOTAL_CUP}),0) cup, COALESCE(SUM(${TOTAL_USD}),0) usd FROM ordenes o WHERE o.estado IN ${REVENUE_STATES} AND ${esteMes}`),
     db.getFirstAsync<{ cup: number; usd: number }>(`SELECT COALESCE(SUM(${TOTAL_CUP}),0) cup, COALESCE(SUM(${TOTAL_USD}),0) usd FROM ordenes o WHERE o.estado IN ${REVENUE_STATES} AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,4)=strftime('%Y','now','localtime')`),
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes o WHERE substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,4)=strftime('%Y','now','localtime')`),
@@ -48,6 +56,8 @@ export async function obtenerResumenDashboard() {
     enProgreso: progreso?.total ?? 0,
     facturadas: facturadas?.total ?? 0,
     tecnicosActivos: tecnicos?.total ?? 0,
+    tecnicosRegistrados: tecnicosRegistrados?.total ?? 0,
+    ordenesCompletadasFacturadas: (completadas?.total ?? 0) + (facturadas?.total ?? 0),
     ingresoMesCUP: ingreso,
     ingresoMesUSD: ingresoMes?.usd ?? 0,
     ingresoAnualCUP: ingresoAnual?.cup ?? 0,
@@ -67,6 +77,7 @@ export async function obtenerResumenDashboard() {
  */
 export async function obtenerIngresosPorMes(meses = 12): Promise<MesIngreso[]> {
   const db = await getDatabase();
+  const desdeMes = inicioMesISO(meses);
   const filas = await db.getAllAsync<MesIngreso>(
     `SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) mes,
             COUNT(*) ordenes,
@@ -74,9 +85,9 @@ export async function obtenerIngresosPorMes(meses = 12): Promise<MesIngreso[]> {
             COALESCE(SUM(${TOTAL_USD}),0) usd
      FROM ordenes o
      WHERE o.estado IN ${REVENUE_STATES}
-       AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= strftime('%Y-%m','now','-' || ? || ' months')
+       AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(?,1,7)
      GROUP BY mes`,
-    meses - 1
+    desdeMes
   );
   const porMes = new Map<string, MesIngreso>(filas.map((f) => [f.mes, f]));
   const hoy = new Date();
@@ -86,39 +97,43 @@ export async function obtenerIngresosPorMes(meses = 12): Promise<MesIngreso[]> {
     const clave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     continuo.push(porMes.get(clave) ?? { mes: clave, ordenes: 0, cup: 0, usd: 0 });
   }
-  return continuo.reverse();
+  return continuo;
 }
 
 export async function obtenerRendimientoServicios(meses = 12): Promise<ServicioRendimiento[]> {
   const db = await getDatabase();
+  const desdeMes = inicioMesISO(meses);
   return db.getAllAsync<ServicioRendimiento>(
     `SELECT COALESCE(os.descripcion,'Servicio sin descripción') servicio,
             COALESCE(os.codigo,'') codigo,
             SUM(os.cantidad) cantidad,
-            COALESCE(SUM(os.importeCUP),0) cup,
-            COALESCE(SUM(os.importeUSD),0) usd
+            COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) cup,
+            COALESCE(SUM(os.importeUSD * COALESCE(os.cantidad,1)),0) usd
      FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
      WHERE o.estado IN ${REVENUE_STATES}
-       AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(strftime('%Y-%m','now','-' || ? || ' months'),1,7)
+       AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(?,1,7)
      GROUP BY os.servicioId, os.codigo, os.descripcion
-     ORDER BY cantidad DESC, cup DESC LIMIT 20`, meses
+     ORDER BY cantidad DESC, cup DESC LIMIT 20`, desdeMes
   );
 }
 
 export async function obtenerAceptacionServiciosPorMes(meses = 12): Promise<{ mes: string; servicio: string; cantidad: number; cup: number }[]> {
   const db = await getDatabase();
+  const desdeMes = inicioMesISO(meses);
   return db.getAllAsync<{ mes: string; servicio: string; cantidad: number; cup: number }>(
     `WITH base AS (
        SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) mes,
               COALESCE(os.descripcion,'Sin descripción') servicio,
-              SUM(os.cantidad) cantidad, COALESCE(SUM(os.importeCUP),0) cup
+              SUM(os.cantidad) cantidad, COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) cup
        FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
        WHERE o.estado IN ${REVENUE_STATES}
+         AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(?,1,7)
        GROUP BY mes, os.servicioId, os.descripcion
      ), ranked AS (
        SELECT *, ROW_NUMBER() OVER (PARTITION BY mes ORDER BY cantidad DESC, cup DESC) rn FROM base
      )
-     SELECT mes, servicio, cantidad, cup FROM ranked WHERE rn <= 5 ORDER BY mes DESC, cantidad DESC`
+     SELECT mes, servicio, cantidad, cup FROM ranked WHERE rn <= 5 ORDER BY mes DESC, cantidad DESC`,
+    desdeMes,
   );
 }
 
@@ -272,6 +287,50 @@ export async function obtenerOrdenesPorEstado() {
 
 export type EvolucionServicio = { servicio: string; puntos: { mes: string; cantidad: number }[] };
 
+export async function obtenerEvolucionAceptacionServicios(meses = 6, top = 3): Promise<EvolucionServicio[]> {
+  const db = await getDatabase();
+  const desdeMes = inicioMesISO(meses);
+  const filas = await db.getAllAsync<{ mes: string; servicio: string; cantidad: number }>(
+    `WITH top AS (
+       SELECT COALESCE(os.descripcion,'Sin descripción') servicio,
+              COUNT(DISTINCT o.id) total
+       FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
+       WHERE o.estado IN ${REVENUE_STATES}
+         AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(?,1,7)
+       GROUP BY os.servicioId, os.descripcion
+       ORDER BY total DESC
+       LIMIT ?
+     )
+     SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) mes,
+            COALESCE(os.descripcion,'Sin descripción') servicio,
+            COUNT(DISTINCT o.id) cantidad
+     FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
+     WHERE o.estado IN ${REVENUE_STATES}
+       AND COALESCE(os.descripcion,'Sin descripción') IN (SELECT servicio FROM top)
+       AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(?,1,7)
+     GROUP BY mes, servicio
+     ORDER BY mes ASC`,
+    desdeMes, top, desdeMes
+  );
+
+  const hoy = new Date();
+  const mesesContinuos = Array.from({ length: meses }, (_, i) => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (meses - 1 - i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const porServicio = new Map<string, Map<string, number>>();
+  for (const f of filas) {
+    if (!porServicio.has(f.servicio)) porServicio.set(f.servicio, new Map());
+    porServicio.get(f.servicio)!.set(f.mes, f.cantidad);
+  }
+  return Array.from(porServicio.entries()).map(([servicio, porMes]) => ({
+    servicio,
+    puntos: mesesContinuos.map((mes) => ({ mes, cantidad: porMes.get(mes) ?? 0 })),
+  }));
+}
+
+
+
 /**
  * A diferencia de obtenerAceptacionServiciosPorMes (que da el top 5 DE CADA
  * mes, un conjunto que cambia mes a mes), esto fija un cohorte único — el
@@ -282,12 +341,13 @@ export type EvolucionServicio = { servicio: string; puntos: { mes: string; canti
  */
 export async function obtenerEvolucionTopServicios(meses = 6, top = 5): Promise<EvolucionServicio[]> {
   const db = await getDatabase();
+  const desdeMes = inicioMesISO(meses);
   const filas = await db.getAllAsync<{ mes: string; servicio: string; cantidad: number }>(
     `WITH top AS (
        SELECT COALESCE(os.descripcion,'Sin descripción') servicio, SUM(os.cantidad) total
        FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
        WHERE o.estado IN ${REVENUE_STATES}
-         AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(strftime('%Y-%m','now','-' || ? || ' months'),1,7)
+         AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(?,1,7)
        GROUP BY os.servicioId, os.descripcion ORDER BY total DESC LIMIT ?
      )
      SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) mes,
@@ -296,12 +356,16 @@ export async function obtenerEvolucionTopServicios(meses = 6, top = 5): Promise<
      FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
      WHERE o.estado IN ${REVENUE_STATES}
        AND COALESCE(os.descripcion,'Sin descripción') IN (SELECT servicio FROM top)
-       AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(strftime('%Y-%m','now','-' || ? || ' months'),1,7)
+       AND substr(COALESCE(NULLIF(o.fechaReporte,''),o.creadoEn),1,7) >= substr(?,1,7)
      GROUP BY mes, servicio ORDER BY mes ASC`,
-    meses, top, meses
+    desdeMes, top, desdeMes
   );
 
-  const mesesOrdenados: string[] = Array.from(new Set<string>(filas.map((f) => f.mes))).sort();
+  const hoy = new Date();
+  const mesesOrdenados: string[] = Array.from({ length: meses }, (_, i) => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (meses - 1 - i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
   const porServicio = new Map<string, Map<string, number>>();
   for (const f of filas) {
     if (!porServicio.has(f.servicio)) porServicio.set(f.servicio, new Map());
