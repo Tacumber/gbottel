@@ -344,11 +344,16 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 function moneda(n: number, codigo: 'CUP' | 'USD'): string {
-  return new Intl.NumberFormat('es-CU', { style: 'currency', currency: codigo, maximumFractionDigits: 0 }).format(n || 0);
+  return new Intl.NumberFormat('es-CU', { style: 'currency', currency: codigo, maximumFractionDigits: 2 }).format(n || 0);
+}
+
+function protegerCSV(valor: string): string {
+  return /^[=+\-@]/.test(valor) ? `'${valor}` : valor;
 }
 
 function escaparCSV(valor: string): string {
-  return /[",\n]/.test(valor) ? `"${valor.replace(/"/g, '""')}"` : valor;
+  const seguro = protegerCSV(valor);
+  return /[",\n]/.test(seguro) ? `"${seguro.replace(/"/g, '""')}"` : seguro;
 }
 
 function escaparHTML(valor: string): string {
@@ -368,7 +373,7 @@ export async function exportarOrdenesCSV(ordenes: OrdenDashboard[]): Promise<voi
     ETIQUETA_ESTADO[o.estado] ?? o.estado,
     String(o.totalCUP ?? 0), String(o.totalUSD ?? 0),
   ]);
-  const csv = [encabezados, ...filas].map((fila) => fila.map(escaparCSV).join(',')).join('\n');
+  const csv = '\uFEFF' + [encabezados, ...filas].map((fila) => fila.map(escaparCSV).join(',')).join('\r\n');
   await compartirTexto(csv, nombreArchivoConFecha('gbottel-ordenes', 'csv'));
 }
 
