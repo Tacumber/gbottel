@@ -82,7 +82,7 @@ export default function TableroScreen() {
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [data]);
 
   useFocusEffect(
     useCallback(() => {
