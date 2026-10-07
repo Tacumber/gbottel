@@ -58,6 +58,11 @@ async function migrarTecnicosAEsquemaActual(db: SQLite.SQLiteDatabase): Promise<
   const salario = nombres.has('salarioBasico')
     ? `COALESCE("salarioBasico", ${nombres.has('salarioFijo') ? '"salarioFijo"' : '0'}, 0)`
     : (nombres.has('salarioFijo') ? `COALESCE("salarioFijo", 0)` : '0');
+  const estado = nombres.has('estado')
+    ? `CASE WHEN "estado" IN ('activo','inactivo') THEN "estado" ELSE 'activo' END`
+    : nombres.has('activo')
+      ? `CASE WHEN COALESCE("activo",1) = 1 THEN 'activo' ELSE 'inactivo' END`
+      : "'activo'";
 
   await db.execAsync(`PRAGMA foreign_keys = OFF`);
   try {
@@ -91,8 +96,7 @@ async function migrarTecnicosAEsquemaActual(db: SQLite.SQLiteDatabase): Promise<
         ${salario},
         COALESCE(${expresion('aportesONAT','0')}, 0),
         COALESCE(${expresion('planMensualCUP','0')}, 0),
-        CASE WHEN ${expresion('estado',"'activo'")} IN ('activo','inactivo')
-             THEN ${expresion('estado',"'activo'")} ELSE 'activo' END,
+        ${estado},
         COALESCE(${expresion('creadoEn',"datetime('now')")}, datetime('now'))
       FROM tecnicos;
     `);
