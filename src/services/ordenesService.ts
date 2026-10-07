@@ -64,14 +64,28 @@ async function siguienteNumeroOrden(db: Awaited<ReturnType<typeof getDatabase>>)
      FROM ordenes
      WHERE TRIM(numeroOrden) GLOB '[0-9]*'`,
   );
-  let siguiente = Math.max(1, (fila?.maximo ?? 0) + 1);
+  const contador = await db.getFirstAsync<{ valor: string | null }>(
+    `SELECT valor FROM configuracion WHERE clave = 'siguienteFolio' LIMIT 1`,
+  );
+  let siguiente = Math.max(
+    1,
+    (fila?.maximo ?? 0) + 1,
+    Number(contador?.valor ?? 1),
+  );
   while (true) {
     const folio = String(siguiente).padStart(6, '0');
     const existe = await db.getFirstAsync<{ encontrado: number }>(
       `SELECT 1 encontrado FROM ordenes WHERE numeroOrden = ? LIMIT 1`,
       folio,
     );
-    if (!existe) return folio;
+    if (!existe) {
+      await db.runAsync(
+        `INSERT INTO configuracion (clave, valor) VALUES ('siguienteFolio', ?)
+         ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor`,
+        String(siguiente + 1),
+      );
+      return folio;
+    }
     siguiente += 1;
   }
 }
@@ -303,8 +317,8 @@ export async function guardarOrdenCompleta(
   validarPayloadOrden(payload);
   const db = await getDatabase();
   let id: number | null = ordenId;
-  await db.withTransactionAsync(async () => {
-    id = await guardarOrdenCompletaEnTransaccion(db, ordenId, payload);
+  await db.withExclusiveTransactionAsync(async (tx) => {
+    id = await guardarOrdenCompletaEnTransaccion(tx, ordenId, payload);
   });
   if (id === null) throw new Error('guardarOrdenCompleta: no se pudo determinar el id de la orden guardada.');
   return id;
