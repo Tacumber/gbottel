@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
+import { formatearFecha } from '@/utils/fechas';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -138,7 +139,7 @@ export default function OrdenesScreen(){
               {modoSeleccion&&<View style={styles.colCheck}><View style={[styles.check,{borderColor:theme.border},marcada&&{backgroundColor:theme.primary,borderColor:theme.primary}]}>{marcada&&<ThemedText style={styles.checkMark}>✓</ThemedText>}</View></View>}
               <ThemedText type="small" numberOfLines={1} style={styles.folio}>{item.folio}</ThemedText>
               <ThemedText type="small" numberOfLines={1} style={styles.client}>{item.cliente}</ThemedText>
-              <ThemedText type="small" style={styles.date}>{item.fecha?.slice(0,10)||'—'}</ThemedText>
+              <ThemedText type="small" style={styles.date}>{formatearFecha(item.fecha)}</ThemedText>
               <View style={styles.status}><View style={[styles.badge,{backgroundColor:theme.backgroundSelected}]}><ThemedText type="small">{label[item.estado]||item.estado}</ThemedText></View></View>
               <ThemedText type="small" style={styles.money}>{money(item.totalCUP,'CUP')}</ThemedText>
               <ThemedText type="small" style={styles.money}>{money(item.totalUSD,'USD')}</ThemedText>

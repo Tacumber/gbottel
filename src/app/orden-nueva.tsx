@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -43,6 +43,7 @@ import {
   type NuevaOrden,
   type NuevoOrdenMaterial,
   type NuevoOrdenTecnico,
+  type NuevoOrdenEquipo,
   type TipoCobertura,
 } from "@/types/ordenes.types";
 
@@ -55,6 +56,21 @@ function formatoMoneda(valor: number, moneda: "CUP" | "USD") {
     currency: moneda,
     maximumFractionDigits: 2,
   }).format(valor || 0);
+}
+
+function numeroLocal(valor: string, respaldo = 0): number {
+  const limpio = valor.trim().replace(/\s/g, "");
+  if (!limpio) return respaldo;
+  const normalizado =
+    limpio.includes(",") && limpio.includes(".")
+      ? limpio.lastIndexOf(",") > limpio.lastIndexOf(".")
+        ? limpio.replace(/\./g, "").replace(",", ".")
+        : limpio.replace(/,/g, "")
+      : limpio.includes(",")
+        ? limpio.replace(",", ".")
+        : limpio;
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? numero : respaldo;
 }
 
 function estadoEtiqueta(
@@ -101,6 +117,13 @@ type TecnicoLocal = {
   firmado: boolean;
 };
 
+type EquipoLocal = {
+  clave: string;
+  marca: string;
+  modelo: string;
+  nroSerie: string;
+};
+
 const materialVacio = (): MaterialLocal => ({
   clave: `m-${Date.now()}-${Math.random()}`,
   vale: "",
@@ -111,6 +134,13 @@ const materialVacio = (): MaterialLocal => ({
   nroSerie: "",
   importeCUP: "0",
   importeUSD: "0",
+});
+
+const equipoVacio = (): EquipoLocal => ({
+  clave: `e-${Date.now()}-${Math.random()}`,
+  marca: "",
+  modelo: "",
+  nroSerie: "",
 });
 
 const tecnicoVacio = (): TecnicoLocal => ({
@@ -163,6 +193,7 @@ function formularioVacio() {
 
     observaciones: "",
 
+    equipos: [] as EquipoLocal[],
     materiales: [] as MaterialLocal[],
     servicios: [] as ServicioLocal[],
     tecnicos: [] as TecnicoLocal[],
@@ -205,11 +236,14 @@ export default function OrdenNuevaScreen() {
   const router = useRouter();
 
   const params = useLocalSearchParams<{ id?: string }>();
-
-  const idOrden = params.id ? Number(params.id) : null;
+  const idParam = typeof params.id === "string" ? params.id.trim() : "";
+  const idNumerico = Number(idParam);
+  const idOrden = Number.isInteger(idNumerico) && idNumerico > 0 ? idNumerico : null;
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  const rutaInicializada = useRef<string | null | undefined>(undefined);
 
   const [form, setForm] = useState<FormularioOrden>(formularioVacio());
 
@@ -233,18 +267,44 @@ export default function OrdenNuevaScreen() {
   >(null);
   const [selectorEstado, setSelectorEstado] = useState(false);
 
-  // useFocusEffect en vez de useEffect: expo-router reutiliza la misma
-  // instancia de pantalla al navegar (no la desmonta), así que un
-  // useEffect atado solo al id no alcanza — "Nueva orden" seguía
-  // mostrando los datos de la orden anterior porque nada disparaba un
-  // reseteo. Esto corre cada vez que la pantalla vuelve a estar en
-  // foco: si no hay id, resetea a blanco; si hay id, recarga fresco
-  // desde la base (por si se editó y se volvió a entrar).
+  // La pantalla puede mantenerse montada al cambiar de pestaña. Inicializamos
+  // una ruta nueva solo cuando cambia el id; al volver al foco se conserva el
+  // borrador en vez de destruirlo. Una orden existente sí se recarga cuando
+  // se entra con otro id.
   useFocusEffect(
     useCallback(() => {
       let cancelado = false;
+      const claveRuta = idOrden == null ? "nuevo" : `editar:${idOrden}`;
 
-      if (!idOrden) {
+      if (rutaInicializada.current === claveRuta) {
+        const seleccion = obtenerSeleccionTarifario();
+        if (seleccion.length) {
+          setForm((prev) => ({
+            ...prev,
+            servicios: [
+              ...prev.servicios,
+              ...seleccion.map((servicio) => ({
+                clave: `s-${servicio.id}-${Date.now()}-${Math.random()}`,
+                servicioId: servicio.id,
+                codigo: servicio.codigoServicio,
+                descripcion: servicio.nombreServicio,
+                cantidad: prev.modalidadMultiple ? String(prev.equipos.length) : "1",
+                importeCUP: String(servicio.precioBase),
+                importeUSD: "0",
+              })),
+            ],
+          }));
+          limpiarSeleccionTarifario();
+        }
+        listarTecnicos().then(setTecnicosBD).catch(() => setTecnicosBD([]));
+        return () => {
+          cancelado = true;
+        };
+      }
+      rutaInicializada.current = claveRuta;
+      setErrorCarga(null);
+
+      if (idOrden == null) {
         setForm(formularioVacio());
         setBuscarTexto("");
         setResultadosBusqueda([]);
@@ -279,7 +339,11 @@ export default function OrdenNuevaScreen() {
         .catch(() => setTecnicosBD([]));
       obtenerOrden(idOrden)
         .then((orden) => {
-          if (!orden || cancelado) return;
+          if (cancelado) return;
+          if (!orden) {
+            setErrorCarga("La orden solicitada no existe o fue eliminada. No se puede abrir ni guardar una ficha vacía.");
+            return;
+          }
           setForm({
             folio: orden.numeroOrden,
             estadoSeleccionado: orden.estado,
@@ -297,6 +361,25 @@ export default function OrdenNuevaScreen() {
             clienteMunicipio: orden.clienteMunicipio ?? "",
             clienteProvincia: orden.clienteProvincia ?? "",
             modalidadesServicio: parseModalidades(orden.modalidadesServicio),
+            equipos:
+              orden.equipos.length > 0
+                ? orden.equipos.map((e) => ({
+                    clave: `e-${e.id}`,
+                    marca: e.marca ?? "",
+                    modelo: e.modelo ?? "",
+                    nroSerie: e.nroSerie ?? "",
+                  }))
+                : orden.modalidadMultiple
+                  ? [
+                      {
+                        clave: "e-legacy-1",
+                        marca: orden.equipoMarca ?? "",
+                        modelo: orden.equipoModelo ?? "",
+                        nroSerie: orden.equipoNroSerie ?? "",
+                      },
+                      equipoVacio(),
+                    ]
+                  : [],
             equipoTipo: orden.equipoTipo ?? "",
             equipoMarca: orden.equipoMarca ?? "",
             equipoModelo: orden.equipoModelo ?? "",
@@ -346,6 +429,15 @@ export default function OrdenNuevaScreen() {
             clienteFirmado: Boolean(orden.clienteFirmado),
           });
         })
+        .catch((error) => {
+          if (!cancelado) {
+            setErrorCarga(
+              error instanceof Error
+                ? `No se pudo cargar la orden: ${error.message}`
+                : "No se pudo cargar la orden.",
+            );
+          }
+        })
         .finally(() => {
           if (!cancelado) setCargando(false);
         });
@@ -391,9 +483,9 @@ export default function OrdenNuevaScreen() {
 
   const totales = useMemo(() => {
     const m = form.materiales.map((x) => ({
-      importeCUP: Number(x.importeCUP) || 0,
-      importeUSD: Number(x.importeUSD) || 0,
-      cantidad: Number(x.cantidad) || 1,
+      importeCUP: numeroLocal(x.importeCUP, 0),
+      importeUSD: numeroLocal(x.importeUSD, 0),
+      cantidad: numeroLocal(x.cantidad, 0),
       id: 0,
       ordenId: 0,
       vale: null,
@@ -415,6 +507,21 @@ export default function OrdenNuevaScreen() {
     return calcularTotales(m, s);
   }, [form.materiales, form.servicios]);
 
+  const sincronizarCantidadesServicios = useCallback(
+    (
+      equipos: EquipoLocal[],
+      servicios: ServicioLocal[],
+      modalidadMultiple: boolean,
+    ) =>
+      modalidadMultiple
+        ? servicios.map((servicio) => ({
+            ...servicio,
+            cantidad: String(equipos.length),
+          }))
+        : servicios,
+    [],
+  );
+
   const alternarModalidad = useCallback((valor: ModalidadServicio) => {
     setForm((prev) => ({
       ...prev,
@@ -425,26 +532,62 @@ export default function OrdenNuevaScreen() {
   }, []);
 
   function agregarServicioDesdeResultado(servicio: Servicio) {
-    setForm((prev) => ({
-      ...prev,
-      servicios: [
-        ...prev.servicios,
-        {
-          clave: `s-nuevo-${Date.now()}-${Math.random()}`,
-          servicioId: servicio.id,
-          codigo: servicio.codigoServicio,
-          descripcion: servicio.nombreServicio,
-          cantidad: "1",
-          importeCUP: String(servicio.precioBase),
-          importeUSD: "0",
-        },
-      ],
-    }));
-
-    // corte de copia 1
-
+    setForm((prev) => {
+      const nuevo = {
+        clave: `s-nuevo-${Date.now()}-${Math.random()}`,
+        servicioId: servicio.id,
+        codigo: servicio.codigoServicio,
+        descripcion: servicio.nombreServicio,
+        cantidad: prev.modalidadMultiple ? String(prev.equipos.length) : "1",
+        importeCUP: String(servicio.precioBase),
+        importeUSD: "0",
+      };
+      return {
+        ...prev,
+        servicios: [...prev.servicios, nuevo],
+      };
+    });
     setBuscarTexto("");
     setResultadosBusqueda([]);
+  }
+
+  function agregarEquipo() {
+    setForm((prev) => {
+      const equipos = [...prev.equipos, equipoVacio()];
+      return {
+        ...prev,
+        equipos,
+        servicios: sincronizarCantidadesServicios(equipos, prev.servicios, prev.modalidadMultiple),
+      };
+    });
+  }
+
+  function eliminarEquipo(clave: string) {
+    setForm((prev) => {
+      if (prev.equipos.length <= 2) {
+        Alert.alert("Equipos", "Una orden en modalidad múltiple debe conservar al menos dos equipos.");
+        return prev;
+      }
+      const equipos = prev.equipos.filter((equipo) => equipo.clave !== clave);
+      return {
+        ...prev,
+        equipos,
+        servicios: sincronizarCantidadesServicios(equipos, prev.servicios, prev.modalidadMultiple),
+      };
+    });
+  }
+
+  function actualizarEquipo(
+    clave: string,
+    campoNombre: "marca" | "modelo" | "nroSerie",
+    valor: string,
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      equipos: prev.equipos.map((equipo) =>
+        equipo.clave === clave ? { ...equipo, [campoNombre]: valor } : equipo,
+      ),
+    }));
   }
 
   function actualizarMaterial(
@@ -496,6 +639,27 @@ export default function OrdenNuevaScreen() {
   }
 
   async function guardar() {
+    if (guardando) return;
+
+    if (form.modalidadMultiple && form.equipos.length < 2) {
+      Alert.alert("Modalidad múltiple", "Agregue al menos dos equipos atendidos.");
+      return;
+    }
+
+    const cantidadesMaterialesValidas = form.materiales.every((m) => numeroLocal(m.cantidad, 0) > 0);
+    const cantidadesServiciosValidas = form.servicios.every((s) => numeroLocal(s.cantidad, 0) > 0);
+    if (!cantidadesMaterialesValidas || !cantidadesServiciosValidas) {
+      Alert.alert("Cantidades", "Todas las cantidades deben ser mayores que cero.");
+      return;
+    }
+    const preciosValidos =
+      form.materiales.every((m) => numeroLocal(m.importeCUP, 0) >= 0 && numeroLocal(m.importeUSD, 0) >= 0) &&
+      form.servicios.every((s) => numeroLocal(s.importeCUP, 0) >= 0 && numeroLocal(s.importeUSD, 0) >= 0);
+    if (!preciosValidos) {
+      Alert.alert("Importes", "Los importes deben ser números válidos y no pueden ser negativos.");
+      return;
+    }
+
     setGuardando(true);
 
     try {
@@ -526,15 +690,15 @@ export default function OrdenNuevaScreen() {
         modalidadesServicio: JSON.stringify(form.modalidadesServicio),
 
         equipoTipo: form.equipoTipo || null,
-        equipoMarca: form.equipoMarca || null,
-        equipoModelo: form.equipoModelo || null,
-        equipoNroSerie: form.equipoNroSerie || null,
+        equipoMarca: (form.modalidadMultiple ? form.equipos[0]?.marca : form.equipoMarca) || null,
+        equipoModelo: (form.modalidadMultiple ? form.equipos[0]?.modelo : form.equipoModelo) || null,
+        equipoNroSerie: (form.modalidadMultiple ? form.equipos[0]?.nroSerie : form.equipoNroSerie) || null,
 
         fechaInicio: form.fechaInicio || null,
         fechaFin: form.fechaFin || null,
 
         tiempoTrabajoMinutos: form.tiempoTrabajoMinutos
-          ? Number(form.tiempoTrabajoMinutos)
+          ? numeroLocal(form.tiempoTrabajoMinutos, 0)
           : null,
 
         observaciones: form.observaciones || null,
@@ -557,10 +721,10 @@ export default function OrdenNuevaScreen() {
           codigo: m.codigo || null,
           descripcion: m.descripcion || null,
           unidadMedida: m.unidadMedida || null,
-          cantidad: Number(m.cantidad) || 0,
+          cantidad: numeroLocal(m.cantidad, 0),
           nroSerie: m.nroSerie || null,
-          importeCUP: Number(m.importeCUP) || 0,
-          importeUSD: Number(m.importeUSD) || 0,
+          importeCUP: numeroLocal(m.importeCUP, 0),
+          importeUSD: numeroLocal(m.importeUSD, 0),
         }),
       );
 
@@ -569,9 +733,9 @@ export default function OrdenNuevaScreen() {
           servicioId: s.servicioId ?? null,
           codigo: s.codigo,
           descripcion: s.descripcion,
-          cantidad: Number(s.cantidad) || 1,
-          importeCUP: Number(s.importeCUP) || 0,
-          importeUSD: Number(s.importeUSD) || 0,
+          cantidad: numeroLocal(s.cantidad, 0),
+          importeCUP: numeroLocal(s.importeCUP, 0),
+          importeUSD: numeroLocal(s.importeUSD, 0),
         }),
       );
 
@@ -585,8 +749,17 @@ export default function OrdenNuevaScreen() {
         }),
       );
 
+      const equiposParaGuardar: NuevoOrdenEquipo[] = form.modalidadMultiple
+        ? form.equipos.map((e) => ({
+            marca: e.marca.trim() || null,
+            modelo: e.modelo.trim() || null,
+            nroSerie: e.nroSerie.trim() || null,
+          }))
+        : [];
+
       await guardarOrdenCompleta(idOrden ?? null, {
         datos,
+        equipos: equiposParaGuardar,
         materiales: materialesParaGuardar,
         servicios: serviciosParaGuardar,
         tecnicos: tecnicosParaGuardar,
@@ -612,6 +785,24 @@ export default function OrdenNuevaScreen() {
       <SafeAreaView style={styles.flex} edges={["top"]}>
         <ThemedView style={[styles.flex, styles.centrado]}>
           <ActivityIndicator color={theme.primary} />
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
+
+  if (errorCarga) {
+    return (
+      <SafeAreaView style={styles.flex} edges={["top"]}>
+        <ThemedView style={[styles.flex, styles.centrado, styles.errorCarga]}>
+          <ThemedText type="title" style={{ fontSize: 20 }}>No se pudo abrir la orden</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.errorTexto}>
+            {errorCarga}
+          </ThemedText>
+          <Pressable onPress={() => router.replace("/ordenes")}>
+            <ThemedView type="primary" style={styles.botonGuardar}>
+              <ThemedText style={styles.botonGuardarTexto}>Volver a órdenes</ThemedText>
+            </ThemedView>
+          </Pressable>
         </ThemedView>
       </SafeAreaView>
     );
@@ -706,7 +897,30 @@ export default function OrdenNuevaScreen() {
             </View>
             <Pressable
               onPress={() =>
-                campo("modalidadMultiple", !form.modalidadMultiple)
+                setForm((prev) => {
+                  const modalidadMultiple = !prev.modalidadMultiple;
+                  const equipos =
+                    modalidadMultiple && prev.equipos.length === 0
+                      ? [equipoVacio(), equipoVacio()]
+                      : modalidadMultiple
+                        ? prev.equipos
+                        : [];
+                  const servicios = sincronizarCantidadesServicios(
+                    equipos,
+                    prev.servicios,
+                    modalidadMultiple,
+                  );
+                  const primerEquipo = equipos[0];
+                  return {
+                    ...prev,
+                    modalidadMultiple,
+                    equipos,
+                    servicios,
+                    equipoMarca: !modalidadMultiple && primerEquipo ? primerEquipo.marca : prev.equipoMarca,
+                    equipoModelo: !modalidadMultiple && primerEquipo ? primerEquipo.modelo : prev.equipoModelo,
+                    equipoNroSerie: !modalidadMultiple && primerEquipo ? primerEquipo.nroSerie : prev.equipoNroSerie,
+                  };
+                })
               }
               style={styles.filaCheckbox}
             >
@@ -786,21 +1000,69 @@ export default function OrdenNuevaScreen() {
               valor={form.equipoTipo}
               onCambia={(v) => campo("equipoTipo", v)}
             />
-            <Campo
-              etiqueta="Marca"
-              valor={form.equipoMarca}
-              onCambia={(v) => campo("equipoMarca", v)}
-            />
-            <Campo
-              etiqueta="Modelo"
-              valor={form.equipoModelo}
-              onCambia={(v) => campo("equipoModelo", v)}
-            />
-            <Campo
-              etiqueta="Nº Serie / Inv."
-              valor={form.equipoNroSerie}
-              onCambia={(v) => campo("equipoNroSerie", v)}
-            />
+            {form.modalidadMultiple ? (
+              <>
+                <ThemedText type="smallBold">
+                  Equipos atendidos ({form.equipos.length})
+                </ThemedText>
+                {form.equipos.map((equipo, indice) => (
+                  <View
+                    key={equipo.clave}
+                    style={[styles.filaTabla, { borderColor: theme.border }]}
+                  >
+                    <ThemedText type="smallBold">Equipo {indice + 1}</ThemedText>
+                    <View style={styles.filaTablaTop}>
+                      <CampoChico
+                        etiqueta="Marca"
+                        valor={equipo.marca}
+                        onCambia={(v) => actualizarEquipo(equipo.clave, "marca", v)}
+                      />
+                      <CampoChico
+                        etiqueta="Modelo"
+                        valor={equipo.modelo}
+                        onCambia={(v) => actualizarEquipo(equipo.clave, "modelo", v)}
+                      />
+                    </View>
+                    <Campo
+                      etiqueta="Nº Serie / Inv."
+                      valor={equipo.nroSerie}
+                      onCambia={(v) => actualizarEquipo(equipo.clave, "nroSerie", v)}
+                    />
+                    <Pressable onPress={() => eliminarEquipo(equipo.clave)}>
+                      <ThemedText type="small" style={{ color: theme.danger }}>
+                        Quitar equipo
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                ))}
+                <Pressable
+                  onPress={agregarEquipo}
+                  style={[styles.botonAgregar, { borderColor: theme.primary }]}
+                >
+                  <ThemedText style={{ color: theme.primary }}>
+                    + Agregar equipo
+                  </ThemedText>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Campo
+                  etiqueta="Marca"
+                  valor={form.equipoMarca}
+                  onCambia={(v) => campo("equipoMarca", v)}
+                />
+                <Campo
+                  etiqueta="Modelo"
+                  valor={form.equipoModelo}
+                  onCambia={(v) => campo("equipoModelo", v)}
+                />
+                <Campo
+                  etiqueta="Nº Serie / Inv."
+                  valor={form.equipoNroSerie}
+                  onCambia={(v) => campo("equipoNroSerie", v)}
+                />
+              </>
+            )
             <ThemedText
               type="small"
               themeColor="textSecondary"
@@ -876,7 +1138,7 @@ export default function OrdenNuevaScreen() {
                       actualizarMaterial(
                         m.clave,
                         "cantidad",
-                        v.replace(/[^0-9.]/g, ""),
+                        v.replace(/[^0-9.,]/g, ""),
                       )
                     }
                     teclado="numeric"
@@ -1006,6 +1268,7 @@ export default function OrdenNuevaScreen() {
                     valor={s.cantidad}
                     onCambia={(v) => actualizarServicio(s.clave, "cantidad", v)}
                     teclado="numeric"
+                    editable={!form.modalidadMultiple}
                   />
                   <CampoChico
                     etiqueta="Importe CUP"
@@ -1278,7 +1541,8 @@ export default function OrdenNuevaScreen() {
                 <ThemedText type="small" themeColor="textSecondary">
                   Seleccione un técnico registrado o agregue uno manualmente.
                 </ThemedText>
-                {tecnicosBD.map((t) => (
+                <ScrollView style={styles.tecnicosLista} nestedScrollEnabled>
+                  {tecnicosBD.map((t) => (
                   <Pressable
                     key={t.id}
                     onPress={() => {
@@ -1322,7 +1586,7 @@ export default function OrdenNuevaScreen() {
                     </View>
                   </Pressable>
                 ))}
-                <Pressable
+                </ScrollView>                <Pressable
                   onPress={() => {
                     setSelectorTecnico(false);
                     setForm((prev) =>
@@ -1490,11 +1754,13 @@ function CampoChico({
   valor,
   onCambia,
   teclado,
+  editable = true,
 }: {
   etiqueta: string;
   valor: string;
   onCambia: (v: string) => void;
   teclado?: "default" | "numeric";
+  editable?: boolean;
 }) {
   const theme = useTheme();
   return (
@@ -1505,6 +1771,7 @@ function CampoChico({
       <TextInput
         value={valor}
         onChangeText={onCambia}
+        editable={editable !== false}
         keyboardType={teclado === "numeric" ? "numeric" : "default"}
         style={[
           styles.input,
@@ -1708,7 +1975,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: { padding: 18, borderRadius: 14, gap: 10, maxHeight: "80%" },
+  errorCarga: { padding: 24, gap: 14 },
+  errorTexto: { textAlign: "center" },
   modalBtn: { paddingVertical: 12 },
+  tecnicosLista: { maxHeight: 280 },
   tecnicoOpcion: {
     paddingVertical: 11,
     borderBottomWidth: StyleSheet.hairlineWidth,

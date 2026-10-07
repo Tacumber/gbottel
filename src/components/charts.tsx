@@ -101,10 +101,10 @@ export function BarChartVertical({
         return (
           <G key={`${d.label}-${i}`}>
             <Rect x={x} y={y} width={barW} height={Math.max(2, h)} rx={4} fill={color} />
-            <SvgText x={x + barW / 2} y={Math.max(10, y - 6)} fontSize={9} fill={color} textAnchor="middle">
+            <SvgText x={x + barW / 2} y={Math.max(10, y - 6)} fontSize={11} fontWeight="600" fill={color} textAnchor="middle">
               {formatValue ? formatValue(d.value) : String(d.value)}
             </SvgText>
-            <SvgText x={x + barW / 2} y={chartH + 16} fontSize={10} fill={labelColor} textAnchor="middle">
+            <SvgText x={x + barW / 2} y={chartH + 16} fontSize={11} fontWeight="600" fill={labelColor} textAnchor="middle">
               {d.label}
             </SvgText>
           </G>
@@ -132,7 +132,7 @@ export function BarChartHorizontal({
 }) {
   if (!data.length) return null;
   const max = Math.max(1, ...data.map((d) => d.value));
-  const rowH = 30;
+  const rowH = 36;
   const height = data.length * rowH;
   return (
     <Svg width="100%" height={height} viewBox={`0 0 ${VB_W} ${height}`}>
@@ -141,11 +141,11 @@ export function BarChartHorizontal({
         const w = (d.value / max) * (VB_W - 46);
         return (
           <G key={`${d.label}-${i}`}>
-            <SvgText x={0} y={y + 10} fontSize={10} fill={labelColor}>
+            <SvgText x={0} y={y + 10} fontSize={11} fontWeight="600" fill={labelColor}>
               {truncar(d.label, truncarEn)}
             </SvgText>
-            <Rect x={0} y={y + 16} width={Math.max(3, w)} height={7} rx={3.5} fill={color} />
-            <SvgText x={VB_W} y={y + 21} fontSize={9} fill={valueColor} textAnchor="end">
+            <Rect x={0} y={y + 16} width={Math.max(3, w)} height={8} rx={4} fill={color} />
+            <SvgText x={VB_W} y={y + 21} fontSize={11} fontWeight="600" fill={valueColor} textAnchor="end">
               {formatValue ? formatValue(d.value) : String(d.value)}
             </SvgText>
           </G>
@@ -202,7 +202,8 @@ export function LineChartMulti({
             key={m}
             x={n > 1 ? i * stepX : VB_W / 2}
             y={height - 4}
-            fontSize={9}
+            fontSize={11}
+            fontWeight="600"
             fill={axisColor}
             textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}
           >
@@ -258,7 +259,7 @@ export function CircularProgress({
           transform={`rotate(-90 ${cx} ${cy})`}
         />
       </Svg>
-      <View style={StyleSheet.absoluteFillObject}>
+      <View style={styles.circularOverlay}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ThemedText style={{ fontSize: size * 0.24, fontWeight: "700", color: textColor }}>
             {Math.round(percent)}%
@@ -269,6 +270,7 @@ export function CircularProgress({
   );
 }
 const styles = StyleSheet.create({
+  circularOverlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
   leyenda: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
   leyendaItem: { flexDirection: "row", alignItems: "center", gap: 4, maxWidth: 120 },
   punto: { width: 8, height: 8, borderRadius: 4 },
