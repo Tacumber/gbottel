@@ -535,7 +535,7 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
   porImportar.sort((a, b) => String(a.fechaReporte ?? '').localeCompare(String(b.fechaReporte ?? '')));
 
   let importadas = 0;
-  await db.withTransactionAsync(async () => {
+  await db.withExclusiveTransactionAsync(async (tx) => {
     for (const o of porImportar) {
       const { folioOrigen, tecnicoNombre, materiales, servicios, tecnicos, equipos, ...datosOrden } = o as Record<string, unknown> & {
         folioOrigen?: string; tecnicoNombre?: string | null;
@@ -554,7 +554,7 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
         ];
       }
       try {
-        await guardarOrdenCompletaEnTransaccion(db, null, {
+        await guardarOrdenCompletaEnTransaccion(tx, null, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         datos: { ...datosOrden, tecnicoId } as any,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
