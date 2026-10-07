@@ -18,7 +18,7 @@ function aFecha(iso: string): Date {
 
   // Una fecha "YYYY-MM-DD" no debe pasar por new Date(string): JavaScript
   // la interpreta como UTC y en Cuba puede terminar mostrando el día anterior.
-  const soloFecha = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(iso.trim());
+  const soloFecha = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
   if (soloFecha) {
     const [, y, m, d] = soloFecha;
     const local = new Date(Number(y), Number(m) - 1, Number(d));
