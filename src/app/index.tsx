@@ -58,9 +58,11 @@ export default function TableroScreen() {
   const [aceptacionServicios, setAceptacionServicios] = useState<EvolucionServicio[]>([]);
   const [ultimas, setUltimas] = useState<OrdenDashboard[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    setCargando(true);
+    if (!data) setCargando(true);
+    setErrorCarga(null);
     try {
       const [d, m, top, aceptacion, u] = await Promise.all([
         obtenerResumenDashboard(),
@@ -76,7 +78,7 @@ export default function TableroScreen() {
       setUltimas(u);
     } catch (error) {
       console.error('[GBOTtel] No se pudo cargar el tablero:', error);
-      setData(null);
+      setErrorCarga(error instanceof Error ? error.message : 'No se pudo cargar el tablero.');
     } finally {
       setCargando(false);
     }
@@ -103,10 +105,18 @@ export default function TableroScreen() {
           </View>
         </View>
 
-        {cargando ? (
+        {cargando && !data ? (
           <ActivityIndicator color={theme.primary} />
         ) : (
           <>
+            {errorCarga ? (
+              <ThemedView type="surface" style={[styles.card, { borderColor: theme.border }]}>
+                <ThemedText type="smallBold" style={{ color: theme.danger }}>
+                  No se pudo actualizar el tablero
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{errorCarga}</ThemedText>
+              </ThemedView>
+            ) : null}
             <View style={styles.grid}>
               <Stat
                 icon="checkmark-done-outline"
