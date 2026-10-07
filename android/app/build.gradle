@@ -104,6 +104,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // Never commit release passwords. They may be supplied as Gradle
+            // properties or environment variables on the build machine.
+            def releaseStoreFile = project.findProperty('GBOTTEL_RELEASE_STORE_FILE')
+                    ?: System.getenv('GBOTTEL_RELEASE_STORE_FILE')
+                    ?: 'gbottel-release-key.keystore'
+            def releaseStorePassword = project.findProperty('GBOTTEL_RELEASE_STORE_PASSWORD')
+                    ?: System.getenv('GBOTTEL_RELEASE_STORE_PASSWORD')
+            def releaseKeyAlias = project.findProperty('GBOTTEL_RELEASE_KEY_ALIAS')
+                    ?: System.getenv('GBOTTEL_RELEASE_KEY_ALIAS')
+                    ?: 'gbottel-key-alias'
+            def releaseKeyPassword = project.findProperty('GBOTTEL_RELEASE_KEY_PASSWORD')
+                    ?: System.getenv('GBOTTEL_RELEASE_KEY_PASSWORD')
+
+            storeFile file(releaseStoreFile)
+            storePassword releaseStorePassword
+            keyAlias releaseKeyAlias
+            keyPassword releaseKeyPassword
+        }
     }
     buildTypes {
         debug {
@@ -112,7 +131,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
