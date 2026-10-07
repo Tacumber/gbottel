@@ -73,6 +73,21 @@ function numeroLocal(valor: string, respaldo = 0): number {
   return Number.isFinite(numero) ? numero : respaldo;
 }
 
+function numeroLocalEstricto(valor: string): number {
+  const limpio = valor.trim().replace(/\s/g, "");
+  if (!limpio) return NaN;
+  const normalizado =
+    limpio.includes(",") && limpio.includes(".")
+      ? limpio.lastIndexOf(",") > limpio.lastIndexOf(".")
+        ? limpio.replace(/\./g, "").replace(",", ".")
+        : limpio.replace(/,/g, "")
+      : limpio.includes(",")
+        ? limpio.replace(",", ".")
+        : limpio;
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? numero : NaN;
+}
+
 function estadoEtiqueta(
   estado: "pendiente" | "en_progreso" | "finalizada" | "facturada",
 ) {
@@ -276,7 +291,7 @@ export default function OrdenNuevaScreen() {
       let cancelado = false;
       const claveRuta = idOrden == null ? "nuevo" : `editar:${idOrden}`;
 
-      if (rutaInicializada.current === claveRuta) {
+      if (rutaInicializada.current === claveRuta && idOrden == null) {
         const seleccion = obtenerSeleccionTarifario();
         if (seleccion.length) {
           setForm((prev) => ({
@@ -444,6 +459,7 @@ export default function OrdenNuevaScreen() {
 
       return () => {
         cancelado = true;
+        setCargando(false);
       };
     }, [idOrden]),
   );
@@ -495,9 +511,9 @@ export default function OrdenNuevaScreen() {
       nroSerie: null,
     }));
     const s = form.servicios.map((x) => ({
-      importeCUP: Number(x.importeCUP) || 0,
-      importeUSD: Number(x.importeUSD) || 0,
-      cantidad: Number(x.cantidad) || 1,
+      importeCUP: numeroLocal(x.importeCUP, 0),
+      importeUSD: numeroLocal(x.importeUSD, 0),
+      cantidad: numeroLocal(x.cantidad, 1),
       id: 0,
       ordenId: 0,
       servicioId: null,
@@ -653,8 +669,16 @@ export default function OrdenNuevaScreen() {
       return;
     }
     const preciosValidos =
-      form.materiales.every((m) => numeroLocal(m.importeCUP, 0) >= 0 && numeroLocal(m.importeUSD, 0) >= 0) &&
-      form.servicios.every((s) => numeroLocal(s.importeCUP, 0) >= 0 && numeroLocal(s.importeUSD, 0) >= 0);
+      form.materiales.every((m) => {
+        const cup = numeroLocalEstricto(m.importeCUP);
+        const usd = numeroLocalEstricto(m.importeUSD);
+        return Number.isFinite(cup) && cup >= 0 && Number.isFinite(usd) && usd >= 0;
+      }) &&
+      form.servicios.every((s) => {
+        const cup = numeroLocalEstricto(s.importeCUP);
+        const usd = numeroLocalEstricto(s.importeUSD);
+        return Number.isFinite(cup) && cup >= 0 && Number.isFinite(usd) && usd >= 0;
+      });
     if (!preciosValidos) {
       Alert.alert("Importes", "Los importes deben ser números válidos y no pueden ser negativos.");
       return;
@@ -765,6 +789,13 @@ export default function OrdenNuevaScreen() {
         tecnicos: tecnicosParaGuardar,
       });
 
+      // The tab stays mounted. Invalidate its route key and clear the draft
+      // so a later "+ Nueva orden" can never duplicate the previous order.
+      rutaInicializada.current = undefined;
+      setForm(formularioVacio());
+      setErrorCarga(null);
+      setBuscarTexto("");
+      setResultadosBusqueda([]);
       router.replace("/ordenes");
     } catch (error) {
       console.error("[GBOTtel] No se pudo guardar la orden:", error);
@@ -1062,7 +1093,7 @@ export default function OrdenNuevaScreen() {
                   onCambia={(v) => campo("equipoNroSerie", v)}
                 />
               </>
-            )
+            )}
             <ThemedText
               type="small"
               themeColor="textSecondary"
