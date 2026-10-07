@@ -1,6 +1,7 @@
 name: GBOTtel validation and source ZIP
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - chatgpt/reparacion-integral-2026-10-07-fixed
