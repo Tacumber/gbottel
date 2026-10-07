@@ -1185,7 +1185,7 @@ export default function OrdenNuevaScreen() {
                     etiqueta="Importe CUP"
                     valor={m.importeCUP}
                     onCambia={(v) =>
-                      actualizarMaterial(m.clave, "importeCUP", v)
+                      actualizarMaterial(m.clave, "importeCUP", v.replace(/[^0-9.,]/g, ""))
                     }
                     teclado="numeric"
                   />
@@ -1193,7 +1193,7 @@ export default function OrdenNuevaScreen() {
                     etiqueta="Importe USD"
                     valor={m.importeUSD}
                     onCambia={(v) =>
-                      actualizarMaterial(m.clave, "importeUSD", v)
+                      actualizarMaterial(m.clave, "importeUSD", v.replace(/[^0-9.,]/g, ""))
                     }
                     teclado="numeric"
                   />
@@ -1305,7 +1305,7 @@ export default function OrdenNuevaScreen() {
                     etiqueta="Importe CUP"
                     valor={s.importeCUP}
                     onCambia={(v) =>
-                      actualizarServicio(s.clave, "importeCUP", v)
+                      actualizarServicio(s.clave, "importeCUP", v.replace(/[^0-9.,]/g, ""))
                     }
                     teclado="numeric"
                   />
@@ -1313,7 +1313,7 @@ export default function OrdenNuevaScreen() {
                     etiqueta="Importe USD"
                     valor={s.importeUSD}
                     onCambia={(v) =>
-                      actualizarServicio(s.clave, "importeUSD", v)
+                      actualizarServicio(s.clave, "importeUSD", v.replace(/[^0-9.,]/g, ""))
                     }
                     teclado="numeric"
                   />
