@@ -493,10 +493,25 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
   }
 
   const db = await getDatabase();
-  const existentes = await db.getAllAsync<{ clienteNombre: string | null; fechaReporte: string | null }>(
-    `SELECT clienteNombre, fechaReporte FROM ordenes`
+  const existentes = await db.getAllAsync<{
+    numeroOrden: string | null;
+    clienteNombre: string | null;
+    fechaReporte: string | null;
+    codigoReporte: string | null;
+    codigoOrden: string | null;
+    totalCUP: number;
+    totalUSD: number;
+  }>(
+    `SELECT o.numeroOrden, o.clienteNombre, o.fechaReporte, o.codigoReporte, o.codigoOrden,
+            (SELECT COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) FROM orden_servicios os WHERE os.ordenId=o.id) +
+            (SELECT COALESCE(SUM(om.importeCUP * COALESCE(om.cantidad,1)),0) FROM orden_materiales om WHERE om.ordenId=o.id) totalCUP,
+            (SELECT COALESCE(SUM(os.importeUSD * COALESCE(os.cantidad,1)),0) FROM orden_servicios os WHERE os.ordenId=o.id) +
+            (SELECT COALESCE(SUM(om.importeUSD * COALESCE(om.cantidad,1)),0) FROM orden_materiales om WHERE om.ordenId=o.id) totalUSD
+     FROM ordenes o`
   );
-  const clavesExistentes = new Set(existentes.map((o) => `${o.clienteNombre ?? ''}|${o.fechaReporte ?? ''}`));
+  const claveOrden = (o: Record<string, unknown>) =>
+    `${o.folioOrigen ?? o.numeroOrden ?? o.codigoReporte ?? o.codigoOrden ?? ''}|${o.clienteNombre ?? ''}|${o.fechaReporte ?? ''}|${o.totalCUP ?? 0}|${o.totalUSD ?? 0}`;
+  const clavesExistentes = new Set(existentes.map((o) => claveOrden(o as Record<string, unknown>)));
 
   const tecnicosPropios = await db.getAllAsync<{ id: number; nombre: string }>(`SELECT id, nombre FROM tecnicos`);
   const idPorNombreTecnico = new Map(tecnicosPropios.map((t) => [t.nombre, t.id]));
@@ -504,12 +519,13 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
   const porImportar: Record<string, unknown>[] = [];
   const detalleOmitidas: string[] = [];
   for (const o of datos.ordenes as Record<string, unknown>[]) {
-    const clave = `${o.clienteNombre ?? ''}|${o.fechaReporte ?? ''}`;
+    const clave = claveOrden(o);
     if (clavesExistentes.has(clave)) {
       detalleOmitidas.push(`${o.folioOrigen ?? '(sin folio)'} — ${o.clienteNombre ?? 'sin cliente'}`);
       continue;
     }
     porImportar.push(o);
+    clavesExistentes.add(clave);
   }
   porImportar.sort((a, b) => String(a.fechaReporte ?? '').localeCompare(String(b.fechaReporte ?? '')));
 
@@ -532,7 +548,8 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
           { marca: null, modelo: null, nroSerie: null },
         ];
       }
-      await guardarOrdenCompletaEnTransaccion(db, null, {
+      try {
+        await guardarOrdenCompletaEnTransaccion(db, null, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         datos: { ...datosOrden, tecnicoId } as any,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -546,7 +563,11 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
           tecnicoId: t.nombre ? idPorNombreTecnico.get(String(t.nombre)) ?? null : null,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         })) as any,
-      });
+        });
+      } catch (error) {
+        const folio = String(folioOrigen ?? datosOrden.codigoReporte ?? datosOrden.codigoOrden ?? 'sin folio');
+        throw new Error(`No se pudo importar la orden ${folio}: ${error instanceof Error ? error.message : String(error)}`);
+      }
       importadas++;
     }
   });
