@@ -62,6 +62,7 @@ export function AppTabs() {
       <Tabs.Screen name="reportes" options={{ title: 'Reportes', tabBarIcon: icono('reportes') }} />
       <Tabs.Screen name="ajustes" options={{ title: 'Ajustes', tabBarIcon: icono('ajustes') }} />
       <Tabs.Screen name="orden-nueva" options={{ href: null }} />
+      <Tabs.Screen name="folios" options={{ href: null }} />
     </Tabs>
   );
 }

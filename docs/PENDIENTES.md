@@ -28,11 +28,11 @@ Auditoría completa: `docs/auditorias/AUDITORIA-2026-10-14-folios-rangos-zustand
 
 | # | Cambio | Estado |
 | --- | --- | --- |
-| B1 | Quitar «Renumerar todo» y `renumerarOrdenesPorFecha()` | Pendiente |
-| B2 | Esquema v6: `folio_rangos`, `folios_emitidos`, triggers, `tecnicoPrincipalId`, migración histórica con `ROLLBACK` | Pendiente |
-| B3 | Reserva atómica de folio (transacción exclusiva) | Pendiente |
-| B4 | Pantalla de rangos con alerta de agotamiento y selector de técnico principal independiente | Pendiente |
-| B5 | Respaldo con validación previa, fusión del libro de folios; traspaso atómico con conflictos explícitos | Pendiente |
+| B1 | Quitar «Renumerar todo» y `renumerarOrdenesPorFecha()` | Hecho en rama `claude/folios-rangos-apk-20261015` (PR pendiente de revisión) |
+| B2 | Esquema v6: `folio_rangos`, `folios_emitidos`, triggers, `tecnicoPrincipalId`, migración histórica con `ROLLBACK` | Hecho en la misma rama |
+| B3 | Reserva atómica de folio (transacción exclusiva) | Hecho en la misma rama |
+| B4 | Pantalla de rangos con alerta de agotamiento y selector de técnico principal independiente | Hecho en la misma rama (sin Zustand) |
+| B5 | Respaldo con validación previa, fusión del libro de folios; traspaso atómico con conflictos explícitos | Hecho en la misma rama |
 | B6 | Zustand (borrador + invalidación), opcional | Pendiente |
 | B7 | Renombrar el script `prebuild` (`--clean`) | Pendiente |
 

@@ -7,7 +7,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { APP_NAME } from '@/theme/tokens';
 import { useTheme } from '@/hooks/use-theme';
-import { exportarRespaldoCompleto, importarRespaldoCompleto, resetearBaseDeDatos } from '@/services/respaldoService';
+import { router } from 'expo-router';
+import { aplicarRespaldo, exportarRespaldoCompleto, prepararRespaldo, resetearBaseDeDatos, type PreparacionRespaldo } from '@/services/respaldoService';
 import { contarServicios, importarServiciosDesdeJSON } from '@/services/tarifarioService';
 import serviciosSeed from '@/data/servicios_seed.json';
 import type { NuevoServicio } from '@/types/tarifario.types';
@@ -27,20 +28,35 @@ export default function AjustesScreen() {
     }
   }
 
-  function confirmarImportar() {
+  async function elegirRespaldo() {
+    setProcesando('importar');
+    try {
+      const prep = await prepararRespaldo();
+      if (prep) confirmarImportar(prep);
+    } catch (err) {
+      Alert.alert('Respaldo no válido', err instanceof Error ? err.message : String(err));
+    } finally {
+      setProcesando(null);
+    }
+  }
+
+  function confirmarImportar(prep: PreparacionRespaldo) {
+    const r = prep.resumen;
     Alert.alert(
       'Importar respaldo',
-      'Esto REEMPLAZA todo lo que tenés guardado en este dispositivo (órdenes, técnicos, tarifario) por lo que venga en el archivo. No se combina con lo que ya tenías — se pierde. ¿Seguro?',
+      `El archivo (v${r.version}) tiene ${r.ordenesEnArchivo} orden(es) y ${r.tecnicosEnArchivo} técnico(s).\n\n` +
+        `REEMPLAZA los datos de este dispositivo (${r.ordenesLocalesQueSeReemplazan} orden(es) locales, técnicos, tarifario).\n\n` +
+        `Folios: no se renumera nada. Los folios ya emitidos aquí se conservan y no se reutilizan (${r.foliosNuevosParaElLibro} nuevo(s) se suman al libro). ` +
+        `Bloques: ${r.rangosCoincidentes} coincidente(s), ${r.rangosNuevos} nuevo(s), ${r.rangosSoloLocales} solo locales (se conservan). ¿Seguro?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sí, reemplazar', style: 'destructive', onPress: importar },
+        { text: 'Sí, reemplazar', style: 'destructive', onPress: () => void importar(prep) },
       ]
     );
   }
 
-
   function confirmarReset() {
-    Alert.alert('Restablecer de fábrica', 'Se eliminarán todas las órdenes, técnicos, configuraciones y datos operativos. El tarifario también volverá al catálogo inicial. Esta acción no se puede deshacer.', [
+    Alert.alert('Restablecer de fábrica', 'Se eliminarán todas las órdenes, técnicos, configuraciones y datos operativos. El tarifario también volverá al catálogo inicial. Los folios ya emitidos y los rangos se conservan (no se reutilizan). Esta acción no se puede deshacer.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Sí, restablecer', style: 'destructive', onPress: async () => {
         setProcesando('importar');
@@ -55,13 +71,11 @@ export default function AjustesScreen() {
     ]);
   }
 
-  async function importar() {
+  async function importar(prep: PreparacionRespaldo) {
     setProcesando('importar');
     try {
-      const res = await importarRespaldoCompleto();
-      if (res.importado) {
-        Alert.alert('Listo', 'La base se reemplazó con el respaldo importado.');
-      }
+      await aplicarRespaldo(prep);
+      Alert.alert('Listo', 'La base se reemplazó con el respaldo importado. Los folios no se renumeraron.');
     } catch (err) {
       Alert.alert('No se pudo importar', err instanceof Error ? err.message : String(err));
     } finally {
@@ -81,6 +95,18 @@ export default function AjustesScreen() {
           </View>
 
           <ThemedView type="surface" style={[styles.seccion, { borderColor: theme.border }]}>
+            <ThemedText type="smallBold">Rangos de folios</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.descripcion}>
+              Cada técnico principal emite folios de los bloques que le asignes. Un folio emitido no se cambia ni se reutiliza.
+            </ThemedText>
+            <Pressable onPress={() => router.push('/folios')}>
+              <ThemedView type="primary" style={styles.boton}>
+                <ThemedText style={styles.botonTexto}>Administrar rangos de folios</ThemedText>
+              </ThemedView>
+            </Pressable>
+          </ThemedView>
+
+          <ThemedView type="surface" style={[styles.seccion, { borderColor: theme.border }]}>
             <ThemedText type="smallBold">Respaldo completo</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.descripcion}>
               Exportá todo lo que hay en este dispositivo (tarifario, órdenes, técnicos) en un archivo para
@@ -98,7 +124,7 @@ export default function AjustesScreen() {
               </ThemedView>
             </Pressable>
 
-            <Pressable onPress={confirmarImportar} disabled={procesando !== null}>
+            <Pressable onPress={() => void elegirRespaldo()} disabled={procesando !== null}>
               <View style={[styles.botonSecundario, { borderColor: theme.danger }]}>
                 {procesando === 'importar' ? (
                   <ActivityIndicator color={theme.danger} />
