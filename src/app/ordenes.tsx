@@ -8,7 +8,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { eliminarOrden } from '@/services/ordenesService';
-import { exportarOrdenesCSV, exportarOrdenesJSON, exportarOrdenesPDF, importarOrdenesJSON } from '@/services/respaldoService';
+import { avisosDeFolios, type AvisoFolios } from '@/services/foliosService';
+import { aplicarTraspaso, exportarOrdenesCSV, exportarOrdenesJSON, exportarOrdenesPDF, prepararTraspaso, type PreparacionTraspaso } from '@/services/respaldoService';
 import { obtenerOrdenesFiltradas, obtenerResumenDashboard, type OrdenDashboard } from '@/services/analyticsService';
 import type { EstadoOrden } from '@/types/ordenes.types';
 
@@ -27,17 +28,19 @@ export default function OrdenesScreen(){
   const [seleccionados,setSeleccionados]=useState<Set<number>>(new Set());
   const [modoSeleccion,setModoSeleccion]=useState(false);
   const [exportando,setExportando]=useState(false);
+  const [avisos,setAvisos]=useState<AvisoFolios[]>([]);
 
   const cargar=useCallback(async()=>{
     setLoading(true);
     try{
       const [r,d]=await Promise.all([obtenerOrdenesFiltradas({termino:q,estado:state,limite:300}),obtenerResumenDashboard()]);
       setRows(r);setTotalRegistradas(d.totalOrdenes);
+      setAvisos(await avisosDeFolios().catch(()=>[]));
     } finally { setLoading(false); }
   },[q,state]);
   useFocusEffect(useCallback(()=>{void cargar();},[cargar]));
 
-  const borrar=(id:number)=>Alert.alert('Eliminar Orden de Servicio','Esta acción elimina la orden y sus detalles. ¿Continuar?',[{text:'Cancelar',style:'cancel'},{text:'Eliminar',style:'destructive',onPress:async()=>{await eliminarOrden(id);await cargar()}}]);
+  const borrar=(id:number)=>Alert.alert('Eliminar Orden de Servicio','Esta acción elimina la orden y sus detalles. Su folio queda emitido y no se volverá a usar. ¿Continuar?',[{text:'Cancelar',style:'cancel'},{text:'Eliminar',style:'destructive',onPress:async()=>{await eliminarOrden(id);await cargar()}}]);
 
   const abrirMenu=(item:OrdenDashboard)=>Alert.alert(item.folio,item.cliente,[
     {text:'Cancelar',style:'cancel'},
@@ -72,19 +75,33 @@ export default function OrdenesScreen(){
     finally{ setExportando(false); }
   };
 
-  const importarJSON=()=>{
-    Alert.alert('Traspaso de órdenes','¿Mantener la numeración de folios que ya tenés? Las órdenes nuevas se agregan después, ordenadas por fecha entre ellas. Si elegís renumerar, se reordenan TODAS tus órdenes (las que ya tenías y las nuevas) por fecha estricta — cambia folios que ya existían.',[
-      {text:'Cancelar',style:'cancel'},
-      {text:'Mantener folios',onPress:()=>void ejecutarImportarJSON(true)},
-      {text:'Renumerar todo',style:'destructive',onPress:()=>void ejecutarImportarJSON(false)},
-    ]);
-  };
-  const ejecutarImportarJSON=async(mantener:boolean)=>{
+  const importarJSON=async()=>{
     setExportando(true);
     try{
-      const r=await importarOrdenesJSON(mantener);
-      if(r){ Alert.alert('Traspaso completado',`${r.importadas} orden${r.importadas===1?'':'es'} importada${r.importadas===1?'':'s'}.${r.omitidas?` ${r.omitidas} ya existían y se omitieron.`:''}`); await cargar(); }
-    } catch(e){ Alert.alert('Error al importar',e instanceof Error?e.message:String(e)); }
+      const prep=await prepararTraspaso();
+      if(!prep) return;
+      confirmarTraspaso(prep);
+    } catch(e){ Alert.alert('Archivo no válido',e instanceof Error?e.message:String(e)); }
+    finally{ setExportando(false); }
+  };
+  const confirmarTraspaso=(prep:PreparacionTraspaso)=>{
+    const omitidas=prep.omitidas.slice(0,8).map((o)=>`• ${o.folio} — ${o.cliente}: ${o.motivo}`).join('\n');
+    const mas=prep.omitidas.length>8?`\n… y ${prep.omitidas.length-8} más`:'';
+    const sinP=prep.sinPrincipalLocal?`\n\n${prep.sinPrincipalLocal} orden(es) traen un técnico principal que no existe aquí: se importan sin principal.`:'';
+    const cuerpo=`Se importarán ${prep.aImportar.length} orden(es) conservando su folio. No se renumera ninguna orden existente.${prep.omitidas.length?`\n\nSe omiten ${prep.omitidas.length}:\n${omitidas}${mas}`:''}${sinP}`;
+    if(!prep.aImportar.length){ Alert.alert('Nada que importar',cuerpo); return; }
+    Alert.alert('Traspaso de órdenes',cuerpo,[
+      {text:'Cancelar',style:'cancel'},
+      {text:'Importar',onPress:()=>void ejecutarImportarJSON(prep)},
+    ]);
+  };
+  const ejecutarImportarJSON=async(prep:PreparacionTraspaso)=>{
+    setExportando(true);
+    try{
+      const r=await aplicarTraspaso(prep);
+      Alert.alert('Traspaso completado',`${r.importadas} orden${r.importadas===1?'':'es'} importada${r.importadas===1?'':'s'}.${r.omitidas?` ${r.omitidas} omitida${r.omitidas===1?'':'s'}.`:''}`);
+      await cargar();
+    } catch(e){ Alert.alert('No se importó nada',e instanceof Error?e.message:String(e)); }
     finally{ setExportando(false); }
   };
 
@@ -93,6 +110,8 @@ export default function OrdenesScreen(){
       <View><ThemedText type="title" style={styles.title}>Órdenes de Servicio</ThemedText><ThemedText themeColor="textSecondary">{loading?'Actualizando…':`${rows.length} orden${rows.length===1?'':'es'} en la vista`}</ThemedText></View>
       <Pressable onPress={()=>router.push('/orden-nueva')}><ThemedView type="primary" style={styles.new}><ThemedText style={[styles.white,styles.newIcon]}>+</ThemedText></ThemedView></Pressable>
     </View>
+
+    {avisos.length>0&&<Pressable onPress={()=>router.push('/folios')} style={[styles.aviso,{borderColor:theme.danger,backgroundColor:theme.dangerBg}]}><ThemedText type="small" style={{color:theme.danger}}>{avisos.map((a)=>a.restantes===0?`${a.nombre}: sin folios`:`${a.nombre}: quedan ${a.restantes}`).join(' · ')} — toca para gestionar rangos</ThemedText></Pressable>}
 
     <View style={styles.searchRow}><View style={[styles.searchWrap,{borderColor:theme.border,backgroundColor:theme.surface}]}><TextInput value={q} onChangeText={setQ} placeholder="Buscar por folio, cliente, código…" placeholderTextColor={theme.textMuted} style={[styles.searchInput,{color:theme.text}]}/><Ionicons name="search-outline" size={16} color={theme.textMuted}/></View></View>
 
@@ -157,6 +176,7 @@ const styles=StyleSheet.create({
   new:{width:40,height:40,borderRadius:10,alignItems:'center',justifyContent:'center'},
   newIcon:{fontSize:22,lineHeight:24},
   white:{color:'#fff',fontWeight:'700'},
+  aviso:{marginHorizontal:Spacing.four,marginBottom:8,padding:10,borderRadius:8,borderWidth:1},
   searchRow:{paddingHorizontal:Spacing.four},
   searchWrap:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:8,paddingLeft:12,paddingRight:10},
   searchInput:{flex:1,paddingVertical:9,paddingRight:8},
