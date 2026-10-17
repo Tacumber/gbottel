@@ -555,18 +555,13 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
       }
       try {
         await guardarOrdenCompletaEnTransaccion(tx, null, {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         datos: { ...datosOrden, tecnicoId } as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         equipos: equiposParaGuardar as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         materiales: (materiales ?? []) as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         servicios: (servicios ?? []) as any,
         tecnicos: (tecnicos ?? []).map((t) => ({
           ...t,
           tecnicoId: t.nombre ? idPorNombreTecnico.get(String(t.nombre)) ?? null : null,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         })) as any,
         });
       } catch (error) {
