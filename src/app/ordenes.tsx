@@ -13,9 +13,9 @@ import { aplicarTraspaso, exportarOrdenesCSV, exportarOrdenesJSON, exportarOrden
 import { obtenerOrdenesFiltradas, obtenerResumenDashboard, type OrdenDashboard } from '@/services/analyticsService';
 import type { EstadoOrden } from '@/types/ordenes.types';
 
-const states:[EstadoOrden,string][]=[['pendiente','Pendientes'],['en_progreso','En progreso'],['finalizada','Finalizadas'],['facturada','Facturadas']];
+const states:[EstadoOrden,string][]=[['pendiente','Pendientes'],['finalizada','Finalizadas'],['facturada','Facturadas']];
 const money=(n:number,c:'CUP'|'USD')=>new Intl.NumberFormat('es-CU',{style:'currency',currency:c,maximumFractionDigits:0}).format(n||0);
-const label:Record<string,string>={pendiente:'Pendiente',en_progreso:'En progreso',finalizada:'Finalizada',facturada:'Facturada'};
+const label:Record<string,string>={pendiente:'Pendiente',finalizada:'Finalizada',facturada:'Facturada'};
 const TABLE_WIDTH=34+72+170+82+104+92+92;
 
 export default function OrdenesScreen(){

@@ -382,6 +382,7 @@ export async function aplicarRespaldo(prep: PreparacionRespaldo): Promise<void> 
       for (const folio of datos.folios) {
         await registrarFolioExterno(txn, folio, 'respaldo');
       }
+      await txn.runAsync(`UPDATE ordenes SET estado = 'pendiente' WHERE estado = 'en_progreso'`);
 
       await txn.runAsync(
         `INSERT INTO configuracion (clave, valor) VALUES ('schemaVersion', ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor`,
@@ -599,7 +600,7 @@ export async function resetearBaseDeDatos(): Promise<void> {
 }
 
 const ETIQUETA_ESTADO: Record<string, string> = {
-  pendiente: 'Pendiente', en_progreso: 'En progreso', finalizada: 'Finalizada', facturada: 'Facturada',
+  pendiente: 'Pendiente', finalizada: 'Finalizada', facturada: 'Facturada',
 };
 
 function moneda(n: number, codigo: 'CUP' | 'USD'): string {
@@ -852,6 +853,7 @@ export async function aplicarTraspaso(prep: PreparacionTraspaso): Promise<Result
           })) as unknown as NuevoOrdenTecnico[],
         });
       }
+      await txn.runAsync(`UPDATE ordenes SET estado = 'pendiente' WHERE estado = 'en_progreso'`);
       resultado = {
         importadas: ordenadas.length,
         omitidas: prep.omitidas.length + (prep.aImportar.length - vigente.aImportar.length),

@@ -62,3 +62,16 @@ No hay keystore ni credenciales en el repositorio. Alternativa: `npx eas build -
 3. Agotar un bloque pequeño: bloquea y avisa. Doble toque en Guardar: una sola orden.
 4. Exportar respaldo → restablecer → importar: mismos folios, sin renumerar.
 5. Exportar traspaso en un dispositivo e importarlo en otro: folios intactos; reimportar omite todo.
+
+## Arreglos del formulario (rama `claude/arreglos-formulario-20261016`, apilada sobre esta)
+- **A1** «En progreso» eliminado de formulario, filtros, reportes y tablero. Las órdenes que lo tenían pasan a
+  **Pendiente** (al abrir la app, al restaurar un respaldo y al importar un traspaso). El CHECK de la columna aún lo
+  admite (quitarlo exige reconstruir la tabla), pero nada lo escribe.
+- **A2** Reportes, filtros por fecha y tablero usan la **fecha de inicio** (si falta: fecha de reporte; si falta: creación).
+  La fecha de inicio NO es obligatoria (decisión pendiente tuya).
+- **A3** Servicios: el precio unitario viene del tarifario y ya no se edita; se muestra el **importe = cantidad × precio**,
+  que cambia al cambiar la cantidad. Materiales: el precio unitario sigue editable (no hay catálogo) y se muestra el
+  importe calculado. Lo guardado y `calcularTotales` no cambian (precio unitario × cantidad, una sola vez).
+- **A4** Técnicos: selección **múltiple** de técnicos registrados con casillas; se quitó «agregar manualmente» y
+  «guardar este técnico en la base de datos». Las órdenes viejas con firmantes manuales se siguen mostrando (solo lectura).
+- Nada de esto toca Tarifario. `npm run test:folios` ahora tiene 18 pruebas (T17: En progreso, T18: fecha de inicio).

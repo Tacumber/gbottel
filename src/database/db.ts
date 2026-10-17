@@ -155,6 +155,10 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
   await migrarFoliosV6(db);
   console.warn('[GBOTtel] db: folios:ok');
 
+  // El estado «En progreso» se eliminó: esas órdenes pasan a «Pendiente». El CHECK de la
+  // columna aún lo admite (cambiarlo exige reconstruir la tabla), pero ya nada lo escribe.
+  await db.runAsync(`UPDATE ordenes SET estado = 'pendiente' WHERE estado = 'en_progreso'`);
+
   try {
     await db.execAsync(SCHEMA_SQL_FTS);
     // Un índice FTS5 externo creado después de que ya existan servicios no
