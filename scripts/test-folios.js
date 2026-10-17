@@ -111,6 +111,7 @@ const folios = require(path.join(SRC, 'services/foliosService.ts'));
 const ordenes = require(path.join(SRC, 'services/ordenesService.ts'));
 const respaldo = require(path.join(SRC, 'services/respaldoService.ts'));
 const tecnicosSvc = require(path.join(SRC, 'services/tecnicosService.ts'));
+const analitica = require(path.join(SRC, 'services/analyticsService.ts'));
 
 // ------------------------------------------------------------------
 // Utilidades
@@ -542,6 +543,37 @@ prueba('T16 totales: calcularTotales sigue multiplicando precio × cantidad una 
   assert.equal(t.materialesCUP, 20);
   assert.equal(t.serviciosCUP, 300);
   assert.equal(t.totalCUP, 320);
+});
+
+prueba('T17 «En progreso» eliminado: las órdenes viejas pasan a Pendiente (al abrir la base y al restaurar/importar)', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 9);
+  const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a }));
+  const db = await dbMod.getDatabase();
+  await db.runAsync(`UPDATE ordenes SET estado='en_progreso' WHERE id=?`, id);
+  await dbMod.cerrarDatabase(); await dbMod.initDatabase();
+  assert.equal((await q1('SELECT estado FROM ordenes WHERE id=?', id)).estado, 'pendiente');
+  assert.equal((await analitica.obtenerResumenDashboard()).enProgreso, undefined);
+  // respaldo viejo con en_progreso
+  estado.compartidos = {};
+  await respaldo.exportarRespaldoCompleto();
+  const j = JSON.parse(Object.values(estado.compartidos)[0]);
+  j.tablas.ordenes[0].estado = 'en_progreso';
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(j)));
+  assert.equal((await q1('SELECT estado FROM ordenes')).estado, 'pendiente');
+});
+
+prueba('T18 la fecha de INICIO define el trabajo en filtros y reportes (con respaldo en fecha de reporte)', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 9);
+  await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, datos: { clienteNombre: 'ConInicio', fechaReporte: '2026-01-05', fechaInicio: '2026-03-10', estado: 'finalizada' } }));
+  await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, datos: { clienteNombre: 'SoloReporte', fechaReporte: '2026-03-12', estado: 'finalizada' } }));
+  const marzo = await analitica.obtenerOrdenesFiltradas({ desde: '2026-03-01', hasta: '2026-03-31', limite: 50 });
+  assert.deepEqual(marzo.map((o) => o.cliente).sort(), ['ConInicio', 'SoloReporte']);
+  const enero = await analitica.obtenerOrdenesFiltradas({ desde: '2026-01-01', hasta: '2026-01-31', limite: 50 });
+  assert.equal(enero.length, 0);
 });
 
 // ------------------------------------------------------------------

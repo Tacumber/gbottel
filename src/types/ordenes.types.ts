@@ -1,7 +1,6 @@
 export type TipoCobertura = "garantia" | "postgarantia" | "garantia_servicio";
 export type EstadoOrden =
   | "pendiente"
-  | "en_progreso"
   | "finalizada"
   | "facturada";
 

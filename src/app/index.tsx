@@ -16,7 +16,7 @@ import {
 
 type IconName = keyof typeof Ionicons.glyphMap;
 const money=(n:number,currency:'CUP'|'USD')=>new Intl.NumberFormat('es-CU',{style:'currency',currency,maximumFractionDigits:0}).format(n||0);
-const estado:Record<string,string>={pendiente:'Pendiente',en_progreso:'En progreso',finalizada:'Finalizada',facturada:'Facturada'};
+const estado:Record<string,string>={pendiente:'Pendiente',finalizada:'Finalizada',facturada:'Facturada'};
 const MESES_ES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const mesCorto=(m:string)=>{const [,mm]=m.split('-');const i=Number(mm)-1;return MESES_ES[i]??m;};
 const SERIE_COLORES=['#2f6fed','#16a34a','#d97706','#7c3aed','#0891b2','#db2777'];
@@ -44,7 +44,7 @@ export default function TableroScreen(){
     <View style={styles.header}><View><ThemedText type="title" style={styles.title}>Tablero</ThemedText><ThemedText themeColor="textSecondary">Resumen operativo y logros alcanzados</ThemedText></View></View>
     {cargando?<ActivityIndicator color={theme.primary}/>:<>
       <View style={styles.grid}>
-        <Stat icon="clipboard-outline" title="Órdenes activas" value={String((data?.pendientes||0)+(data?.enProgreso||0))} sub={`${data?.pendientes||0} pendientes · ${data?.enProgreso||0} en progreso`} />
+        <Stat icon="clipboard-outline" title="Órdenes activas" value={String(data?.pendientes||0)} sub={`${data?.pendientes||0} pendientes`} />
         <Stat icon="checkmark-done-outline" title="Completadas" value={String(data?.completadas||0)} sub={`${data?.facturadas||0} facturadas este mes`} />
         <Stat icon="cash-outline" title="Ingresos mensuales" value={money(data?.ingresoMesCUP||0,'CUP')} sub={money(data?.ingresoMesUSD||0,'USD')} accent />
         <Stat icon="construct-outline" title="Técnicos registrados" value={String(data?.tecnicosActivos||0)} sub="Activos en la base de datos" />

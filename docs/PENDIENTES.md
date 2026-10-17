@@ -17,10 +17,10 @@ Verificados en ese ZIP; **no verificados en `main`**.
 
 | # | Cambio | Detalle | Estado |
 | --- | --- | --- | --- |
-| A1 | Eliminar el estado «En progreso» | Aparece en tipos, selector de estado, filtros de Órdenes y Reportes, tablero, etiquetas de respaldo y un contador de analítica; el `CHECK` de `ordenes` lo admite. Migrar las órdenes existentes (destino a decidir: `pendiente` o `finalizada`). | Pendiente |
-| A2 | La fecha de inicio define los trabajos | Tablero, ingresos por mes y por técnico, servicios más pedidos y filtros usan `fechaReporte`. Propuesta: `fechaInicio` → `fechaReporte` → `creadoEn`. Decidir si `fechaInicio` es obligatoria. | Pendiente |
-| A3 | Importes no editables y con subtotal | Mostrar por línea importe total = precio unitario × cantidad, solo lectura. Servicios del Tarifario: precio bloqueado. Decidir qué pasa con el precio unitario de materiales. | Pendiente |
-| A4 | Técnicos: selección múltiple | Modal de selección única; quitar «Agregar técnico manualmente», campos manuales por fila y «Guardar este técnico en la base de datos». Los técnicos se dan de alta solo desde la pestaña Técnicos. | Pendiente |
+| A1 | Eliminar el estado «En progreso» | Aparece en tipos, selector de estado, filtros de Órdenes y Reportes, tablero, etiquetas de respaldo y un contador de analítica; el `CHECK` de `ordenes` lo admite. Migrar las órdenes existentes (destino a decidir: `pendiente` o `finalizada`). | Hecho en rama `claude/arreglos-formulario-20261016` |
+| A2 | La fecha de inicio define los trabajos | Tablero, ingresos por mes y por técnico, servicios más pedidos y filtros usan `fechaReporte`. Propuesta: `fechaInicio` → `fechaReporte` → `creadoEn`. Decidir si `fechaInicio` es obligatoria. | Hecho en rama `claude/arreglos-formulario-20261016` |
+| A3 | Importes no editables y con subtotal | Mostrar por línea importe total = precio unitario × cantidad, solo lectura. Servicios del Tarifario: precio bloqueado. Decidir qué pasa con el precio unitario de materiales. | Hecho en rama `claude/arreglos-formulario-20261016` |
+| A4 | Técnicos: selección múltiple | Modal de selección única; quitar «Agregar técnico manualmente», campos manuales por fila y «Guardar este técnico en la base de datos». Los técnicos se dan de alta solo desde la pestaña Técnicos. | Hecho en rama `claude/arreglos-formulario-20261016` |
 
 ## B. Issue #3 — folios por rangos y Zustand
 
