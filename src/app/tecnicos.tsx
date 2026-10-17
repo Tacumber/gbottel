@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
@@ -46,14 +46,19 @@ function Campo({
 export default function TecnicosScreen() {
   const theme = useTheme();
   const params = useLocalSearchParams<{ nombre?: string; cargo?: string; ci?: string; desdeOrden?: string }>();
-  const parametrosProcesados = useRef(false);
   const desdeOrden = params.desdeOrden === '1';
+  const abrirDesdeOrden = desdeOrden && Boolean(params.nombre || params.cargo || params.ci);
   const [rows, setRows] = useState<Tecnico[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [inactive, setInactive] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<Form>(empty());
+  const [open, setOpen] = useState(abrirDesdeOrden);
+  const [form, setForm] = useState<Form>(() => ({
+    ...empty(),
+    nombre: abrirDesdeOrden ? params.nombre ?? '' : '',
+    cargo: abrirDesdeOrden ? params.cargo ?? '' : '',
+    ci: abrirDesdeOrden ? params.ci ?? '' : '',
+  }));
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -63,14 +68,6 @@ export default function TecnicosScreen() {
   }, [inactive]);
 
   useFocusEffect(useCallback(() => { void cargar(); }, [cargar]));
-
-  useEffect(() => {
-    if (parametrosProcesados.current || !desdeOrden) return;
-    if (!params.nombre && !params.cargo && !params.ci) return;
-    parametrosProcesados.current = true;
-    setForm({ ...empty(), nombre: params.nombre ?? '', cargo: params.cargo ?? '', ci: params.ci ?? '' });
-    setOpen(true);
-  }, [desdeOrden, params.cargo, params.ci, params.nombre]);
 
   function editar(t: Tecnico) {
     setForm({
