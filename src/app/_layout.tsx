@@ -36,7 +36,6 @@ export default function RootLayout() {
 
   const prepararApp = useCallback(async () => {
     try {
-      setStartup({ status: 'loading', message: 'Inicializando base de datos…' });
       console.warn('[GBOTtel] startup: initDatabase:start');
       await initDatabase();
       console.warn('[GBOTtel] startup: initDatabase:ok');
@@ -80,6 +79,11 @@ export default function RootLayout() {
     }
   }, [startup.status]);
 
+  const reintentarApp = useCallback(async () => {
+    setStartup({ status: 'loading', message: 'Inicializando base de datos…' });
+    await prepararApp();
+  }, [prepararApp]);
+
   const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   return (
@@ -88,7 +92,7 @@ export default function RootLayout() {
       {startup.status === 'ready' ? (
         <AppTabs />
       ) : (
-        <StartupScreen state={startup} onRetry={prepararApp} />
+        <StartupScreen state={startup} onRetry={reintentarApp} />
       )}
       </ThemeProvider>
     </ErrorBoundary>

@@ -1,10 +1,11 @@
-name: GBOTtel validation and source ZIP
+name: GBOTtel validation and source archive
 
 on:
   workflow_dispatch:
   push:
     branches:
       - chatgpt/reparacion-integral-2026-10-07-fixed
+      - chatgpt/fix-lint-ci-2026-10-17
 
 jobs:
   validate-and-package:
@@ -35,10 +36,8 @@ jobs:
         run: |
           mkdir -p /tmp/gbottel-release
           tar             --exclude='./.git'             --exclude='./.github'             --exclude='./node_modules'             --exclude='./.expo'             --exclude='./android/.gradle'             --exclude='./android/app/build'             -czf /tmp/gbottel-release/gbottel-reparacion-integral-2026-10-07-fixed.tar.gz .
-          cd /tmp/gbottel-release
-          unzip -h >/dev/null 2>&1 || true
 
-      - name: Upload source ZIP
+      - name: Upload source TAR.GZ
         uses: actions/upload-artifact@v4
         with:
           name: gbottel-reparacion-integral-2026-10-07-fixed
