@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - chatgpt/reparacion-integral-2026-10-07-fixed
+      - chatgpt/fix-lint-ci-2026-10-17
 
 jobs:
   validate-and-package:
