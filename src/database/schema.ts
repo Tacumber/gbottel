@@ -16,7 +16,7 @@
  * una fase posterior, no lo necesitas todavía con datos de prueba.
  */
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 // Migración de columnas nuevas para bases que ya tenían `ordenes` creada
 // antes de que existiera la sección 9 del formulario (Firmas y
@@ -216,6 +216,20 @@ CREATE TABLE IF NOT EXISTS orden_tecnicos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_orden_tecnicos_orden ON orden_tecnicos(ordenId);
+
+-- Equipos atendidos cuando una orden tiene modalidad múltiple.
+-- Las órdenes antiguas conservan además los campos singulares de ordenes
+-- para compatibilidad; esta tabla permite guardar 2 o más equipos sin
+-- sobrecargar columnas fijas.
+CREATE TABLE IF NOT EXISTS orden_equipos (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  ordenId   INTEGER NOT NULL REFERENCES ordenes(id) ON DELETE CASCADE,
+  marca     TEXT,
+  modelo    TEXT,
+  nroSerie  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_orden_equipos_orden ON orden_equipos(ordenId);
 
 -- ============================================================
 -- CONFIGURACIÓN — Fase 5 (esquema listo desde ahora)
