@@ -9,7 +9,7 @@
  * Requisito: `npx expo install expo-sqlite` en el proyecto (ver README).
  */
 import * as SQLite from 'expo-sqlite';
-import { MIGRACIONES_COLUMNAS, SCHEMA_SQL_CORE, SCHEMA_SQL_FTS, SCHEMA_VERSION } from './schema';
+import { MIGRACIONES_COLUMNAS, SCHEMA_SQL_CORE, SCHEMA_SQL_FOLIOS, SCHEMA_SQL_FTS, SCHEMA_VERSION } from './schema';
 
 const DATABASE_NAME = 'gbottel.db';
 
@@ -116,6 +116,44 @@ async function migrarTecnicosAEsquemaActual(db: SQLite.SQLiteDatabase): Promise<
   }
 }
 
+/**
+ * v7: libro de folios (la v6 ya la usa orden_equipos en el PC) y bloque histórico. Una sola transacción con ROLLBACK
+ * explícito. No cambia ningún folio existente: solo los registra como
+ * emitidos y crea un bloque histórico [min, max] ya consumido (siguiente =
+ * max+1) para que ningún bloque nuevo pueda solaparse con ellos. Es
+ * idempotente; solo se ejecuta si la base todavía no estaba en v7.
+ */
+async function migrarFolios(db: SQLite.SQLiteDatabase): Promise<void> {
+  const previa = await db.getFirstAsync<{ valor: string | null }>(
+    `SELECT valor FROM configuracion WHERE clave = 'schemaVersion'`
+  );
+  if (previa && Number(previa.valor) >= 7) return;
+
+  await db.execAsync(`BEGIN IMMEDIATE;`);
+  try {
+    await db.runAsync(
+      `INSERT OR IGNORE INTO folios_emitidos (numero, origen) SELECT numeroOrden, 'historico' FROM ordenes WHERE numeroOrden <> ''`
+    );
+    const hayRangos = await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) AS n FROM folio_rangos`);
+    if (!hayRangos?.n) {
+      const limites = await db.getFirstAsync<{ minimo: number | null; maximo: number | null }>(
+        `SELECT MIN(CAST(numeroOrden AS INTEGER)) AS minimo, MAX(CAST(numeroOrden AS INTEGER)) AS maximo
+         FROM ordenes WHERE numeroOrden <> '' AND numeroOrden NOT GLOB '*[^0-9]*' AND CAST(numeroOrden AS INTEGER) >= 1`
+      );
+      if (limites?.minimo != null && limites.maximo != null) {
+        await db.runAsync(
+          `INSERT INTO folio_rangos (tecnicoId, tecnicoNombre, historico, desde, hasta, siguiente) VALUES (NULL, NULL, 1, ?, ?, ?)`,
+          limites.minimo, limites.maximo, limites.maximo + 1
+        );
+      }
+    }
+    await db.execAsync(`COMMIT;`);
+  } catch (error) {
+    try { await db.execAsync(`ROLLBACK;`); } catch { /* sin transacción abierta */ }
+    throw error;
+  }
+}
+
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
   const db = await getDatabase();
   console.warn('[GBOTtel] db: schema:start');
@@ -137,6 +175,14 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       }
     }
   }
+
+  await db.execAsync(SCHEMA_SQL_FOLIOS);
+  await migrarFolios(db);
+  console.warn('[GBOTtel] db: folios:ok');
+
+  // El estado «En progreso» se eliminó: esas órdenes pasan a «Pendiente». El CHECK de la
+  // columna aún lo admite (cambiarlo exige reconstruir la tabla), pero ya nada lo escribe.
+  await db.runAsync(`UPDATE ordenes SET estado = 'pendiente' WHERE estado = 'en_progreso'`);
 
   try {
     await db.execAsync(SCHEMA_SQL_FTS);

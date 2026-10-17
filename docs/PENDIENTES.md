@@ -17,10 +17,10 @@ Verificados en ese ZIP; **no verificados en `main`**.
 
 | # | Cambio | Detalle | Estado |
 | --- | --- | --- | --- |
-| A1 | Eliminar el estado «En progreso» | Aparece en tipos, selector de estado, filtros de Órdenes y Reportes, tablero, etiquetas de respaldo y un contador de analítica; el `CHECK` de `ordenes` lo admite. Migrar las órdenes existentes (destino a decidir: `pendiente` o `finalizada`). | Pendiente |
-| A2 | La fecha de inicio define los trabajos | Tablero, ingresos por mes y por técnico, servicios más pedidos y filtros usan `fechaReporte`. Propuesta: `fechaInicio` → `fechaReporte` → `creadoEn`. Decidir si `fechaInicio` es obligatoria. | Pendiente |
-| A3 | Importes no editables y con subtotal | Mostrar por línea importe total = precio unitario × cantidad, solo lectura. Servicios del Tarifario: precio bloqueado. Decidir qué pasa con el precio unitario de materiales. | Pendiente |
-| A4 | Técnicos: selección múltiple | Modal de selección única; quitar «Agregar técnico manualmente», campos manuales por fila y «Guardar este técnico en la base de datos». Los técnicos se dan de alta solo desde la pestaña Técnicos. | Pendiente |
+| A1 | Eliminar el estado «En progreso» | Aparece en tipos, selector de estado, filtros de Órdenes y Reportes, tablero, etiquetas de respaldo y un contador de analítica; el `CHECK` de `ordenes` lo admite. Migrar las órdenes existentes (destino a decidir: `pendiente` o `finalizada`). | Hecho en rama `claude/arreglos-formulario-20261016` |
+| A2 | La fecha de inicio define los trabajos | Tablero, ingresos por mes y por técnico, servicios más pedidos y filtros usan `fechaReporte`. Propuesta: `fechaInicio` → `fechaReporte` → `creadoEn`. Decidir si `fechaInicio` es obligatoria. | Hecho en rama `claude/arreglos-formulario-20261016` |
+| A3 | Importes no editables y con subtotal | Mostrar por línea importe total = precio unitario × cantidad, solo lectura. Servicios del Tarifario: precio bloqueado. Decidir qué pasa con el precio unitario de materiales. | Hecho en rama `claude/arreglos-formulario-20261016` |
+| A4 | Técnicos: selección múltiple | Modal de selección única; quitar «Agregar técnico manualmente», campos manuales por fila y «Guardar este técnico en la base de datos». Los técnicos se dan de alta solo desde la pestaña Técnicos. | Hecho en rama `claude/arreglos-formulario-20261016` |
 
 ## B. Issue #3 — folios por rangos y Zustand
 
@@ -28,11 +28,11 @@ Auditoría completa: `docs/auditorias/AUDITORIA-2026-10-14-folios-rangos-zustand
 
 | # | Cambio | Estado |
 | --- | --- | --- |
-| B1 | Quitar «Renumerar todo» y `renumerarOrdenesPorFecha()` | Pendiente |
-| B2 | Esquema v6: `folio_rangos`, `folios_emitidos`, triggers, `tecnicoPrincipalId`, migración histórica con `ROLLBACK` | Pendiente |
-| B3 | Reserva atómica de folio (transacción exclusiva) | Pendiente |
-| B4 | Pantalla de rangos con alerta de agotamiento y selector de técnico principal independiente | Pendiente |
-| B5 | Respaldo con validación previa, fusión del libro de folios; traspaso atómico con conflictos explícitos | Pendiente |
+| B1 | Quitar «Renumerar todo» y `renumerarOrdenesPorFecha()` | Hecho en rama `claude/folios-rangos-apk-20261015` (PR pendiente de revisión) |
+| B2 | Esquema v6: `folio_rangos`, `folios_emitidos`, triggers, `tecnicoPrincipalId`, migración histórica con `ROLLBACK` | Hecho en la misma rama |
+| B3 | Reserva atómica de folio (transacción exclusiva) | Hecho en la misma rama |
+| B4 | Pantalla de rangos con alerta de agotamiento y selector de técnico principal independiente | Hecho en la misma rama (sin Zustand) |
+| B5 | Respaldo con validación previa, fusión del libro de folios; traspaso atómico con conflictos explícitos | Hecho en la misma rama |
 | B6 | Zustand (borrador + invalidación), opcional | Pendiente |
 | B7 | Renombrar el script `prebuild` (`--clean`) | Pendiente |
 

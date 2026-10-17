@@ -48,6 +48,7 @@
     "build:android": "eas build --platform android",
     "build:ios": "eas build --platform ios",
     "check:syntax": "node ./scripts/check-syntax.js",
+    "test:folios": "node ./scripts/test-folios.js",
     "check:project": "npm run check:syntax && npm run type-check",
     "build:android:preview": "eas build --platform android --profile preview",
     "build:android:production": "eas build --platform android --profile production"

@@ -1,4 +1,7 @@
+import type * as SQLite from 'expo-sqlite';
+
 import { getDatabase } from '../database/db';
+import { ErrorFolios, enSerieFolios, reservarFolio } from './foliosService';
 import type {
   ActualizacionOrden,
   EstadoOrden,
@@ -58,63 +61,12 @@ const COLUMNAS_ORDEN = new Set<string>([
   'clienteFirmado',
 ]);
 
-async function siguienteNumeroOrden(db: Awaited<ReturnType<typeof getDatabase>>): Promise<string> {
-  const fila = await db.getFirstAsync<{ maximo: number | null }>(
-    `SELECT MAX(CAST(numeroOrden AS INTEGER)) maximo
-     FROM ordenes
-     WHERE TRIM(numeroOrden) GLOB '[0-9]*'`,
-  );
-  const contador = await db.getFirstAsync<{ valor: string | null }>(
-    `SELECT valor FROM configuracion WHERE clave = 'siguienteFolio' LIMIT 1`,
-  );
-  let siguiente = Math.max(
-    1,
-    (fila?.maximo ?? 0) + 1,
-    Number(contador?.valor ?? 1),
-  );
-  while (true) {
-    const folio = String(siguiente).padStart(6, '0');
-    const existe = await db.getFirstAsync<{ encontrado: number }>(
-      `SELECT 1 encontrado FROM ordenes WHERE numeroOrden = ? LIMIT 1`,
-      folio,
-    );
-    if (!existe) {
-      await db.runAsync(
-        `INSERT INTO configuracion (clave, valor) VALUES ('siguienteFolio', ?)
-         ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor`,
-        String(siguiente + 1),
-      );
-      return folio;
-    }
-    siguiente += 1;
-  }
-}
-
 /**
- * Crea una orden y asigna el siguiente folio disponible según la secuencia
- * almacenada en la base. La búsqueda parte del máximo numérico existente y
- * comprueba la unicidad antes de insertar.
+ * Crea una orden vacía con folio tomado del rango del técnico principal.
+ * Ya no deriva el folio del id interno: delega en guardarOrdenCompleta().
  */
-export async function crearOrden(datos: NuevaOrden): Promise<number> {
-  const db = await getDatabase();
-  const entradas = Object.entries(datos).filter(
-    ([campo, valor]) => valor !== undefined && COLUMNAS_ORDEN.has(campo)
-  ) as [string, string | number | null][];
-
-  const columnas = entradas.map(([campo]) => campo);
-  const marcadores = columnas.map(() => '?').join(', ');
-  const valores = entradas.map(([, valor]) => valor);
-
-  const folio = await siguienteNumeroOrden(db);
-  const resultado = await db.runAsync(
-    `INSERT INTO ordenes (numeroOrden, compania${columnas.length ? ', ' + columnas.join(', ') : ''})
-     VALUES (?, 'COPEXTEL'${columnas.length ? ', ' + marcadores : ''})`,
-    folio,
-    ...valores
-  );
-
-  const id = resultado.lastInsertRowId;
-  return id;
+export async function crearOrden(datos: NuevaOrden, tecnicoPrincipalId: number): Promise<number> {
+  return guardarOrdenCompleta(null, { datos, equipos: [], materiales: [], servicios: [], tecnicos: [], tecnicoPrincipalId });
 }
 
 export async function actualizarOrden(id: number, cambios: ActualizacionOrden): Promise<void> {
@@ -174,114 +126,172 @@ export interface OrdenCompletaParaGuardar {
   materiales: NuevoOrdenMaterial[];
   servicios: ServicioParaGuardar[];
   tecnicos: NuevoOrdenTecnico[];
+  /** Obligatorio al CREAR (ordenId null): de su rango sale el folio. Se ignora al editar. */
+  tecnicoPrincipalId?: number | null;
+  /**
+   * Clave única del formulario abierto. Si ya existe una orden con esta
+   * clave, se devuelve esa orden en vez de crear otra (doble toque en
+   * "Guardar", reintentos).
+   */
+  claveGuardado?: string | null;
+}
+
+type Db = SQLite.SQLiteDatabase;
+
+function entradasDeOrden(datos: NuevaOrden): [string, string | number | null][] {
+  return Object.entries(datos).filter(
+    ([campo, valor]) => valor !== undefined && COLUMNAS_ORDEN.has(campo)
+  ) as [string, string | number | null][];
 }
 
 /**
- * Guarda una orden completa en una sola transacción.
- *
- * Antes la pantalla hacía: crear/actualizar orden + tres Promise.all de
- * reemplazo. Si una operación fallaba, la orden podía quedar parcialmente
- * guardada. SQLite garantiza aquí un commit único: o se guarda todo o no se
- * modifica nada.
+ * Inserta una orden NUEVA con un folio ya decidido (reservado de un rango o
+ * recibido por traspaso). El folio se escribe una sola vez, en el INSERT.
  */
-export async function guardarOrdenCompletaEnTransaccion(
-  db: Awaited<ReturnType<typeof getDatabase>>,
+export async function insertarOrdenNueva(
+  db: Db,
+  folio: string,
+  tecnicoPrincipalId: number | null,
+  claveGuardado: string | null,
+  datos: NuevaOrden
+): Promise<number> {
+  const entradas = entradasDeOrden(datos);
+  const columnas = entradas.map(([campo]) => campo);
+  const marcadores = columnas.map(() => '?').join(', ');
+  const valores = entradas.map(([, valor]) => valor);
+  const resultado = await db.runAsync(
+    `INSERT INTO ordenes (numeroOrden, compania, tecnicoPrincipalId, claveGuardado${columnas.length ? ', ' + columnas.join(', ') : ''})
+     VALUES (?, 'COPEXTEL', ?, ?${columnas.length ? ', ' + marcadores : ''})`,
+    folio,
+    tecnicoPrincipalId,
+    claveGuardado,
+    ...valores
+  );
+  return resultado.lastInsertRowId;
+}
+
+/** Reemplaza materiales, servicios y firmantes de una orden (dentro de una transacción). */
+export async function reemplazarHijosDeOrden(
+  db: Db,
+  id: number,
+  payload: Pick<OrdenCompletaParaGuardar, 'materiales' | 'servicios' | 'tecnicos'> & { equipos?: NuevoOrdenEquipo[] }
+): Promise<void> {
+  await db.runAsync(`DELETE FROM orden_equipos WHERE ordenId = ?`, id);
+  for (const e of payload.equipos ?? []) {
+    await db.runAsync(
+      `INSERT INTO orden_equipos (ordenId, marca, modelo, nroSerie) VALUES (?, ?, ?, ?)`,
+      id,
+      e.marca ?? null,
+      e.modelo ?? null,
+      e.nroSerie ?? null
+    );
+  }
+
+  await db.runAsync(`DELETE FROM orden_materiales WHERE ordenId = ?`, id);
+  for (const m of payload.materiales) {
+    await db.runAsync(
+      `INSERT INTO orden_materiales (ordenId, vale, codigo, descripcion, unidadMedida, cantidad, nroSerie, importeCUP, importeUSD)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      m.vale ?? null,
+      m.codigo ?? null,
+      m.descripcion ?? null,
+      m.unidadMedida ?? null,
+      m.cantidad ?? 0,
+      m.nroSerie ?? null,
+      m.importeCUP ?? 0,
+      m.importeUSD ?? 0
+    );
+  }
+
+  await db.runAsync(`DELETE FROM orden_servicios WHERE ordenId = ?`, id);
+  for (const s of payload.servicios) {
+    await db.runAsync(
+      `INSERT INTO orden_servicios (ordenId, servicioId, codigo, descripcion, cantidad, importeCUP, importeUSD)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      s.servicioId,
+      s.codigo,
+      s.descripcion,
+      s.cantidad,
+      s.importeCUP,
+      s.importeUSD
+    );
+  }
+
+  await db.runAsync(`DELETE FROM orden_tecnicos WHERE ordenId = ?`, id);
+  for (const t of payload.tecnicos) {
+    await db.runAsync(
+      `INSERT INTO orden_tecnicos (ordenId, tecnicoId, nombre, cargo, ci, firmado) VALUES (?, ?, ?, ?, ?, ?)`,
+      id,
+      t.tecnicoId ?? null,
+      t.nombre ?? null,
+      t.cargo ?? null,
+      t.ci ?? null,
+      t.firmado ?? 0
+    );
+  }
+}
+
+/**
+ * Guarda una orden completa en UNA transacción exclusiva (conexión aparte,
+ * sin lecturas/escrituras intercaladas) y en cola con otros guardados:
+ * o se guarda todo —incluida la reserva del folio— o no cambia nada.
+ *
+ * - Al crear: exige técnico principal, reserva el folio de su rango y lo
+ *   escribe junto con la orden. Si no quedan folios, lanza SIN_FOLIOS y no
+ *   se crea nada.
+ * - Al editar: el folio y el principal no se tocan (el trigger
+ *   `folio_inmutable` lo impide además a nivel de base de datos).
+ * - Con `claveGuardado`: un segundo guardado con la misma clave devuelve la
+ *   orden ya creada en vez de gastar otro folio.
+ */
+export async function guardarOrdenCompleta(
   ordenId: number | null,
-  payload: OrdenCompletaParaGuardar,
+  payload: OrdenCompletaParaGuardar
 ): Promise<number> {
   validarPayloadOrden(payload);
-  let id = ordenId;
+  if (ordenId === null && (payload.tecnicoPrincipalId == null || !Number.isInteger(payload.tecnicoPrincipalId))) {
+    throw new ErrorFolios('SIN_PRINCIPAL', 'Elige el técnico principal de la orden: de su rango sale el folio.');
+  }
+
+  return enSerieFolios(async () => {
+    const db = await getDatabase();
+    // withExclusiveTransactionAsync no propaga el retorno del callback.
+    let id = ordenId;
+
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      if (id === null) {
+        const clave = payload.claveGuardado || null;
+        if (clave) {
+          const previa = await txn.getFirstAsync<{ id: number }>(`SELECT id FROM ordenes WHERE claveGuardado = ?`, clave);
+          if (previa) {
+            id = previa.id;
+            return;
+          }
+        }
+        const folio = await reservarFolio(txn, payload.tecnicoPrincipalId as number);
+        id = await insertarOrdenNueva(txn, folio, payload.tecnicoPrincipalId as number, clave, payload.datos);
+      } else {
+        const entradas = entradasDeOrden(payload.datos);
+        if (entradas.length) {
+          const asignaciones = entradas.map(([campo]) => `${campo} = ?`).join(', ');
+          const valores = entradas.map(([, valor]) => valor);
+          await txn.runAsync(
+            `UPDATE ordenes SET ${asignaciones}, actualizadoEn = datetime('now') WHERE id = ?`,
+            ...valores,
+            id
+          );
+        }
+      }
+      await reemplazarHijosDeOrden(txn, id as number, payload);
+    });
 
     if (id === null) {
-      const entradas = Object.entries(payload.datos).filter(
-        ([campo, valor]) => valor !== undefined && COLUMNAS_ORDEN.has(campo)
-      ) as [string, string | number | null][];
-      const columnas = entradas.map(([campo]) => campo);
-      const marcadores = columnas.map(() => '?').join(', ');
-      const valores = entradas.map(([, valor]) => valor);
-
-      const folio = await siguienteNumeroOrden(db);
-      const resultado = await db.runAsync(
-        `INSERT INTO ordenes (numeroOrden, compania${columnas.length ? ', ' + columnas.join(', ') : ''})
-         VALUES (?, 'COPEXTEL'${columnas.length ? ', ' + marcadores : ''})`,
-        folio,
-        ...valores
-      );
-      id = resultado.lastInsertRowId;
-    } else {
-      const entradas = Object.entries(payload.datos).filter(
-        ([campo, valor]) => valor !== undefined && COLUMNAS_ORDEN.has(campo)
-      ) as [string, string | number | null][];
-      if (entradas.length) {
-        const asignaciones = entradas.map(([campo]) => `${campo} = ?`).join(', ');
-        const valores = entradas.map(([, valor]) => valor);
-        await db.runAsync(
-          `UPDATE ordenes SET ${asignaciones}, actualizadoEn = datetime('now') WHERE id = ?`,
-          ...valores,
-          id
-        );
-      }
+      throw new Error('guardarOrdenCompleta: no se pudo determinar el id de la orden guardada.');
     }
-
-    await db.runAsync(`DELETE FROM orden_equipos WHERE ordenId = ?`, id);
-    for (const e of payload.equipos) {
-      await db.runAsync(
-        `INSERT INTO orden_equipos (ordenId, marca, modelo, nroSerie) VALUES (?, ?, ?, ?)`,
-        id,
-        e.marca ?? null,
-        e.modelo ?? null,
-        e.nroSerie ?? null,
-      );
-    }
-
-    await db.runAsync(`DELETE FROM orden_materiales WHERE ordenId = ?`, id);
-    for (const m of payload.materiales) {
-      await db.runAsync(
-        `INSERT INTO orden_materiales (ordenId, vale, codigo, descripcion, unidadMedida, cantidad, nroSerie, importeCUP, importeUSD)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        id,
-        m.vale ?? null,
-        m.codigo ?? null,
-        m.descripcion ?? null,
-        m.unidadMedida ?? null,
-        m.cantidad ?? 0,
-        m.nroSerie ?? null,
-        m.importeCUP ?? 0,
-        m.importeUSD ?? 0
-      );
-    }
-
-    await db.runAsync(`DELETE FROM orden_servicios WHERE ordenId = ?`, id);
-    for (const s of payload.servicios) {
-      await db.runAsync(
-        `INSERT INTO orden_servicios (ordenId, servicioId, codigo, descripcion, cantidad, importeCUP, importeUSD)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        id,
-        s.servicioId,
-        s.codigo,
-        s.descripcion,
-        s.cantidad,
-        s.importeCUP,
-        s.importeUSD
-      );
-    }
-
-    await db.runAsync(`DELETE FROM orden_tecnicos WHERE ordenId = ?`, id);
-    for (const t of payload.tecnicos) {
-      await db.runAsync(
-        `INSERT INTO orden_tecnicos (ordenId, tecnicoId, nombre, cargo, ci, firmado) VALUES (?, ?, ?, ?, ?, ?)`,
-        id,
-        t.tecnicoId ?? null,
-        t.nombre ?? null,
-        t.cargo ?? null,
-        t.ci ?? null,
-        t.firmado ?? 0
-      );
-    }
-  if (id === null) {
-    throw new Error('guardarOrdenCompleta: no se pudo determinar el id de la orden guardada.');
-  }
-  return id;
+    return id;
+  });
 }
 
 function validarPayloadOrden(payload: OrdenCompletaParaGuardar): void {
@@ -308,20 +318,6 @@ function validarPayloadOrden(payload: OrdenCompletaParaGuardar): void {
       throw new Error('Los importes de los servicios no son válidos.');
     }
   }
-}
-
-export async function guardarOrdenCompleta(
-  ordenId: number | null,
-  payload: OrdenCompletaParaGuardar
-): Promise<number> {
-  validarPayloadOrden(payload);
-  const db = await getDatabase();
-  let id: number | null = ordenId;
-  await db.withExclusiveTransactionAsync(async (tx) => {
-    id = await guardarOrdenCompletaEnTransaccion(tx, ordenId, payload);
-  });
-  if (id === null) throw new Error('guardarOrdenCompleta: no se pudo determinar el id de la orden guardada.');
-  return id;
 }
 
 // ---------- Materiales ----------

@@ -27,8 +27,8 @@ function inicioMesISO(meses: number): string {
 
 export async function obtenerResumenDashboard() {
   const db = await getDatabase();
-  const esteMes = `substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7)=strftime('%Y-%m','now','localtime')`;
-  const [ordenes, completadas, pendientes, progreso, facturadas, tecnicos, tecnicosRegistrados, ingresoMes, ingresoAnual, ordenesAnual, plan] = await Promise.all([
+  const esteMes = `substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7)=strftime('%Y-%m','now','localtime')`;
+  const [ordenes, completadas, pendientes, facturadas, tecnicos, tecnicosRegistrados, ingresoMes, ingresoAnual, ordenesAnual, plan] = await Promise.all([
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes`),
     // Completadas resetea cada mes (cuenta solo lo finalizado/facturado
     // ESTE mes) — a diferencia de Órdenes activas, que es un estado
@@ -36,13 +36,12 @@ export async function obtenerResumenDashboard() {
     // siendo un pendiente real hoy.
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes o WHERE o.estado='finalizada' AND ${esteMes}`),
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes WHERE estado='pendiente'`),
-    db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes WHERE estado='en_progreso'`),
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes o WHERE o.estado='facturada' AND ${esteMes}`),
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM tecnicos WHERE estado='activo'`),
     db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM tecnicos`),
     db.getFirstAsync<{ cup: number; usd: number }>(`SELECT COALESCE(SUM(${TOTAL_CUP}),0) cup, COALESCE(SUM(${TOTAL_USD}),0) usd FROM ordenes o WHERE o.estado IN ${REVENUE_STATES} AND ${esteMes}`),
-    db.getFirstAsync<{ cup: number; usd: number }>(`SELECT COALESCE(SUM(${TOTAL_CUP}),0) cup, COALESCE(SUM(${TOTAL_USD}),0) usd FROM ordenes o WHERE o.estado IN ${REVENUE_STATES} AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,4)=strftime('%Y','now','localtime')`),
-    db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes o WHERE substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,4)=strftime('%Y','now','localtime')`),
+    db.getFirstAsync<{ cup: number; usd: number }>(`SELECT COALESCE(SUM(${TOTAL_CUP}),0) cup, COALESCE(SUM(${TOTAL_USD}),0) usd FROM ordenes o WHERE o.estado IN ${REVENUE_STATES} AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,4)=strftime('%Y','now','localtime')`),
+    db.getFirstAsync<{ total: number }>(`SELECT COUNT(*) total FROM ordenes o WHERE substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,4)=strftime('%Y','now','localtime')`),
     // Suma de la meta individual de cada técnico activo, no un valor único
     // global — cada técnico define su propia meta en la pantalla Técnicos.
     db.getFirstAsync<{ total: number }>(`SELECT COALESCE(SUM(planMensualCUP),0) total FROM tecnicos WHERE estado='activo'`),
@@ -53,7 +52,6 @@ export async function obtenerResumenDashboard() {
     totalOrdenes: ordenes?.total ?? 0,
     completadas: completadas?.total ?? 0,
     pendientes: pendientes?.total ?? 0,
-    enProgreso: progreso?.total ?? 0,
     facturadas: facturadas?.total ?? 0,
     tecnicosActivos: tecnicos?.total ?? 0,
     tecnicosRegistrados: tecnicosRegistrados?.total ?? 0,
@@ -79,13 +77,13 @@ export async function obtenerIngresosPorMes(meses = 12): Promise<MesIngreso[]> {
   const db = await getDatabase();
   const desdeMes = inicioMesISO(meses);
   const filas = await db.getAllAsync<MesIngreso>(
-    `SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
+    `SELECT substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
             COUNT(*) ordenes,
             COALESCE(SUM(${TOTAL_CUP}),0) cup,
             COALESCE(SUM(${TOTAL_USD}),0) usd
      FROM ordenes o
      WHERE o.estado IN ${REVENUE_STATES}
-       AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
+       AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
      GROUP BY mes`,
     desdeMes
   );
@@ -111,7 +109,7 @@ export async function obtenerRendimientoServicios(meses = 12): Promise<ServicioR
             COALESCE(SUM(os.importeUSD * COALESCE(os.cantidad,1)),0) usd
      FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
      WHERE o.estado IN ${REVENUE_STATES}
-       AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
+       AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
      GROUP BY os.servicioId, os.codigo, os.descripcion
      ORDER BY cantidad DESC, cup DESC LIMIT 20`, desdeMes
   );
@@ -122,12 +120,12 @@ export async function obtenerAceptacionServiciosPorMes(meses = 12): Promise<{ me
   const desdeMes = inicioMesISO(meses);
   return db.getAllAsync<{ mes: string; servicio: string; cantidad: number; cup: number }>(
     `WITH base AS (
-       SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
+       SELECT substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
               COALESCE(os.descripcion,'Sin descripción') servicio,
               SUM(os.cantidad) cantidad, COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) cup
        FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
        WHERE o.estado IN ${REVENUE_STATES}
-         AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
+         AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
        GROUP BY mes, os.servicioId, os.descripcion
      ), ranked AS (
        SELECT *, ROW_NUMBER() OVER (PARTITION BY mes ORDER BY cantidad DESC, cup DESC) rn FROM base
@@ -179,7 +177,7 @@ export async function obtenerIngresosPorTecnico(
 
   const filas = await db.getAllAsync<{ periodo: string; tecnico: string; ordenes: number; cup: number; usd: number }>(
     `WITH totales AS (
-       SELECT o.id, COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha, ${TOTAL_CUP} cup, ${TOTAL_USD} usd
+       SELECT o.id, COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha, ${TOTAL_CUP} cup, ${TOTAL_USD} usd
        FROM ordenes o WHERE o.estado IN ${REVENUE_STATES}
      ), acotado AS (
        SELECT * FROM totales WHERE ${whereFecha}
@@ -218,12 +216,12 @@ export async function obtenerIngresosPorTecnico(
 
   const primerMesFilas = await db.getAllAsync<{ tecnico: string; anio: string; primerMes: string }>(
     `WITH participantes AS (
-       SELECT o.id, COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha,
+       SELECT o.id, COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha,
               COALESCE(NULLIF(t.nombre,''),'Técnico no identificado') tecnico
        FROM ordenes o LEFT JOIN tecnicos t ON t.id=o.tecnicoId
        WHERE o.estado IN ${REVENUE_STATES} AND o.tecnicoId IS NOT NULL
        UNION
-       SELECT ot.ordenId, COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),
+       SELECT ot.ordenId, COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),
               COALESCE(NULLIF(ot.nombre,''),'Técnico no identificado')
        FROM orden_tecnicos ot JOIN ordenes o ON o.id=ot.ordenId
        WHERE o.estado IN ${REVENUE_STATES} AND NULLIF(ot.nombre,'') IS NOT NULL
@@ -248,7 +246,7 @@ export async function obtenerUltimasOrdenes(limite = 10): Promise<OrdenDashboard
   const db = await getDatabase();
   return db.getAllAsync<OrdenDashboard>(
     `SELECT o.id, o.numeroOrden folio, COALESCE(o.clienteNombre,'Sin cliente') cliente,
-            COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha, o.estado,
+            COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha, o.estado,
             ${TOTAL_CUP} totalCUP, ${TOTAL_USD} totalUSD
      FROM ordenes o ORDER BY o.id DESC LIMIT ?`, limite
   );
@@ -265,15 +263,15 @@ export async function obtenerOrdenesFiltradas(opciones: {
   if (term) { where.push(`(o.numeroOrden LIKE ? OR o.clienteNombre LIKE ? OR o.codigoOrden LIKE ? OR o.codigoFactura LIKE ?)`); const q=`%${term}%`; params.push(q,q,q,q); }
   if (opciones.estado) { where.push(`o.estado = ?`); params.push(opciones.estado); }
   if (opciones.tecnicoId) { where.push(`o.tecnicoId = ?`); params.push(opciones.tecnicoId); }
-  if (opciones.desde) { where.push(`date(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime'))) >= date(?)`); params.push(opciones.desde); }
-  if (opciones.hasta) { where.push(`date(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime'))) <= date(?)`); params.push(opciones.hasta); }
+  if (opciones.desde) { where.push(`date(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime'))) >= date(?)`); params.push(opciones.desde); }
+  if (opciones.hasta) { where.push(`date(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime'))) <= date(?)`); params.push(opciones.hasta); }
   if (opciones.min != null) { where.push(`(${TOTAL_CUP}) >= ?`); params.push(opciones.min); }
   if (opciones.max != null) { where.push(`(${TOTAL_CUP}) <= ?`); params.push(opciones.max); }
   const limit=Math.max(1, Math.min(500, opciones.limite ?? 100));
   params.push(limit);
   return db.getAllAsync<OrdenDashboard>(
     `SELECT o.id, o.numeroOrden folio, COALESCE(o.clienteNombre,'Sin cliente') cliente,
-            COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha, o.estado,
+            COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')) fecha, o.estado,
             ${TOTAL_CUP} totalCUP, ${TOTAL_USD} totalUSD
      FROM ordenes o ${where.length?`WHERE ${where.join(' AND ')}`:''}
      ORDER BY o.id DESC LIMIT ?`, ...params
@@ -296,18 +294,18 @@ export async function obtenerEvolucionAceptacionServicios(meses = 6, top = 3): P
               COUNT(DISTINCT o.id) total
        FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
        WHERE o.estado IN ${REVENUE_STATES}
-         AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
+         AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
        GROUP BY os.servicioId, os.descripcion
        ORDER BY total DESC
        LIMIT ?
      )
-     SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
+     SELECT substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
             COALESCE(os.descripcion,'Sin descripción') servicio,
             COUNT(DISTINCT o.id) cantidad
      FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
      WHERE o.estado IN ${REVENUE_STATES}
        AND COALESCE(os.descripcion,'Sin descripción') IN (SELECT servicio FROM top)
-       AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
+       AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
      GROUP BY mes, servicio
      ORDER BY mes ASC`,
     desdeMes, top, desdeMes
@@ -347,16 +345,16 @@ export async function obtenerEvolucionTopServicios(meses = 6, top = 5): Promise<
        SELECT COALESCE(os.descripcion,'Sin descripción') servicio, SUM(os.cantidad) total
        FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
        WHERE o.estado IN ${REVENUE_STATES}
-         AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
+         AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
        GROUP BY os.servicioId, os.descripcion ORDER BY total DESC LIMIT ?
      )
-     SELECT substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
+     SELECT substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
             COALESCE(os.descripcion,'Sin descripción') servicio,
             SUM(os.cantidad) cantidad
      FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
      WHERE o.estado IN ${REVENUE_STATES}
        AND COALESCE(os.descripcion,'Sin descripción') IN (SELECT servicio FROM top)
-       AND substr(COALESCE(NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
+       AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
      GROUP BY mes, servicio ORDER BY mes ASC`,
     desdeMes, top, desdeMes
   );

@@ -47,6 +47,7 @@ import {
   type TipoCobertura,
 } from "@/types/ordenes.types";
 
+import { resumenFoliosPorTecnico, type ResumenFoliosTecnico } from "@/services/foliosService";
 import type { Servicio } from "@/types/tarifario.types";
 import type { Tecnico } from "@/types/tecnicos.types";
 
@@ -89,12 +90,11 @@ function numeroLocalEstricto(valor: string): number {
 }
 
 function estadoEtiqueta(
-  estado: "pendiente" | "en_progreso" | "finalizada" | "facturada",
+  estado: "pendiente" | "finalizada" | "facturada",
 ) {
   return (
     {
       pendiente: "Pendiente",
-      en_progreso: "En progreso",
       finalizada: "Finalizada",
       facturada: "Facturada",
     } as const
@@ -158,22 +158,12 @@ const equipoVacio = (): EquipoLocal => ({
   nroSerie: "",
 });
 
-const tecnicoVacio = (): TecnicoLocal => ({
-  clave: `t-${Date.now()}-${Math.random()}`,
-  tecnicoId: null,
-  nombre: "",
-  ci: "",
-  cargo: "",
-  firmado: false,
-});
-
 function formularioVacio() {
   return {
     folio: null as string | null,
 
     estadoSeleccionado: "pendiente" as
       | "pendiente"
-      | "en_progreso"
       | "finalizada"
       | "facturada",
 
@@ -262,6 +252,13 @@ export default function OrdenNuevaScreen() {
 
   const [form, setForm] = useState<FormularioOrden>(formularioVacio());
 
+  // Técnico principal (de su rango sale el folio): distinto de los firmantes.
+  const [principalId, setPrincipalId] = useState<number | null>(null);
+  const [resumenFolios, setResumenFolios] = useState<ResumenFoliosTecnico[]>([]);
+  // Clave única por formulario abierto: un segundo "Guardar" no crea otra orden.
+  const claveGuardadoRef = useRef<string>("");
+  const guardandoRef = useRef(false);
+
   const campo = <K extends keyof FormularioOrden>(
     clave: K,
     valor: FormularioOrden[K],
@@ -277,9 +274,6 @@ export default function OrdenNuevaScreen() {
   const [buscando, setBuscando] = useState(false);
   const [tecnicosBD, setTecnicosBD] = useState<Tecnico[]>([]);
   const [selectorTecnico, setSelectorTecnico] = useState(false);
-  const [tecnicoEditandoClave, setTecnicoEditandoClave] = useState<
-    string | null
-  >(null);
   const [selectorEstado, setSelectorEstado] = useState(false);
 
   // La pantalla puede mantenerse montada al cambiar de pestaña. Inicializamos
@@ -290,6 +284,10 @@ export default function OrdenNuevaScreen() {
     useCallback(() => {
       let cancelado = false;
       const claveRuta = idOrden == null ? "nuevo" : `editar:${idOrden}`;
+
+      resumenFoliosPorTecnico()
+        .then((r) => { if (!cancelado) setResumenFolios(r); })
+        .catch(() => setResumenFolios([]));
 
       if (rutaInicializada.current === claveRuta && idOrden == null) {
         const seleccion = obtenerSeleccionTarifario();
@@ -320,6 +318,8 @@ export default function OrdenNuevaScreen() {
       setErrorCarga(null);
 
       if (idOrden == null) {
+        claveGuardadoRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+        setPrincipalId(null);
         setForm(formularioVacio());
         setBuscarTexto("");
         setResultadosBusqueda([]);
@@ -359,9 +359,10 @@ export default function OrdenNuevaScreen() {
             setErrorCarga("La orden solicitada no existe o fue eliminada. No se puede abrir ni guardar una ficha vacía.");
             return;
           }
+          setPrincipalId(orden.tecnicoPrincipalId ?? null);
           setForm({
             folio: orden.numeroOrden,
-            estadoSeleccionado: orden.estado,
+            estadoSeleccionado: (orden.estado as string) === "en_progreso" ? "pendiente" : orden.estado,
             codigoReporte: orden.codigoReporte ?? "",
             reportadoPor: orden.reportadoPor ?? "",
             fechaReporte: orden.fechaReporte ?? "",
@@ -621,26 +622,13 @@ export default function OrdenNuevaScreen() {
 
   function actualizarServicio(
     clave: string,
-    campoNombre: "cantidad" | "importeCUP" | "importeUSD",
+    campoNombre: "cantidad",
     valor: string,
   ) {
     setForm((prev) => ({
       ...prev,
       servicios: prev.servicios.map((s) =>
         s.clave === clave ? { ...s, [campoNombre]: valor } : s,
-      ),
-    }));
-  }
-
-  function actualizarTecnico(
-    clave: string,
-    campoNombre: "nombre" | "ci" | "cargo",
-    valor: string,
-  ) {
-    setForm((prev) => ({
-      ...prev,
-      tecnicos: prev.tecnicos.map((t) =>
-        t.clave === clave ? { ...t, [campoNombre]: valor } : t,
       ),
     }));
   }
@@ -655,8 +643,15 @@ export default function OrdenNuevaScreen() {
   }
 
   async function guardar() {
-    if (guardando) return;
-
+    // El ref bloquea el segundo toque aunque React aún no haya repintado "guardando".
+    if (guardandoRef.current) return;
+    if (!idOrden && principalId == null) {
+      Alert.alert(
+        "Falta el técnico principal",
+        "Elige el técnico principal de la orden: de su rango de folios sale el folio.",
+      );
+      return;
+    }
     if (form.modalidadMultiple && form.equipos.length < 2) {
       Alert.alert("Modalidad múltiple", "Agregue al menos dos equipos atendidos.");
       return;
@@ -684,6 +679,7 @@ export default function OrdenNuevaScreen() {
       return;
     }
 
+    guardandoRef.current = true;
     setGuardando(true);
 
     try {
@@ -787,6 +783,8 @@ export default function OrdenNuevaScreen() {
         materiales: materialesParaGuardar,
         servicios: serviciosParaGuardar,
         tecnicos: tecnicosParaGuardar,
+        tecnicoPrincipalId: idOrden ? undefined : principalId,
+        claveGuardado: idOrden ? undefined : claveGuardadoRef.current,
       });
 
       // The tab stays mounted. Invalidate its route key and clear the draft
@@ -807,6 +805,7 @@ export default function OrdenNuevaScreen() {
           : "Ocurrió un error inesperado. Los cambios no se guardaron.",
       );
     } finally {
+      guardandoRef.current = false;
       setGuardando(false);
     }
   }
@@ -873,6 +872,38 @@ export default function OrdenNuevaScreen() {
               </ThemedText>
               <ThemedText themeColor="textSecondary">▼</ThemedText>
             </Pressable>
+
+            <ThemedText type="small" themeColor="textSecondary">
+              Técnico principal (de su rango sale el folio)
+            </ThemedText>
+            {idOrden ? (
+              <ThemedText type="smallBold">
+                {principalId != null
+                  ? resumenFolios.find((r) => r.tecnicoId === principalId)?.nombre ?? `Técnico #${principalId}`
+                  : "Sin técnico principal (orden anterior a los rangos de folios)"}
+              </ThemedText>
+            ) : (
+              <View style={styles.filaChips}>
+                {resumenFolios.map((r) => (
+                  <Chip
+                    key={r.tecnicoId}
+                    etiqueta={`${r.nombre} · ${r.tieneRangos ? `${r.restantes} folios` : "sin rango"}`}
+                    activo={principalId === r.tecnicoId}
+                    onPress={() => setPrincipalId(r.tecnicoId)}
+                  />
+                ))}
+                {!resumenFolios.length && (
+                  <ThemedText type="small" themeColor="textMuted">
+                    No hay técnicos activos. Registra uno en Técnicos y asígnale un rango en Ajustes.
+                  </ThemedText>
+                )}
+              </View>
+            )}
+            {!idOrden && principalId != null && (resumenFolios.find((r) => r.tecnicoId === principalId)?.restantes ?? 0) <= 0 && (
+              <ThemedText type="small" style={{ color: theme.danger }}>
+                Este técnico no tiene folios disponibles. Asigna un rango en Ajustes → Rangos de folios.
+              </ThemedText>
+            )}
           </View>
 
           <Seccion titulo="1. Encabezado y Control del Documento">
@@ -1182,7 +1213,7 @@ export default function OrdenNuevaScreen() {
                 </View>
                 <View style={styles.filaTablaTop}>
                   <CampoChico
-                    etiqueta="Importe CUP"
+                    etiqueta="Precio unit. CUP"
                     valor={m.importeCUP}
                     onCambia={(v) =>
                       actualizarMaterial(m.clave, "importeCUP", v.replace(/[^0-9.,]/g, ""))
@@ -1190,7 +1221,7 @@ export default function OrdenNuevaScreen() {
                     teclado="numeric"
                   />
                   <CampoChico
-                    etiqueta="Importe USD"
+                    etiqueta="Precio unit. USD"
                     valor={m.importeUSD}
                     onCambia={(v) =>
                       actualizarMaterial(m.clave, "importeUSD", v.replace(/[^0-9.,]/g, ""))
@@ -1198,6 +1229,12 @@ export default function OrdenNuevaScreen() {
                     teclado="numeric"
                   />
                 </View>
+                <ThemedText type="smallBold">
+                  Importe: {formatoMoneda((Number(m.importeCUP) || 0) * (Number(m.cantidad) || 1), "CUP")}
+                  {Number(m.importeUSD) > 0
+                    ? ` · ${formatoMoneda(Number(m.importeUSD) * (Number(m.cantidad) || 1), "USD")}`
+                    : ""}
+                </ThemedText>
 
                 <Pressable
                   onPress={() =>
@@ -1301,23 +1338,17 @@ export default function OrdenNuevaScreen() {
                     teclado="numeric"
                     editable={!form.modalidadMultiple}
                   />
-                  <CampoChico
-                    etiqueta="Importe CUP"
-                    valor={s.importeCUP}
-                    onCambia={(v) =>
-                      actualizarServicio(s.clave, "importeCUP", v.replace(/[^0-9.,]/g, ""))
-                    }
-                    teclado="numeric"
-                  />
-                  <CampoChico
-                    etiqueta="Importe USD"
-                    valor={s.importeUSD}
-                    onCambia={(v) =>
-                      actualizarServicio(s.clave, "importeUSD", v.replace(/[^0-9.,]/g, ""))
-                    }
-                    teclado="numeric"
-                  />
                 </View>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Precio unitario (tarifario): {formatoMoneda(Number(s.importeCUP) || 0, "CUP")}
+                  {Number(s.importeUSD) > 0 ? ` · ${formatoMoneda(Number(s.importeUSD), "USD")}` : ""}
+                </ThemedText>
+                <ThemedText type="smallBold">
+                  Importe: {formatoMoneda((Number(s.importeCUP) || 0) * (Number(s.cantidad) || 1), "CUP")}
+                  {Number(s.importeUSD) > 0
+                    ? ` · ${formatoMoneda(Number(s.importeUSD) * (Number(s.cantidad) || 1), "USD")}`
+                    : ""}
+                </ThemedText>
                 <Pressable
                   onPress={() =>
                     setForm((prev) => ({
@@ -1411,101 +1442,28 @@ export default function OrdenNuevaScreen() {
               </ThemedText>
             </View>
             <Pressable
-              onPress={() => {
-                setTecnicoEditandoClave(null);
-                setSelectorTecnico(true);
-              }}
+              onPress={() => setSelectorTecnico(true)}
               style={[styles.botonAgregar, { borderColor: theme.primary }]}
             >
               <ThemedText style={{ color: theme.primary }}>
-                + Agregar técnico
+                + Seleccionar técnicos
               </ThemedText>
             </Pressable>
+            {form.tecnicos.length === 0 && (
+              <ThemedText type="small" themeColor="textMuted">
+                Aún no hay técnicos seleccionados.
+              </ThemedText>
+            )}
             {form.tecnicos.map((t) => (
               <View
                 key={t.clave}
                 style={[styles.filaTabla, { borderColor: theme.border }]}
               >
-                {t.tecnicoId != null ? (
-                  <Pressable
-                    onPress={() => {
-                      setTecnicoEditandoClave(t.clave);
-                      setSelectorTecnico(true);
-                    }}
-                    style={[
-                      styles.selector,
-                      {
-                        borderColor: theme.border,
-                        backgroundColor: theme.background,
-                      },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <ThemedText type="small">Nombre</ThemedText>
-                      <ThemedText type="smallBold">{t.nombre}</ThemedText>
-                    </View>
-                    <ThemedText themeColor="textSecondary">▼</ThemedText>
-                  </Pressable>
-                ) : (
-                  <View style={styles.filaTablaTop}>
-                    <CampoChico
-                      etiqueta="Nombre y apellidos"
-                      valor={t.nombre}
-                      onCambia={(v) => actualizarTecnico(t.clave, "nombre", v)}
-                    />
-                    <CampoChico
-                      etiqueta="Cargo"
-                      valor={t.cargo}
-                      onCambia={(v) => actualizarTecnico(t.clave, "cargo", v)}
-                    />
-                    <CampoChico
-                      etiqueta="CI"
-                      valor={t.ci}
-                      onCambia={(v) => actualizarTecnico(t.clave, "ci", v)}
-                      teclado="numeric"
-                    />
-                  </View>
-                )}
-                <Pressable
-                  onPress={() => {
-                    const tech = form.tecnicos.find((x) => x.clave === t.clave);
-                    if (
-                      !tech?.nombre.trim() ||
-                      !tech.cargo.trim() ||
-                      !tech.ci.trim()
-                    ) {
-                      Alert.alert(
-                        "Técnico",
-                        "Complete nombre y apellidos, cargo y CI antes de guardar.",
-                      );
-                      return;
-                    }
-                    Alert.alert(
-                      "Agregar a la base de datos",
-                      "¿Desea registrar este técnico en la base de datos para reutilizarlo en próximas órdenes?",
-                      [
-                        { text: "No", style: "cancel" },
-                        {
-                          text: "Sí, completar ficha",
-                          onPress: () =>
-                            router.push({
-                              pathname: "/tecnicos",
-                              params: {
-                                nombre: tech.nombre.trim(),
-                                cargo: tech.cargo.trim(),
-                                ci: tech.ci.trim(),
-                                desdeOrden: "1",
-                              },
-                            }),
-                        },
-                      ],
-                    );
-                  }}
-                >
-                  <ThemedText type="small" style={{ color: theme.primary }}>
-                    ＋ Guardar este técnico en la base de datos
-                  </ThemedText>
-                </Pressable>
+                <ThemedText type="smallBold">{t.nombre}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {[t.cargo, t.ci ? `CI ${t.ci}` : ""].filter(Boolean).join(" · ")}
+                  {t.tecnicoId == null ? " · (registrado manualmente en una orden anterior)" : ""}
+                </ThemedText>
                 <View style={styles.filaEntreTecnico}>
                   <CasillaFirmado
                     etiqueta="Conforme"
@@ -1568,88 +1526,48 @@ export default function OrdenNuevaScreen() {
           >
             <View style={styles.modalBackdrop}>
               <ThemedView type="surface" style={styles.modalCard}>
-                <ThemedText type="smallBold">Agregar técnico</ThemedText>
+                <ThemedText type="smallBold">Técnicos que participaron</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Seleccione un técnico registrado o agregue uno manualmente.
+                  Marque uno o varios técnicos registrados. Para registrar uno nuevo, use la pantalla Técnicos.
                 </ThemedText>
-                <ScrollView style={styles.tecnicosLista} nestedScrollEnabled>
-                  {tecnicosBD.map((t) => (
-                  <Pressable
-                    key={t.id}
-                    onPress={() => {
-                      setForm((prev) => {
-                        const nuevo = {
-                          clave: `t-${t.id}-${Date.now()}`,
-                          tecnicoId: t.id,
-                          nombre: t.nombre,
-                          ci: t.ci,
-                          cargo: t.cargo,
-                          firmado: false,
-                        };
-                        if (!tecnicoEditandoClave)
-                          return {
-                            ...prev,
-                            tecnicos: [...prev.tecnicos, nuevo],
-                          };
-                        return {
-                          ...prev,
-                          tecnicos: prev.tecnicos.map((item) =>
-                            item.clave === tecnicoEditandoClave
-                              ? { ...nuevo, clave: item.clave }
-                              : item,
-                          ),
-                        };
-                      });
-                      setTecnicoEditandoClave(null);
-                      setSelectorTecnico(false);
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.tecnicoOpcion,
-                        { borderBottomColor: theme.border },
-                      ]}
-                    >
-                      <ThemedText type="smallBold">{t.nombre}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {t.cargo} · CI {t.ci}
-                      </ThemedText>
-                    </View>
-                  </Pressable>
-                ))}
-                </ScrollView>                <Pressable
-                  onPress={() => {
-                    setSelectorTecnico(false);
-                    setForm((prev) =>
-                      tecnicoEditandoClave
-                        ? {
-                            ...prev,
-                            tecnicos: prev.tecnicos.map((item) =>
-                              item.clave === tecnicoEditandoClave
-                                ? tecnicoVacio()
-                                : item,
-                            ),
-                          }
-                        : {
-                            ...prev,
-                            tecnicos: [...prev.tecnicos, tecnicoVacio()],
-                          },
+                <ScrollView style={{ maxHeight: 360 }}>
+                  {tecnicosBD.map((t) => {
+                    const marcado = form.tecnicos.some((x) => x.tecnicoId === t.id);
+                    return (
+                      <Pressable
+                        key={t.id}
+                        onPress={() =>
+                          setForm((prev) =>
+                            prev.tecnicos.some((x) => x.tecnicoId === t.id)
+                              ? { ...prev, tecnicos: prev.tecnicos.filter((x) => x.tecnicoId !== t.id) }
+                              : {
+                                  ...prev,
+                                  tecnicos: [
+                                    ...prev.tecnicos,
+                                    { clave: `t-${t.id}-${Date.now()}`, tecnicoId: t.id, nombre: t.nombre, ci: t.ci, cargo: t.cargo, firmado: false },
+                                  ],
+                                },
+                          )
+                        }
+                      >
+                        <View style={[styles.tecnicoOpcion, { borderBottomColor: theme.border }]}>
+                          <ThemedText type="smallBold" style={{ color: marcado ? theme.primary : theme.text }}>
+                            {marcado ? "☑ " : "☐ "}
+                            {t.nombre}
+                          </ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary">
+                            {t.cargo} · CI {t.ci}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
                     );
-                    setTecnicoEditandoClave(null);
-                  }}
-                  style={styles.modalBtn}
-                >
-                  <ThemedText
-                    style={{ color: theme.primary, fontWeight: "700" }}
-                  >
-                    + Agregar técnico manualmente
-                  </ThemedText>
-                </Pressable>
-                <Pressable
-                  onPress={() => setSelectorTecnico(false)}
-                  style={styles.modalBtn}
-                >
-                  <ThemedText themeColor="textSecondary">Cerrar</ThemedText>
+                  })}
+                  {!tecnicosBD.length && (
+                    <ThemedText type="small" themeColor="textMuted">No hay técnicos activos registrados.</ThemedText>
+                  )}
+                </ScrollView>
+                <Pressable onPress={() => setSelectorTecnico(false)} style={styles.modalBtn}>
+                  <ThemedText style={{ color: theme.primary, fontWeight: "700" }}>Listo</ThemedText>
                 </Pressable>
               </ThemedView>
             </View>
@@ -1668,7 +1586,6 @@ export default function OrdenNuevaScreen() {
                 {(
                   [
                     ["pendiente", "Pendiente"],
-                    ["en_progreso", "En progreso"],
                     ["finalizada", "Finalizada"],
                     ["facturada", "Facturada"],
                   ] as const

@@ -1,7 +1,6 @@
 export type TipoCobertura = "garantia" | "postgarantia" | "garantia_servicio";
 export type EstadoOrden =
   | "pendiente"
-  | "en_progreso"
   | "finalizada"
   | "facturada";
 
@@ -59,6 +58,10 @@ export interface Orden {
   tiempoTrabajoMinutos: number | null;
   observaciones: string | null;
   tecnicoId: number | null;
+  /** Técnico principal explícito (v6); de su rango sale el folio. NULL en órdenes anteriores a la v6. */
+  tecnicoPrincipalId: number | null;
+  /** Clave interna anti doble guardado. No se muestra. */
+  claveGuardado: string | null;
   estado: EstadoOrden;
   revisorNombre: string | null;
   revisorCargo: string | null;
@@ -77,7 +80,7 @@ export interface Orden {
 }
 
 export type NuevaOrden = Partial<
-  Omit<Orden, "id" | "numeroOrden" | "compania" | "creadoEn" | "actualizadoEn">
+  Omit<Orden, "id" | "numeroOrden" | "compania" | "creadoEn" | "actualizadoEn" | "tecnicoPrincipalId" | "claveGuardado">
 >;
 
 export type ActualizacionOrden = Partial<Omit<Orden, "id" | "creadoEn">>;

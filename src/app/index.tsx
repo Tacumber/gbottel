@@ -30,7 +30,6 @@ const money = (n: number, currency: 'CUP' | 'USD') =>
 
 const estado: Record<string, string> = {
   pendiente: 'Pendiente',
-  en_progreso: 'En progreso',
   finalizada: 'Finalizada',
   facturada: 'Facturada',
 };

@@ -16,7 +16,8 @@
  * una fase posterior, no lo necesitas todavía con datos de prueba.
  */
 
-export const SCHEMA_VERSION = 6;
+// v6: orden_equipos (PC). v7: folios por rangos, libro de folios y técnico principal.
+export const SCHEMA_VERSION = 7;
 
 // Migración de columnas nuevas para bases que ya tenían `ordenes` creada
 // antes de que existiera la sección 9 del formulario (Firmas y
@@ -40,6 +41,11 @@ export const MIGRACIONES_COLUMNAS: string[] = [
   `ALTER TABLE ordenes ADD COLUMN clienteFirmaFecha TEXT`,
   `ALTER TABLE ordenes ADD COLUMN clienteFirmado INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE tecnicos ADD COLUMN planMensualCUP REAL NOT NULL DEFAULT 0`,
+  // v6: técnico principal explícito (distinto de los firmantes de
+  // orden_tecnicos) y clave de guardado para que un doble toque no cree
+  // dos órdenes. Las órdenes anteriores a la v6 quedan con NULL.
+  `ALTER TABLE ordenes ADD COLUMN tecnicoPrincipalId INTEGER REFERENCES tecnicos(id) ON DELETE SET NULL`,
+  `ALTER TABLE ordenes ADD COLUMN claveGuardado TEXT`,
 ];
 // v2: se agregan 4 columnas a `servicios` que aparecieron en el xlsx real
 // (Tecnostar_CM_030325.xlsx) y no estaban en el esquema original de la Fase 1.1:
@@ -276,4 +282,63 @@ CREATE TRIGGER IF NOT EXISTS servicios_au AFTER UPDATE ON servicios BEGIN
   INSERT INTO servicios_fts(rowid, nombreServicio, descripcionTecnica, codigoServicio)
   VALUES (new.id, new.nombreServicio, new.descripcionTecnica, new.codigoServicio);
 END;
+`;
+
+// v7 — Folios por rangos asignados al técnico principal.
+//
+// - folio_rangos: bloques [desde, hasta] asignados a un técnico. `siguiente`
+//   es el próximo número libre del bloque (hasta+1 = agotado). Los bloques
+//   no pueden solaparse (trigger). `historico=1` marca el bloque que cubre
+//   los folios que ya existían antes de la v6 (nunca emite folios nuevos).
+//   `tecnicoNombre` es una copia para poder reconectar el bloque si la
+//   tabla de técnicos se reemplaza (respaldo, restablecer).
+// - folios_emitidos: libro de folios que ya existieron en este dispositivo.
+//   Solo se agrega; no se actualiza ni se borra (triggers). Un folio emitido
+//   no se reutiliza aunque la orden se elimine o se restaure un respaldo.
+// - folio_inmutable: una vez asignado, numeroOrden no se puede cambiar.
+// Se ejecuta DESPUÉS de MIGRACIONES_COLUMNAS (usa ordenes.claveGuardado).
+export const SCHEMA_SQL_FOLIOS = `
+CREATE TABLE IF NOT EXISTS folio_rangos (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  tecnicoId     INTEGER REFERENCES tecnicos(id) ON DELETE SET NULL,
+  tecnicoNombre TEXT,
+  historico     INTEGER NOT NULL DEFAULT 0 CHECK (historico IN (0,1)),
+  desde         INTEGER NOT NULL,
+  hasta         INTEGER NOT NULL,
+  siguiente     INTEGER NOT NULL,
+  creadoEn      TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK (desde >= 1 AND hasta >= desde AND siguiente >= desde AND siguiente <= hasta + 1)
+);
+
+CREATE INDEX IF NOT EXISTS idx_folio_rangos_tecnico ON folio_rangos(tecnicoId);
+
+CREATE TABLE IF NOT EXISTS folios_emitidos (
+  numero    TEXT PRIMARY KEY,
+  origen    TEXT NOT NULL DEFAULT 'local',
+  emitidoEn TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TRIGGER IF NOT EXISTS rangos_sin_solape_ins BEFORE INSERT ON folio_rangos
+WHEN EXISTS (SELECT 1 FROM folio_rangos r WHERE r.desde <= NEW.hasta AND r.hasta >= NEW.desde)
+BEGIN SELECT RAISE(ABORT, 'RANGO_SOLAPADO'); END;
+
+CREATE TRIGGER IF NOT EXISTS rangos_sin_solape_upd BEFORE UPDATE OF desde, hasta ON folio_rangos
+WHEN EXISTS (SELECT 1 FROM folio_rangos r WHERE r.id <> NEW.id AND r.desde <= NEW.hasta AND r.hasta >= NEW.desde)
+BEGIN SELECT RAISE(ABORT, 'RANGO_SOLAPADO'); END;
+
+CREATE TRIGGER IF NOT EXISTS rangos_no_retroceden BEFORE UPDATE OF siguiente ON folio_rangos
+WHEN NEW.siguiente < OLD.siguiente
+BEGIN SELECT RAISE(ABORT, 'RANGO_RETROCEDE'); END;
+
+CREATE TRIGGER IF NOT EXISTS folios_emitidos_no_update BEFORE UPDATE ON folios_emitidos
+BEGIN SELECT RAISE(ABORT, 'LIBRO_FOLIOS_INMUTABLE'); END;
+
+CREATE TRIGGER IF NOT EXISTS folios_emitidos_no_delete BEFORE DELETE ON folios_emitidos
+BEGIN SELECT RAISE(ABORT, 'LIBRO_FOLIOS_INMUTABLE'); END;
+
+CREATE TRIGGER IF NOT EXISTS folio_inmutable BEFORE UPDATE OF numeroOrden ON ordenes
+WHEN OLD.numeroOrden <> '' AND NEW.numeroOrden <> OLD.numeroOrden
+BEGIN SELECT RAISE(ABORT, 'FOLIO_INMUTABLE'); END;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ordenes_clave_guardado ON ordenes(claveGuardado) WHERE claveGuardado IS NOT NULL;
 `;
