@@ -36,7 +36,6 @@ export default function RootLayout() {
 
   const prepararApp = useCallback(async () => {
     try {
-      setStartup({ status: 'loading', message: 'Inicializando base de datos…' });
       console.warn('[GBOTtel] startup: initDatabase:start');
       await initDatabase();
       console.warn('[GBOTtel] startup: initDatabase:ok');
