@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BarChartVertical, LineChartMulti } from '@/components/charts';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { formatearImporte } from '@/utils/moneda';
 import {
   obtenerEvolucionAceptacionServicios,
   obtenerEvolucionTopServicios,
@@ -21,12 +22,7 @@ import {
 } from '@/services/analyticsService';
 
 type IconName = keyof typeof Ionicons.glyphMap;
-const money = (n: number, currency: 'CUP' | 'USD') =>
-  new Intl.NumberFormat('es-CU', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(n || 0);
+const money = formatearImporte;
 
 const estado: Record<string, string> = {
   pendiente: 'Pendiente',

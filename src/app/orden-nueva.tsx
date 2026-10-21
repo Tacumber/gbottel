@@ -33,7 +33,7 @@ import {
   obtenerSeleccionTarifario,
 } from "@/services/orderDraftStore";
 
-import { buscarServicios } from "@/services/tarifarioService";
+import { buscarServicios, obtenerServicioPorId } from "@/services/tarifarioService";
 import { listarTecnicos } from "@/services/tecnicosService";
 
 import {
@@ -47,47 +47,29 @@ import {
   type TipoCobertura,
 } from "@/types/ordenes.types";
 
-import { resumenFoliosPorTecnico, type ResumenFoliosTecnico } from "@/services/foliosService";
+import {
+  FOLIO_MAXIMO,
+  formatearFolio,
+  proximoFolioDisponible,
+  resumenFoliosPorTecnico,
+  type ResumenFoliosTecnico,
+} from "@/services/foliosService";
 import type { Servicio } from "@/types/tarifario.types";
 import type { Tecnico } from "@/types/tecnicos.types";
+import { formatearImporte } from "@/utils/moneda";
+import {
+  calcularTiempoAutomatico,
+  cantidadInicial,
+  instantaneaFormulario,
+  numeroLocal,
+  numeroLocalEstricto,
+  resolverTiempo,
+  sincronizarCantidades,
+  type SeccionOrden,
+} from "@/utils/ordenForm";
+import { obtenerSeccionesOcultas, guardarSeccionesOcultas } from "@/services/preferenciasService";
 
-function formatoMoneda(valor: number, moneda: "CUP" | "USD") {
-  return new Intl.NumberFormat("es-CU", {
-    style: "currency",
-    currency: moneda,
-    maximumFractionDigits: 2,
-  }).format(valor || 0);
-}
-
-function numeroLocal(valor: string, respaldo = 0): number {
-  const limpio = valor.trim().replace(/\s/g, "");
-  if (!limpio) return respaldo;
-  const normalizado =
-    limpio.includes(",") && limpio.includes(".")
-      ? limpio.lastIndexOf(",") > limpio.lastIndexOf(".")
-        ? limpio.replace(/\./g, "").replace(",", ".")
-        : limpio.replace(/,/g, "")
-      : limpio.includes(",")
-        ? limpio.replace(",", ".")
-        : limpio;
-  const numero = Number(normalizado);
-  return Number.isFinite(numero) ? numero : respaldo;
-}
-
-function numeroLocalEstricto(valor: string): number {
-  const limpio = valor.trim().replace(/\s/g, "");
-  if (!limpio) return NaN;
-  const normalizado =
-    limpio.includes(",") && limpio.includes(".")
-      ? limpio.lastIndexOf(",") > limpio.lastIndexOf(".")
-        ? limpio.replace(/\./g, "").replace(",", ".")
-        : limpio.replace(/,/g, "")
-      : limpio.includes(",")
-        ? limpio.replace(",", ".")
-        : limpio;
-  const numero = Number(normalizado);
-  return Number.isFinite(numero) ? numero : NaN;
-}
+const formatoMoneda = formatearImporte;
 
 function estadoEtiqueta(
   estado: "pendiente" | "finalizada" | "facturada",
@@ -119,6 +101,10 @@ type ServicioLocal = {
   codigo: string;
   descripcion: string;
   cantidad: string;
+  /** true si el técnico escribió la cantidad: el autollenado por nº de equipos ya no la toca. */
+  cantidadManual?: boolean;
+  /** Minutos por unidad del catálogo (solo referencia para sugerir el tiempo; no se guarda en la orden). */
+  tiempoEstimado?: number | null;
   importeCUP: string;
   importeUSD: string;
 };
@@ -195,6 +181,7 @@ function formularioVacio() {
     fechaInicio: "",
     fechaFin: "",
     tiempoTrabajoMinutos: "",
+    tiempoManual: false,
 
     observaciones: "",
 
@@ -258,6 +245,16 @@ export default function OrdenNuevaScreen() {
   // Clave única por formulario abierto: un segundo "Guardar" no crea otra orden.
   const claveGuardadoRef = useRef<string>("");
   const guardandoRef = useRef(false);
+  // Instantánea del formulario tal como se cargó (para saber si una orden existente se modificó).
+  const instantaneaInicialRef = useRef<string>("");
+  // Fuerza recargar la orden desde SQLite (al descartar cambios).
+  const [recarga, setRecarga] = useState(0);
+  // Secciones ocultas: solo presentación. `seccionesGuardadas` es lo persistido para el técnico.
+  const [seccionesOcultas, setSeccionesOcultas] = useState<SeccionOrden[]>([]);
+  const [seccionesGuardadas, setSeccionesGuardadas] = useState<SeccionOrden[]>([]);
+  // Folio editable (solo órdenes nuevas): lo propuesto por el rango del principal y lo escrito.
+  const [folioPropuesto, setFolioPropuesto] = useState<number | null>(null);
+  const [folioTexto, setFolioTexto] = useState("");
 
   const campo = <K extends keyof FormularioOrden>(
     clave: K,
@@ -283,6 +280,7 @@ export default function OrdenNuevaScreen() {
   useFocusEffect(
     useCallback(() => {
       let cancelado = false;
+      void recarga; // «No» en la confirmación incrementa `recarga` para volver a leer la orden de SQLite.
       const claveRuta = idOrden == null ? "nuevo" : `editar:${idOrden}`;
 
       resumenFoliosPorTecnico()
@@ -301,7 +299,8 @@ export default function OrdenNuevaScreen() {
                 servicioId: servicio.id,
                 codigo: servicio.codigoServicio,
                 descripcion: servicio.nombreServicio,
-                cantidad: prev.modalidadMultiple ? String(prev.equipos.length) : "1",
+                cantidad: cantidadInicial(prev.modalidadMultiple, prev.equipos.length),
+                tiempoEstimado: servicio.tiempoEstimado ?? null,
                 importeCUP: String(servicio.precioBase),
                 importeUSD: "0",
               })),
@@ -321,6 +320,7 @@ export default function OrdenNuevaScreen() {
         claveGuardadoRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
         setPrincipalId(null);
         setForm(formularioVacio());
+        instantaneaInicialRef.current = "";
         setBuscarTexto("");
         setResultadosBusqueda([]);
         const seleccion = obtenerSeleccionTarifario();
@@ -333,6 +333,7 @@ export default function OrdenNuevaScreen() {
               codigo: s.codigoServicio,
               descripcion: s.nombreServicio,
               cantidad: "1",
+              tiempoEstimado: s.tiempoEstimado ?? null,
               importeCUP: String(s.precioBase),
               importeUSD: "0",
             })),
@@ -360,7 +361,7 @@ export default function OrdenNuevaScreen() {
             return;
           }
           setPrincipalId(orden.tecnicoPrincipalId ?? null);
-          setForm({
+          const cargado: FormularioOrden = {
             folio: orden.numeroOrden,
             estadoSeleccionado: (orden.estado as string) === "en_progreso" ? "pendiente" : orden.estado,
             codigoReporte: orden.codigoReporte ?? "",
@@ -405,6 +406,8 @@ export default function OrdenNuevaScreen() {
             tiempoTrabajoMinutos: orden.tiempoTrabajoMinutos
               ? String(orden.tiempoTrabajoMinutos)
               : "",
+            // Un tiempo ya guardado es del técnico: nunca se sustituye por el automático.
+            tiempoManual: Boolean(orden.tiempoTrabajoMinutos),
             observaciones: orden.observaciones ?? "",
             materiales: orden.materiales.map((m) => ({
               clave: `m-${m.id}`,
@@ -423,6 +426,8 @@ export default function OrdenNuevaScreen() {
               codigo: s.codigo ?? "",
               descripcion: s.descripcion ?? "",
               cantidad: String(s.cantidad),
+              // La cantidad guardada es la del técnico: el autollenado no debe pisarla.
+              cantidadManual: true,
               importeCUP: String(s.importeCUP),
               importeUSD: String(s.importeUSD),
             })),
@@ -443,6 +448,26 @@ export default function OrdenNuevaScreen() {
             clienteFirmaCI: orden.clienteFirmaCI ?? "",
             clienteFirmaFecha: orden.clienteFirmaFecha ?? "",
             clienteFirmado: Boolean(orden.clienteFirmado),
+          };
+          instantaneaInicialRef.current = instantaneaFormulario(cargado);
+          setForm(cargado);
+
+          // Duraciones del catálogo de los servicios de la orden (solo referencia para el tiempo sugerido).
+          const ids = orden.servicios
+            .map((x) => x.servicioId)
+            .filter((x): x is number => x != null);
+          Promise.all(ids.map((id) => obtenerServicioPorId(id).catch(() => null))).then((catalogo) => {
+            if (cancelado) return;
+            const mapa = new Map<number, number | null>();
+            for (const sv of catalogo) if (sv) mapa.set(sv.id, sv.tiempoEstimado ?? null);
+            setForm((prev) => ({
+              ...prev,
+              servicios: prev.servicios.map((l) =>
+                l.servicioId != null && mapa.has(l.servicioId)
+                  ? { ...l, tiempoEstimado: mapa.get(l.servicioId) ?? null }
+                  : l,
+              ),
+            }));
           });
         })
         .catch((error) => {
@@ -462,7 +487,7 @@ export default function OrdenNuevaScreen() {
         cancelado = true;
         setCargando(false);
       };
-    }, [idOrden]),
+    }, [idOrden, recarga]),
   );
 
   useFocusEffect(
@@ -498,6 +523,55 @@ export default function OrdenNuevaScreen() {
     return () => clearTimeout(t);
   }, [buscarTexto]);
 
+  // Preferencia de secciones del técnico principal (solo presentación).
+  useEffect(() => {
+    let cancelado = false;
+    obtenerSeccionesOcultas(principalId)
+      .then((guardadas) => {
+        if (cancelado) return;
+        setSeccionesGuardadas(guardadas);
+        setSeccionesOcultas(guardadas);
+      })
+      .catch(() => {
+        if (cancelado) return;
+        setSeccionesGuardadas([]);
+        setSeccionesOcultas([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [principalId, recarga]);
+
+  // Folio propuesto = próximo libre del bloque del técnico principal elegido (nueva orden).
+  useEffect(() => {
+    if (idOrden != null || principalId == null) return;
+    let cancelado = false;
+    proximoFolioDisponible(principalId)
+      .then((n) => {
+        if (cancelado) return;
+        setFolioPropuesto(n);
+        setFolioTexto(n == null ? "" : formatearFolio(n));
+      })
+      .catch(() => {
+        if (cancelado) return;
+        setFolioPropuesto(null);
+        setFolioTexto("");
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [idOrden, principalId]);
+
+  const alternarSeccion = useCallback((id: SeccionOrden) => {
+    setSeccionesOcultas((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  const tiempoAutomatico = useMemo(() => calcularTiempoAutomatico(form.servicios), [form.servicios]);
+  const tiempoMostrado = resolverTiempo(
+    { texto: form.tiempoTrabajoMinutos, manual: form.tiempoManual },
+    tiempoAutomatico,
+  );
+
   const totales = useMemo(() => {
     const m = form.materiales.map((x) => ({
       importeCUP: numeroLocal(x.importeCUP, 0),
@@ -529,13 +603,7 @@ export default function OrdenNuevaScreen() {
       equipos: EquipoLocal[],
       servicios: ServicioLocal[],
       modalidadMultiple: boolean,
-    ) =>
-      modalidadMultiple
-        ? servicios.map((servicio) => ({
-            ...servicio,
-            cantidad: String(equipos.length),
-          }))
-        : servicios,
+    ) => sincronizarCantidades(servicios, equipos.length, modalidadMultiple),
     [],
   );
 
@@ -555,7 +623,8 @@ export default function OrdenNuevaScreen() {
         servicioId: servicio.id,
         codigo: servicio.codigoServicio,
         descripcion: servicio.nombreServicio,
-        cantidad: prev.modalidadMultiple ? String(prev.equipos.length) : "1",
+        cantidad: cantidadInicial(prev.modalidadMultiple, prev.equipos.length),
+        tiempoEstimado: servicio.tiempoEstimado ?? null,
         importeCUP: String(servicio.precioBase),
         importeUSD: "0",
       };
@@ -628,7 +697,7 @@ export default function OrdenNuevaScreen() {
     setForm((prev) => ({
       ...prev,
       servicios: prev.servicios.map((s) =>
-        s.clave === clave ? { ...s, [campoNombre]: valor } : s,
+        s.clave === clave ? { ...s, [campoNombre]: valor, cantidadManual: true } : s,
       ),
     }));
   }
@@ -679,6 +748,74 @@ export default function OrdenNuevaScreen() {
       return;
     }
 
+    // Folio escrito por el técnico (solo órdenes nuevas con folio propuesto).
+    let folioManual: number | null = null;
+    let continuarSecuencia = false;
+    if (idOrden == null && principalId != null && folioPropuesto != null) {
+      const texto = folioTexto.trim();
+      const numero = Number(texto);
+      if (!/^[0-9]+$/.test(texto) || numero < 1 || numero > FOLIO_MAXIMO) {
+        Alert.alert("Folio", `El folio debe ser un número entre 1 y ${FOLIO_MAXIMO}.`);
+        return;
+      }
+      if (numero !== folioPropuesto) {
+        folioManual = numero;
+        if (numero > folioPropuesto) {
+          guardandoRef.current = true;
+          const respuesta = await new Promise<"si" | "no" | "cancelar">((resolver) => {
+            Alert.alert(
+              "Continuar la secuencia",
+              `Escribió el folio ${formatearFolio(numero)} en lugar de ${formatearFolio(folioPropuesto)}. ¿Desea continuar la secuencia a partir de ${formatearFolio(numero)}? Si elige No, el siguiente folio seguirá la secuencia asignada al rango.`,
+              [
+                { text: "Cancelar", style: "cancel", onPress: () => resolver("cancelar") },
+                { text: "No, conservar secuencia", onPress: () => resolver("no") },
+                { text: "Sí, continuar", onPress: () => resolver("si") },
+              ],
+              { cancelable: true, onDismiss: () => resolver("cancelar") },
+            );
+          });
+          guardandoRef.current = false;
+          if (respuesta === "cancelar") return;
+          continuarSecuencia = respuesta === "si";
+        }
+      }
+    }
+
+    // Confirmación cuando una orden existente fue modificada o cuando cambió la personalización
+    // de secciones. «No» descarta lo pendiente y conserva lo anterior; tocar fuera del diálogo
+    // permite seguir editando.
+    const ordenModificada = idOrden != null && instantaneaFormulario(form) !== instantaneaInicialRef.current;
+    const seccionesModificadas =
+      seccionesOcultas.length !== seccionesGuardadas.length ||
+      seccionesOcultas.some((x) => !seccionesGuardadas.includes(x));
+    if (ordenModificada || seccionesModificadas) {
+      // Bloquea un segundo toque mientras el diálogo está abierto.
+      guardandoRef.current = true;
+      const decision = await new Promise<"si" | "no" | "seguir">((resolver) => {
+        Alert.alert(
+          "Guardar cambios",
+          "La orden de servicio fue modificada, ¿desea mantenerla así?",
+          [
+            { text: "No", style: "cancel", onPress: () => resolver("no") },
+            { text: "Sí", onPress: () => resolver("si") },
+          ],
+          { cancelable: true, onDismiss: () => resolver("seguir") },
+        );
+      });
+      if (decision === "seguir") {
+        guardandoRef.current = false;
+        return;
+      }
+      if (decision === "no") {
+        guardandoRef.current = false;
+        // Se descartan los cambios pendientes: la orden se recarga desde SQLite y las secciones
+        // vuelven a lo guardado. Los datos anteriores no se tocan.
+        setSeccionesOcultas(seccionesGuardadas);
+        if (idOrden != null) setRecarga((n) => n + 1);
+        return;
+      }
+    }
+
     guardandoRef.current = true;
     setGuardando(true);
 
@@ -717,8 +854,8 @@ export default function OrdenNuevaScreen() {
         fechaInicio: form.fechaInicio || null,
         fechaFin: form.fechaFin || null,
 
-        tiempoTrabajoMinutos: form.tiempoTrabajoMinutos
-          ? numeroLocal(form.tiempoTrabajoMinutos, 0)
+        tiempoTrabajoMinutos: tiempoMostrado.texto
+          ? numeroLocal(tiempoMostrado.texto, 0)
           : null,
 
         observaciones: form.observaciones || null,
@@ -784,8 +921,16 @@ export default function OrdenNuevaScreen() {
         servicios: serviciosParaGuardar,
         tecnicos: tecnicosParaGuardar,
         tecnicoPrincipalId: idOrden ? undefined : principalId,
+        folioManual: idOrden ? undefined : folioManual,
+        continuarSecuencia: idOrden ? undefined : continuarSecuencia,
         claveGuardado: idOrden ? undefined : claveGuardadoRef.current,
       });
+
+      if (seccionesModificadas) {
+        // La orden ya quedó guardada; la preferencia de presentación es secundaria.
+        await guardarSeccionesOcultas(principalId, seccionesOcultas).catch(() => undefined);
+        setSeccionesGuardadas(seccionesOcultas);
+      }
 
       // The tab stays mounted. Invalidate its route key and clear the draft
       // so a later "+ Nueva orden" can never duplicate the previous order.
@@ -852,11 +997,25 @@ export default function OrdenNuevaScreen() {
             <ThemedText type="title" style={styles.titulo}>
               Orden de Servicio
             </ThemedText>
-            <ThemedText themeColor="textSecondary">
-              {form.folio
-                ? `Folio ${form.folio}`
-                : "Folio se asigna al guardar"}
-            </ThemedText>
+            {idOrden == null && principalId != null && folioPropuesto != null ? (
+              <View style={styles.campo}>
+                <Campo
+                  etiqueta="Folio (editable)"
+                  valor={folioTexto}
+                  onCambia={(v) => setFolioTexto(v.replace(/[^0-9]/g, "").slice(0, 6))}
+                  teclado="numeric"
+                />
+                <ThemedText type="small" themeColor="textSecondary">
+                  Propuesto: {formatearFolio(folioPropuesto)}. Si escribe otro número dentro de su bloque, se le preguntará si desea continuar la secuencia desde él.
+                </ThemedText>
+              </View>
+            ) : (
+              <ThemedText themeColor="textSecondary">
+                {form.folio
+                  ? `Folio ${form.folio}`
+                  : "Folio se asigna al guardar"}
+              </ThemedText>
+            )}
             <ThemedText type="small" themeColor="textSecondary">
               Estado de la Orden de Servicio
             </ThemedText>
@@ -906,7 +1065,7 @@ export default function OrdenNuevaScreen() {
             )}
           </View>
 
-          <Seccion titulo="1. Encabezado y Control del Documento">
+          <Seccion titulo="1. Encabezado y Control del Documento" id="encabezado" oculta={seccionesOcultas.includes("encabezado")} onAlternar={alternarSeccion}>
             <Campo
               etiqueta="Código del Reporte"
               valor={form.codigoReporte}
@@ -934,7 +1093,7 @@ export default function OrdenNuevaScreen() {
               onCambia={(v) => campo("codigoFactura", v)}
             />
           </Seccion>
-          <Seccion titulo="2. Clasificación del Servicio">
+          <Seccion titulo="2. Clasificación del Servicio" id="clasificacion" oculta={seccionesOcultas.includes("clasificacion")} onAlternar={alternarSeccion}>
             <ThemedText
               type="small"
               themeColor="textSecondary"
@@ -999,7 +1158,7 @@ export default function OrdenNuevaScreen() {
               <ThemedText type="small">Modalidad múltiple</ThemedText>
             </Pressable>
           </Seccion>
-          <Seccion titulo="3. Información del Cliente">
+          <Seccion titulo="3. Información del Cliente" id="cliente" oculta={seccionesOcultas.includes("cliente")} onAlternar={alternarSeccion}>
             <Campo
               etiqueta="Código del Cliente"
               valor={form.clienteCodigo}
@@ -1032,7 +1191,7 @@ export default function OrdenNuevaScreen() {
               onCambia={(v) => campo("clienteProvincia", v)}
             />
           </Seccion>
-          <Seccion titulo="4. Información del Servicio y Equipo">
+          <Seccion titulo="4. Información del Servicio y Equipo" id="servicio-equipo" oculta={seccionesOcultas.includes("servicio-equipo")} onAlternar={alternarSeccion}>
             <ThemedText
               type="small"
               themeColor="textSecondary"
@@ -1146,12 +1305,37 @@ export default function OrdenNuevaScreen() {
             />
             <Campo
               etiqueta="Tiempo de trabajo (minutos)"
-              valor={form.tiempoTrabajoMinutos}
-              onCambia={(v) => campo("tiempoTrabajoMinutos", v)}
+              valor={tiempoMostrado.texto}
+              onCambia={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  tiempoTrabajoMinutos: v,
+                  // Escribir fija el valor; dejarlo vacío vuelve al cálculo automático.
+                  tiempoManual: v.trim() !== "",
+                }))
+              }
               teclado="numeric"
             />
+            {tiempoAutomatico > 0 ? (
+              <View style={styles.filaEntreTecnico}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Suma de los servicios con duración definida: {tiempoAutomatico} min
+                </ThemedText>
+                {tiempoMostrado.manual && String(tiempoAutomatico) !== tiempoMostrado.texto ? (
+                  <Pressable
+                    onPress={() =>
+                      setForm((prev) => ({ ...prev, tiempoTrabajoMinutos: "", tiempoManual: false }))
+                    }
+                  >
+                    <ThemedText type="small" style={{ color: theme.primary }}>
+                      Usar suma
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
           </Seccion>
-          <Seccion titulo="5. Detalles del Trabajo">
+          <Seccion titulo="5. Detalles del Trabajo" id="detalles" oculta={seccionesOcultas.includes("detalles")} onAlternar={alternarSeccion}>
             <Campo
               etiqueta="Observaciones del trabajo realizado"
               valor={form.observaciones}
@@ -1160,7 +1344,7 @@ export default function OrdenNuevaScreen() {
               alto
             />
           </Seccion>
-          <Seccion titulo="6. Materiales Utilizados">
+          <Seccion titulo="6. Materiales Utilizados" id="materiales" oculta={seccionesOcultas.includes("materiales")} onAlternar={alternarSeccion}>
             {form.materiales.map((m) => (
               <View
                 key={m.clave}
@@ -1276,7 +1460,7 @@ export default function OrdenNuevaScreen() {
               </ThemedText>
             </View>
           </Seccion>
-          <Seccion titulo="7. Servicios Prestados">
+          <Seccion titulo="7. Servicios Prestados" id="servicios" oculta={seccionesOcultas.includes("servicios")} onAlternar={alternarSeccion}>
             <TextInput
               value={buscarTexto}
               onChangeText={setBuscarTexto}
@@ -1336,7 +1520,6 @@ export default function OrdenNuevaScreen() {
                     valor={s.cantidad}
                     onCambia={(v) => actualizarServicio(s.clave, "cantidad", v)}
                     teclado="numeric"
-                    editable={!form.modalidadMultiple}
                   />
                 </View>
                 <ThemedText type="small" themeColor="textSecondary">
@@ -1375,7 +1558,7 @@ export default function OrdenNuevaScreen() {
               </ThemedText>
             </View>
           </Seccion>
-          <Seccion titulo="8. Totales Generales">
+          <Seccion titulo="8. Totales Generales" id="totales" oculta={seccionesOcultas.includes("totales")} onAlternar={alternarSeccion}>
             <View style={styles.filaTotalTabla}>
               <ThemedText type="title" style={{ fontSize: 20 }}>
                 Total a pagar
@@ -1397,7 +1580,7 @@ export default function OrdenNuevaScreen() {
               </View>
             </View>
           </Seccion>
-          <Seccion titulo="9. Firmas y Conformidad">
+          <Seccion titulo="9. Firmas y Conformidad" id="firmas" oculta={seccionesOcultas.includes("firmas")} onAlternar={alternarSeccion}>
             <ThemedText
               type="small"
               themeColor="textMuted"
@@ -1634,9 +1817,15 @@ export default function OrdenNuevaScreen() {
 
 function Seccion({
   titulo,
+  id,
+  oculta,
+  onAlternar,
   children,
 }: {
   titulo: string;
+  id: SeccionOrden;
+  oculta: boolean;
+  onAlternar: (id: SeccionOrden) => void;
   children: import("react").ReactNode;
 }) {
   const theme = useTheme();
@@ -1645,10 +1834,23 @@ function Seccion({
       type="surface"
       style={[styles.seccion, { borderColor: theme.border }]}
     >
-      <ThemedText type="smallBold" style={styles.seccionTitulo}>
-        {titulo}
-      </ThemedText>
-      {children}
+      <View style={styles.seccionCabecera}>
+        <Pressable
+          onPress={() => onAlternar(id)}
+          accessibilityRole="button"
+          accessibilityLabel={`${oculta ? "Mostrar" : "Ocultar"} la sección ${titulo}`}
+          hitSlop={8}
+          style={[styles.seccionBoton, { borderColor: theme.border }]}
+        >
+          <ThemedText type="smallBold" style={{ color: theme.primary }}>
+            {oculta ? "+" : "−"}
+          </ThemedText>
+        </Pressable>
+        <ThemedText type="smallBold" style={styles.seccionTitulo}>
+          {titulo}
+        </ThemedText>
+      </View>
+      {oculta ? null : children}
     </ThemedView>
   );
 }
@@ -1783,7 +1985,7 @@ function SelectorTipo({
         {etiqueta}
       </ThemedText>
       <View style={styles.filaChips}>
-        {["Institucional", "Población"].map((op) => (
+        {["Institucional", "Población", "Interno"].map((op) => (
           <Chip
             key={op}
             etiqueta={op}
@@ -1846,7 +2048,16 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.two,
   },
-  seccionTitulo: { marginBottom: Spacing.one },
+  seccionCabecera: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
+  seccionBoton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  seccionTitulo: { flex: 1 },
   subEtiqueta: { marginTop: Spacing.two },
   filaEntreSecciones: { marginTop: Spacing.two, gap: 2 },
   filaEntreTecnico: {

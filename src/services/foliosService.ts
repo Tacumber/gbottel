@@ -144,6 +144,67 @@ export async function reservarFolio(db: Db, tecnicoId: number): Promise<string> 
   throw new ErrorFolios('SIN_FOLIOS', 'No quedan folios disponibles para este técnico principal.');
 }
 
+/**
+ * Folio ESCRITO por el técnico para una orden nueva. Debe pertenecer a un bloque activo del
+ * técnico principal y no haber sido emitido nunca. Dentro de la transacción de guardado:
+ *  - se registra en el libro (inmutable);
+ *  - si `continuarSecuencia` es true y el número está por delante del siguiente del bloque, el
+ *    siguiente pasa a número + 1 (los números omitidos quedan sin emitir). Nunca retrocede;
+ *  - si es false, el bloque conserva su secuencia (los folios ya emitidos se saltan al avanzar).
+ * Si coincide justo con el siguiente del bloque, equivale a la emisión normal.
+ */
+export async function reservarFolioManual(
+  db: Db,
+  tecnicoId: number,
+  numero: number,
+  continuarSecuencia: boolean
+): Promise<string> {
+  if (!Number.isInteger(numero) || numero < 1 || numero > FOLIO_MAXIMO) {
+    throw new ErrorFolios('RANGO_INVALIDO', `El folio debe ser un número entero entre 1 y ${FOLIO_MAXIMO}.`);
+  }
+  const principal = await db.getFirstAsync<{ estado: string }>(`SELECT estado FROM tecnicos WHERE id = ?`, tecnicoId);
+  if (!principal) throw new ErrorFolios('PRINCIPAL_INVALIDO', 'El técnico principal elegido no existe.');
+  if (principal.estado !== 'activo') {
+    throw new ErrorFolios('PRINCIPAL_INVALIDO', 'El técnico principal elegido está inactivo.');
+  }
+  const rango = await db.getFirstAsync<{ id: number; desde: number; hasta: number; siguiente: number }>(
+    `SELECT id, desde, hasta, siguiente FROM folio_rangos
+     WHERE tecnicoId = ? AND historico = 0 AND siguiente <= hasta AND desde <= ? AND hasta >= ?`,
+    tecnicoId,
+    numero,
+    numero
+  );
+  if (!rango) {
+    throw new ErrorFolios(
+      'RANGO_INVALIDO',
+      `El folio ${formatearFolio(numero)} está fuera de los rangos asignados a este técnico principal.`
+    );
+  }
+  const folio = formatearFolio(numero);
+  const registro = await db.runAsync(`INSERT OR IGNORE INTO folios_emitidos (numero, origen) VALUES (?, 'manual')`, folio);
+  if (registro.changes !== 1) {
+    throw new ErrorFolios('FOLIO_EMITIDO', `El folio ${folio} ya fue emitido; no se puede reutilizar.`);
+  }
+  if (numero === rango.siguiente) {
+    // Misma emisión que el modo automático.
+    const avance = await db.runAsync(
+      `UPDATE folio_rangos SET siguiente = siguiente + 1 WHERE id = ? AND siguiente = ?`,
+      rango.id,
+      rango.siguiente
+    );
+    if (avance.changes !== 1) throw new ErrorFolios('CONFLICTO', 'El rango de folios cambió mientras se guardaba. Intenta de nuevo.');
+  } else if (continuarSecuencia && numero > rango.siguiente) {
+    const avance = await db.runAsync(
+      `UPDATE folio_rangos SET siguiente = ? WHERE id = ? AND siguiente = ?`,
+      numero + 1,
+      rango.id,
+      rango.siguiente
+    );
+    if (avance.changes !== 1) throw new ErrorFolios('CONFLICTO', 'El rango de folios cambió mientras se guardaba. Intenta de nuevo.');
+  }
+  return folio;
+}
+
 /** Registra un folio que llegó de fuera (traspaso/respaldo). No falla si ya estaba. */
 export async function registrarFolioExterno(db: Db, folio: string, origen: string): Promise<void> {
   await db.runAsync(`INSERT OR IGNORE INTO folios_emitidos (numero, origen) VALUES (?, ?)`, folio, origen);
@@ -300,6 +361,26 @@ export async function resumenFoliosPorTecnico(): Promise<ResumenFoliosTecnico[]>
      ORDER BY t.nombre COLLATE NOCASE ASC`
   );
   return filas.map((f) => ({ tecnicoId: f.tecnicoId, nombre: f.nombre, restantes: f.restantes, tieneRangos: f.rangos > 0 }));
+}
+
+/**
+ * Folio que se asignaría ahora al técnico principal (sin reservarlo): el primer número del
+ * primer bloque con folios libres que no figure ya en el libro. null si no le queda ninguno.
+ */
+export async function proximoFolioDisponible(tecnicoId: number): Promise<number | null> {
+  const db = await getDatabase();
+  const rango = await db.getFirstAsync<{ siguiente: number; hasta: number }>(
+    `SELECT siguiente, hasta FROM folio_rangos
+     WHERE tecnicoId = ? AND historico = 0 AND siguiente <= hasta
+     ORDER BY desde ASC LIMIT 1`,
+    tecnicoId
+  );
+  if (!rango) return null;
+  for (let n = rango.siguiente; n <= rango.hasta; n++) {
+    const usado = await db.getFirstAsync<{ x: number }>(`SELECT 1 AS x FROM folios_emitidos WHERE numero = ?`, formatearFolio(n));
+    if (!usado) return n;
+  }
+  return null;
 }
 
 export interface AvisoFolios {

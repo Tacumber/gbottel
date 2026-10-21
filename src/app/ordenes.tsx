@@ -13,9 +13,10 @@ import { avisosDeFolios, type AvisoFolios } from '@/services/foliosService';
 import { aplicarTraspaso, exportarOrdenesCSV, exportarOrdenesJSON, exportarOrdenesPDF, prepararTraspaso, type PreparacionTraspaso } from '@/services/respaldoService';
 import { obtenerOrdenesFiltradas, obtenerResumenDashboard, type OrdenDashboard } from '@/services/analyticsService';
 import type { EstadoOrden } from '@/types/ordenes.types';
+import { formatearImporte } from '@/utils/moneda';
 
 const states:[EstadoOrden,string][]=[['pendiente','Pendientes'],['finalizada','Finalizadas'],['facturada','Facturadas']];
-const money=(n:number,c:'CUP'|'USD')=>new Intl.NumberFormat('es-CU',{style:'currency',currency:c,maximumFractionDigits:0}).format(n||0);
+const money=formatearImporte;
 const label:Record<string,string>={pendiente:'Pendiente',finalizada:'Finalizada',facturada:'Facturada'};
 const TABLE_WIDTH=34+72+170+82+104+92+92;
 
@@ -132,7 +133,7 @@ export default function OrdenesScreen(){
 
     <View style={styles.exportRow}>
       <Pressable onPress={exportar} disabled={exportando} style={[styles.exportBtn,{flex:1,borderColor:theme.border}]}>
-        {exportando?<ActivityIndicator size="small" color={theme.primary}/>:<ThemedText type="small" style={{color:theme.primary}}>⇩ Exportar {seleccionados.size?`(${seleccionados.size})`:'todas'}</ThemedText>}
+        {exportando?<ActivityIndicator size="small" color={theme.primary}/>:<ThemedText type="small" style={{color:theme.primary}}>⇩ Exportar{seleccionados.size?` (${seleccionados.size})`:''}</ThemedText>}
       </Pressable>
       <Pressable onPress={importarJSON} disabled={exportando} style={[styles.exportBtn,{flex:1,borderColor:theme.border}]}>
         <ThemedText type="small" style={{color:theme.primary}}>⇧ Importar JSON</ThemedText>
@@ -182,9 +183,9 @@ const styles=StyleSheet.create({
   searchWrap:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:8,paddingLeft:12,paddingRight:10},
   searchInput:{flex:1,paddingVertical:9,paddingRight:8},
   searchIcon:{fontSize:16},
-  filters:{gap:8,paddingHorizontal:Spacing.four,paddingVertical:10},
+  filters:{gap:8,paddingHorizontal:Spacing.four,paddingTop:10,paddingBottom:4},
   filter:{borderWidth:1,borderRadius:999,paddingHorizontal:12,paddingVertical:7},
-  counter:{marginHorizontal:Spacing.four,paddingVertical:8,flexDirection:'row',justifyContent:'space-between'},
+  counter:{marginHorizontal:Spacing.four,paddingTop:2,paddingBottom:8,flexDirection:'row',justifyContent:'space-between'},
   seleccionBar:{marginHorizontal:Spacing.four,paddingVertical:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
   checkAllRow:{flexDirection:'row',alignItems:'center',gap:6},
   check:{width:18,height:18,borderRadius:4,borderWidth:1.5,alignItems:'center',justifyContent:'center'},

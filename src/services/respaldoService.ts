@@ -12,6 +12,7 @@ import type { NuevaOrden, NuevoOrdenEquipo, NuevoOrdenMaterial, NuevoOrdenTecnic
 import type { NuevoServicio, Servicio } from '../types/tarifario.types';
 import { importarServiciosDesdeJSON, listarServicios } from './tarifarioService';
 import { fechaHoyISO, formatearFecha } from '@/utils/fechas';
+import { formatearImporte, importeComoTexto } from '@/utils/moneda';
 
 // v4 = v3 del tablero anterior (orden_equipos) + folio_rangos y folios_emitidos.
 // Se aceptan v1–v3: sin folios (sus órdenes pasan al libro al restaurar) y, antes
@@ -615,9 +616,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente: 'Pendiente', finalizada: 'Finalizada', facturada: 'Facturada',
 };
 
-function moneda(n: number, codigo: 'CUP' | 'USD'): string {
-  return new Intl.NumberFormat('es-CU', { style: 'currency', currency: codigo, maximumFractionDigits: 2 }).format(n || 0);
-}
+const moneda = formatearImporte;
 
 function protegerCSV(valor: string): string {
   return /^[=+\-@]/.test(valor) ? `'${valor}` : valor;
@@ -643,7 +642,7 @@ export async function exportarOrdenesCSV(ordenes: OrdenDashboard[]): Promise<voi
   const filas = ordenes.map((o) => [
     o.folio, o.cliente, formatearFecha(o.fecha),
     ETIQUETA_ESTADO[o.estado] ?? o.estado,
-    String(o.totalCUP ?? 0), String(o.totalUSD ?? 0),
+    importeComoTexto(o.totalCUP), importeComoTexto(o.totalUSD),
   ]);
   const csv = '\uFEFF' + [encabezados, ...filas].map((fila) => fila.map(escaparCSV).join(',')).join('\r\n');
   await compartirTexto(csv, nombreArchivoConFecha('gbottel-ordenes', 'csv'));
