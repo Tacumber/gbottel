@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -46,6 +46,7 @@ import {
   type TipoCobertura,
 } from "@/types/ordenes.types";
 
+import { resumenFoliosPorTecnico, type ResumenFoliosTecnico } from "@/services/foliosService";
 import type { Servicio } from "@/types/tarifario.types";
 import type { Tecnico } from "@/types/tecnicos.types";
 
@@ -213,6 +214,13 @@ export default function OrdenNuevaScreen() {
 
   const [form, setForm] = useState<FormularioOrden>(formularioVacio());
 
+  // Técnico principal (de su rango sale el folio): distinto de los firmantes.
+  const [principalId, setPrincipalId] = useState<number | null>(null);
+  const [resumenFolios, setResumenFolios] = useState<ResumenFoliosTecnico[]>([]);
+  // Clave única por formulario abierto: un segundo "Guardar" no crea otra orden.
+  const claveGuardadoRef = useRef<string>("");
+  const guardandoRef = useRef(false);
+
   const campo = <K extends keyof FormularioOrden>(
     clave: K,
     valor: FormularioOrden[K],
@@ -244,7 +252,13 @@ export default function OrdenNuevaScreen() {
     useCallback(() => {
       let cancelado = false;
 
+      resumenFoliosPorTecnico()
+        .then((r) => { if (!cancelado) setResumenFolios(r); })
+        .catch(() => setResumenFolios([]));
+
       if (!idOrden) {
+        claveGuardadoRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+        setPrincipalId(null);
         setForm(formularioVacio());
         setBuscarTexto("");
         setResultadosBusqueda([]);
@@ -280,6 +294,7 @@ export default function OrdenNuevaScreen() {
       obtenerOrden(idOrden)
         .then((orden) => {
           if (!orden || cancelado) return;
+          setPrincipalId(orden.tecnicoPrincipalId ?? null);
           setForm({
             folio: orden.numeroOrden,
             estadoSeleccionado: orden.estado,
@@ -496,6 +511,16 @@ export default function OrdenNuevaScreen() {
   }
 
   async function guardar() {
+    // El ref bloquea el segundo toque aunque React aún no haya repintado "guardando".
+    if (guardandoRef.current) return;
+    if (!idOrden && principalId == null) {
+      Alert.alert(
+        "Falta el técnico principal",
+        "Elige el técnico principal de la orden: de su rango de folios sale el folio.",
+      );
+      return;
+    }
+    guardandoRef.current = true;
     setGuardando(true);
 
     try {
@@ -590,6 +615,8 @@ export default function OrdenNuevaScreen() {
         materiales: materialesParaGuardar,
         servicios: serviciosParaGuardar,
         tecnicos: tecnicosParaGuardar,
+        tecnicoPrincipalId: idOrden ? undefined : principalId,
+        claveGuardado: idOrden ? undefined : claveGuardadoRef.current,
       });
 
       router.replace("/ordenes");
@@ -603,6 +630,7 @@ export default function OrdenNuevaScreen() {
           : "Ocurrió un error inesperado. Los cambios no se guardaron.",
       );
     } finally {
+      guardandoRef.current = false;
       setGuardando(false);
     }
   }
@@ -651,6 +679,38 @@ export default function OrdenNuevaScreen() {
               </ThemedText>
               <ThemedText themeColor="textSecondary">▼</ThemedText>
             </Pressable>
+
+            <ThemedText type="small" themeColor="textSecondary">
+              Técnico principal (de su rango sale el folio)
+            </ThemedText>
+            {idOrden ? (
+              <ThemedText type="smallBold">
+                {principalId != null
+                  ? resumenFolios.find((r) => r.tecnicoId === principalId)?.nombre ?? `Técnico #${principalId}`
+                  : "Sin técnico principal (orden anterior a los rangos de folios)"}
+              </ThemedText>
+            ) : (
+              <View style={styles.filaChips}>
+                {resumenFolios.map((r) => (
+                  <Chip
+                    key={r.tecnicoId}
+                    etiqueta={`${r.nombre} · ${r.tieneRangos ? `${r.restantes} folios` : "sin rango"}`}
+                    activo={principalId === r.tecnicoId}
+                    onPress={() => setPrincipalId(r.tecnicoId)}
+                  />
+                ))}
+                {!resumenFolios.length && (
+                  <ThemedText type="small" themeColor="textMuted">
+                    No hay técnicos activos. Registra uno en Técnicos y asígnale un rango en Ajustes.
+                  </ThemedText>
+                )}
+              </View>
+            )}
+            {!idOrden && principalId != null && (resumenFolios.find((r) => r.tecnicoId === principalId)?.restantes ?? 0) <= 0 && (
+              <ThemedText type="small" style={{ color: theme.danger }}>
+                Este técnico no tiene folios disponibles. Asigna un rango en Ajustes → Rangos de folios.
+              </ThemedText>
+            )}
           </View>
 
           <Seccion titulo="1. Encabezado y Control del Documento">
