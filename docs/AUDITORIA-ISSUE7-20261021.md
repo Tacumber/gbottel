@@ -53,3 +53,29 @@ Tablero (3 tarjetas; quitar «Mayor aceptación» —sigue en `index.tsx`— y p
 
 ## 4. Plan de esta etapa
 Prioridad (cambios pequeños y verificables): B1 (formato único exacto) → F3/F1/F2 (cantidad y tiempo) → A1–A3 (secciones + confirmación + preferencia por técnico) → A5 → C1 → D1 → C3/C2 (XLSX/PDF, solo si hay margen) . E2 queda bloqueado.
+
+## 5. Estado tras la implementación (commits posteriores a `ab3a489`)
+Pruebas: `npm run test:folios` = 28/28 (Node 22.22, `node:sqlite` como sustituto de expo-sqlite; NO en dispositivo). `npm run check:syntax` 0 errores; `tsc --noEmit` solo el error previo de `app-tabs.web.tsx`; `expo export --platform android` genera el bundle Hermes (no es APK ni prueba en dispositivo).
+
+| ID | Estado | Archivo y evidencia |
+|---|---|---|
+| A1 secciones −/+ | PARCIAL (código hecho, sin probar la UI) | `orden-nueva.tsx` `Seccion` (botón − / + arriba a la izquierda, `seccionesOcultas`). La UI no se ejecutó en dispositivo ni en un renderizador |
+| A2 confirmación al guardar | PARCIAL (código hecho, sin probar la UI) | `orden-nueva.tsx` `guardar()` (Alert «La orden de servicio fue modificada, ¿desea mantenerla así?»; No → recarga de SQLite/restaura secciones; tocar fuera = seguir editando). La lógica de «modificada» usa `instantaneaFormulario`, no probada con UI |
+| A3 preferencia por técnico | VERIFICADO (persistencia) | `preferenciasService.ts`; prueba T23 (independiente por técnico, entrada inválida ignorada, no toca la orden, viaja en el respaldo). Que se aplique a «órdenes nuevas» en pantalla: PARCIAL (sin probar UI). Decisión de diseño: «técnico» = técnico principal |
+| A4 impresión/exportación completas | VERIFICADO (exportación) | T25 (XLSX) y T26 (PDF) generan desde SQLite todas las secciones; no dependen del estado de pantalla |
+| A5 espaciado | PARCIAL | `ordenes.tsx` estilos `filters`/`counter` (−6 px aprox.); sin captura de pantalla |
+| B1 importes exactos | VERIFICADO (lógica) | `utils/moneda.ts` único formateador en tablero, órdenes, reportes, orden, PDF, CSV; T20 (SQLite = calcularTotales = últimas 10 = lista = texto; 3 703 728,92) y T28 (SQL y JS alineados con cantidad ≤ 0). Tarifario conserva su formateador propio (regla del proyecto) |
+| B2 precio × cantidad una vez | VERIFICADO | T16, T20, T21 |
+| B3 PDF y XLSX | VERIFICADO | T25 (celdas numéricas idénticas, leídas con openpyxl), T26 |
+| C1 botón «Exportar» | VERIFICADO (texto) / PARCIAL (UI) | `ordenes.tsx`; selector de formato en `Modal` (el Alert de 4 botones no cabía en Android, solo muestra 3) |
+| C2 PDF por orden | PARCIAL | T26. Formato oficial NO VERIFICABLE (plantilla ausente); disposición = 9 secciones del formulario |
+| C3 XLSX real | VERIFICADO | `utils/ordenExport.ts` (ZIP/OOXML propio, sin dependencias); T25: CRC por `zlib`, una hoja por orden, abierto con openpyxl 3.1.5. No abierto en Excel real |
+| C4 JSON importable | VERIFICADO | T13, T14, T19, T27: versión, tipos, cantidades, importes, totales declarados, equipos, conflictos antes de aplicar, atomicidad con fallo forzado |
+| D1 folio editable | VERIFICADO (servicio) / PARCIAL (UI) | `foliosService.reservarFolioManual`; T24 (rango, duplicados, continuar/conservar, no retroceder, saltar emitidos). Diálogo en `orden-nueva.tsx` sin probar en UI |
+| D2–D5 | VERIFICADO | T02–T08, T10–T15, T19, T24 |
+| E1 tipos | PARCIAL | «Interno» añadido (`SelectorTipo`) |
+| E2 filtro por tipo | BLOQUEADO | Falta decisión del usuario (ver §3-E) |
+| F1/F2 tiempo | VERIFICADO (reglas) / PARCIAL (UI) | `utils/ordenForm.ts`, T22; en pantalla: sugerido = suma de `tiempoEstimado × cantidad` de las líneas con duración (**decisión a confirmar**: multiplicar por cantidad); manual se conserva |
+| F3 cantidad múltiple | VERIFICADO (reglas) / PARCIAL (UI) | T21: autollenado inicial, editable, nunca limitada al nº de equipos, no se pisa; `orden-nueva.tsx` |
+
+**Limitaciones:** UI no ejecutada (sin dispositivo/emulador); APK no compilado; hoja XLSX no probada en Excel; formato oficial desconocido; Tablero, Tarifario y Reportes (issue #7 §G) no tocados.

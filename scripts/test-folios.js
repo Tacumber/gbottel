@@ -89,7 +89,7 @@ const dobles = {
       }
     },
   },
-  'expo-print': {},
+  'expo-print': { printToFileAsync: async ({ html }) => { estado.ultimoHtml = html; return { uri: 'mem://orden.pdf' }; } },
   'expo-sharing': { isAvailableAsync: async () => true, shareAsync: async () => {} },
 };
 
@@ -112,6 +112,10 @@ const ordenes = require(path.join(SRC, 'services/ordenesService.ts'));
 const respaldo = require(path.join(SRC, 'services/respaldoService.ts'));
 const tecnicosSvc = require(path.join(SRC, 'services/tecnicosService.ts'));
 const analitica = require(path.join(SRC, 'services/analyticsService.ts'));
+const preferencias = require(path.join(SRC, 'services/preferenciasService.ts'));
+const moneda = require(path.join(SRC, 'utils/moneda.ts'));
+const formOrden = require(path.join(SRC, 'utils/ordenForm.ts'));
+const exportador = require(path.join(SRC, 'utils/ordenExport.ts'));
 
 // ------------------------------------------------------------------
 // Utilidades
@@ -512,10 +516,11 @@ prueba('T14 traspaso: choque con bloque ajeno / histórico, archivo viejo sin fo
 
   // atomicidad: una orden con datos que rompen a mitad → no entra ninguna
   const malo = JSON.parse(archivo);
-  malo.ordenes[1].estado = 'no_existe';
+  malo.ordenes[1].clienteNombre = 'FALLA';
   await reiniciarBase(); await tecnico('Beto');
+  await (await dbMod.getDatabase()).execAsync(`CREATE TRIGGER t_falla BEFORE INSERT ON ordenes WHEN NEW.clienteNombre = 'FALLA' BEGIN SELECT RAISE(ABORT, 'FALLA_A_MITAD'); END`);
   const p3 = await respaldo.prepararTraspasoDesdeTexto(JSON.stringify(malo));
-  await rechaza(respaldo.aplicarTraspaso(p3), 'CHECK');
+  await rechaza(respaldo.aplicarTraspaso(p3), 'FALLA_A_MITAD');
   assert.equal((await q1('SELECT COUNT(*) n FROM ordenes')).n, 0);
   assert.equal((await q1('SELECT COUNT(*) n FROM folios_emitidos')).n, 0);
 });
@@ -611,6 +616,282 @@ prueba('T18 la fecha de INICIO define el trabajo en filtros y reportes (con resp
   assert.deepEqual(marzo.map((o) => o.cliente).sort(), ['ConInicio', 'SoloReporte']);
   const enero = await analitica.obtenerOrdenesFiltradas({ desde: '2026-01-01', hasta: '2026-01-31', limite: 50 });
   assert.equal(enero.length, 0);
+});
+
+
+prueba('T20 importes exactos: SQLite = calcularTotales = contador/últimas 10 = texto mostrado; sin redondeo ni «mil»', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 50);
+  const id = await ordenes.guardarOrdenCompleta(null, payload({
+    tecnicoPrincipalId: a,
+    datos: { clienteNombre: 'Grande', fechaReporte: '2026-10-05', fechaInicio: '2026-10-05', estado: 'finalizada' },
+    materiales: [{ descripcion: 'm', cantidad: 2.5, importeCUP: 10.1, importeUSD: 0 }],
+    servicios: [{ servicioId: null, codigo: 'S', descripcion: 's', cantidad: 3, importeCUP: 1234567.89, importeUSD: 0.125 }],
+  }));
+  const o = await ordenes.obtenerOrden(id);
+  const t = ordenes.calcularTotales(o.materiales, o.servicios);
+  const sql = await q1(`SELECT (SELECT COALESCE(SUM(importeCUP*cantidad),0) FROM orden_servicios WHERE ordenId=?) + (SELECT COALESCE(SUM(importeCUP*cantidad),0) FROM orden_materiales WHERE ordenId=?) AS cup`, id, id);
+  const ultimas = await analitica.obtenerUltimasOrdenes(10);
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  const esperado = 1234567.89 * 3 + 10.1 * 2.5; // 3 703 728,92
+  for (const valor of [t.totalCUP, sql.cup, ultimas[0].totalCUP, lista[0].totalCUP]) {
+    assert.equal(moneda.normalizarImporte(valor), moneda.normalizarImporte(esperado));
+  }
+  // el mismo texto en todas las pantallas (todas usan formatearImporte)
+  const textos = new Set([t.totalCUP, ultimas[0].totalCUP, lista[0].totalCUP].map((v) => moneda.formatearImporte(v, 'CUP')));
+  assert.equal(textos.size, 1);
+  const texto = [...textos][0];
+  assert.ok(!/mil/i.test(texto), texto);
+  assert.ok(/3[\s .,]?703[\s .,]?728[.,]92/.test(texto), `texto inesperado: ${texto}`);
+  // sin pérdida de decimales ni redondeo a enteros
+  assert.ok(/12345\.67/.test(moneda.importeComoTexto(12345.67)));
+  assert.equal(moneda.importeComoTexto(0.1 * 3), '0.3');
+  assert.ok(/12[\s .,]?345[.,]67/.test(moneda.formatearImporte(12345.67, 'CUP')));
+  assert.ok(/0[.,]125/.test(moneda.formatearImporte(0.125, 'USD')));
+  assert.ok(/1[.,]00/.test(moneda.formatearImporte(1, 'CUP')));
+});
+
+prueba('T21 cantidad en modalidad múltiple: autollenado inicial, edición libre (mayor o menor que equipos) y no se pisa', async () => {
+  const f = formOrden;
+  assert.equal(f.cantidadInicial(true, 2), '2');
+  assert.equal(f.cantidadInicial(false, 2), '1');
+  let lineas = [{ cantidad: '2' }, { cantidad: '2' }];
+  lineas[0] = { cantidad: '4', cantidadManual: true };   // 4 cargas para 2 equipos
+  lineas[1] = { cantidad: '16', cantidadManual: true };  // 16 perforaciones
+  const sync = f.sincronizarCantidades([...lineas, { cantidad: '2' }], 3, true);
+  assert.deepEqual(sync.map((l) => l.cantidad), ['4', '16', '3']);   // solo la no editada sigue a los equipos
+  assert.deepEqual(f.sincronizarCantidades([{ cantidad: '5' }], 3, false).map((l) => l.cantidad), ['5']);
+  // importe una sola vez: precio unitario × cantidad final
+  const total = ordenes.calcularTotales([], [{ cantidad: 16, importeCUP: 12.5, importeUSD: 0 }]);
+  assert.equal(total.serviciosCUP, 200);
+});
+
+prueba('T22 tiempo: suma de servicios con duración, ignora los sin duración y respeta la edición manual', async () => {
+  const f = formOrden;
+  const lineas = [
+    { cantidad: '2', tiempoEstimado: 30 },
+    { cantidad: '1', tiempoEstimado: null },
+    { cantidad: '3', tiempoEstimado: 0 },
+    { cantidad: '1,5', tiempoEstimado: 20 },
+  ];
+  assert.equal(f.calcularTiempoAutomatico(lineas), 90);
+  assert.equal(f.calcularTiempoAutomatico([]), 0);
+  assert.equal(f.calcularTiempoAutomatico([{ cantidad: '4' }]), 0);
+  assert.deepEqual(f.resolverTiempo({ texto: '', manual: false }, 90), { texto: '90', manual: false });
+  assert.deepEqual(f.resolverTiempo({ texto: '', manual: false }, 0), { texto: '', manual: false });
+  // el técnico escribe 45: el automático (que cambia después) NO lo sobrescribe
+  assert.deepEqual(f.resolverTiempo({ texto: '45', manual: true }, 90), { texto: '45', manual: true });
+  assert.deepEqual(f.resolverTiempo({ texto: '45', manual: true }, 200), { texto: '45', manual: true });
+});
+
+prueba('T23 secciones: preferencia independiente por técnico, entrada inválida ignorada, no toca órdenes', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana'); const b = await tecnico('Beto');
+  await folios.asignarRango(a, 1, 5);
+  const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a }));
+  const antes = JSON.stringify(await ordenes.obtenerOrden(id));
+  await preferencias.guardarSeccionesOcultas(a, ['materiales', 'firmas']);
+  await preferencias.guardarSeccionesOcultas(b, ['cliente']);
+  assert.deepEqual(await preferencias.obtenerSeccionesOcultas(a), ['materiales', 'firmas']);
+  assert.deepEqual(await preferencias.obtenerSeccionesOcultas(b), ['cliente']);
+  assert.deepEqual(await preferencias.obtenerSeccionesOcultas(null), []);
+  assert.deepEqual(formOrden.parsearSeccionesOcultas('["totales","inventada",3]'), ['totales']);
+  assert.deepEqual(formOrden.parsearSeccionesOcultas('no es json'), []);
+  assert.equal(JSON.stringify(await ordenes.obtenerOrden(id)), antes); // ocultar no modifica la orden
+  // las preferencias viajan en el respaldo (tabla configuracion)
+  await respaldo.exportarRespaldoCompleto();
+  const j = JSON.parse(Object.values(estado.compartidos).pop());
+  assert.ok(j.tablas.configuracion.some((c) => c.clave === `seccionesOcultas:${a}`));
+});
+
+prueba('T24 folio editable: propuesto, manual dentro del bloque, continuar o conservar secuencia, rechazos', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana'); const b = await tecnico('Beto');
+  await folios.asignarRango(a, 1, 10);
+  await folios.asignarRango(b, 11, 20);
+  assert.equal(await folios.proximoFolioDisponible(a), 1);
+  const g = (extra) => ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, ...extra }));
+  // fuera del bloque de Ana (es de Beto) y fuera de todo rango
+  await rechaza(g({ folioManual: 12 }), 'RANGO_INVALIDO');
+  await rechaza(g({ folioManual: 99 }), 'RANGO_INVALIDO');
+  await rechaza(g({ folioManual: 0 }), 'RANGO_INVALIDO');
+  assert.equal((await q1('SELECT COUNT(*) n FROM ordenes')).n, 0);
+  assert.equal((await q1('SELECT COUNT(*) n FROM folios_emitidos')).n, 0);
+  // igual al propuesto = emisión normal
+  const o1 = await g({ folioManual: 1 });
+  assert.equal((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', o1)).numeroOrden, '000001');
+  assert.equal((await q1('SELECT siguiente FROM folio_rangos WHERE tecnicoId=?', a)).siguiente, 2);
+  // 5 CONTINUANDO: el siguiente pasa a 6
+  const o2 = await g({ folioManual: 5, continuarSecuencia: true });
+  assert.equal((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', o2)).numeroOrden, '000005');
+  assert.equal((await q1('SELECT siguiente FROM folio_rangos WHERE tecnicoId=?', a)).siguiente, 6);
+  assert.equal(await folios.proximoFolioDisponible(a), 6);
+  // 8 SIN continuar: se usa el 8 pero la secuencia sigue en 6
+  const o3 = await g({ folioManual: 8, continuarSecuencia: false });
+  assert.equal((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', o3)).numeroOrden, '000008');
+  assert.equal((await q1('SELECT siguiente FROM folio_rangos WHERE tecnicoId=?', a)).siguiente, 6);
+  // duplicado (ya emitido) y reutilización tras borrar la orden
+  await rechaza(g({ folioManual: 8 }), 'FOLIO_EMITIDO');
+  await (await dbMod.getDatabase()).runAsync('DELETE FROM ordenes WHERE id=?', o3);
+  await rechaza(g({ folioManual: 8 }), 'FOLIO_EMITIDO');
+  // la secuencia automática salta los ya emitidos: 6, 7, (8 emitido) 9
+  const seq = [];
+  for (let i = 0; i < 3; i++) seq.push((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', await g({}))).numeroOrden);
+  assert.deepEqual(seq, ['000006', '000007', '000009']);
+  // sin guardado parcial en los rechazos y libro coherente
+  assert.equal((await q1('SELECT COUNT(*) n FROM folios_emitidos')).n, 6);
+});
+
+
+async function crearDosOrdenesParaExportar() {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 20);
+  const eq = [{ marca: 'M1', modelo: 'X', nroSerie: 'S1' }, { marca: 'M2', modelo: 'Y', nroSerie: 'S2' }];
+  const id1 = await ordenes.guardarOrdenCompleta(null, payload({
+    tecnicoPrincipalId: a, equipos: eq,
+    datos: { clienteNombre: 'Cliente <Uno> & Cía', clienteTipo: 'Institucional', fechaReporte: '2026-10-05', fechaInicio: '2026-10-05', estado: 'finalizada', modalidadMultiple: 1, observaciones: 'Línea 1\nLínea 2 =SUM(A1)' },
+    materiales: [{ descripcion: 'Cable', cantidad: 2.5, importeCUP: 10.1, importeUSD: 0.333 }],
+    servicios: [{ servicioId: null, codigo: 'S1', descripcion: 'Perforaciones', cantidad: 16, importeCUP: 12345.67, importeUSD: 0 }],
+  }));
+  const id2 = await ordenes.guardarOrdenCompleta(null, payload({
+    tecnicoPrincipalId: a,
+    datos: { clienteNombre: 'Cliente Dos', fechaReporte: '2026-10-06', estado: 'pendiente' },
+    servicios: [{ servicioId: null, codigo: 'S2', descripcion: 'Otro', cantidad: 3, importeCUP: 1234567.89, importeUSD: 0.125 }],
+  }));
+  return [id1, id2];
+}
+
+prueba('T25 XLSX real: ZIP válido (CRC), una hoja por orden, importes numéricos idénticos a SQLite; lo abre openpyxl', async () => {
+  const ids = await crearDosOrdenesParaExportar();
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesXLSX(lista);
+  const bytes = Object.entries(estado.compartidos).filter(([n]) => n.endsWith('.xlsx')).pop()[1];
+  assert.ok(bytes instanceof Uint8Array);
+  assert.equal(bytes[0], 0x50); assert.equal(bytes[1], 0x4b); // «PK»
+  // verificación independiente de CRC con zlib
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const zlib = require('zlib');
+  let pos = 0, n = 0;
+  while (dv.getUint32(pos, true) === 0x04034b50) {
+    const crc = dv.getUint32(pos + 14, true), tam = dv.getUint32(pos + 18, true), nl = dv.getUint16(pos + 26, true);
+    const datos = bytes.subarray(pos + 30 + nl, pos + 30 + nl + tam);
+    assert.equal(zlib.crc32(datos) >>> 0, crc);
+    pos += 30 + nl + tam; n++;
+  }
+  assert.ok(n >= 7);
+  // lectura con un lector XLSX real
+  const tmp = path.join(TMP, 'salida.xlsx');
+  fs.writeFileSync(tmp, bytes);
+  const py = require('child_process').spawnSync('python3', ['-I', '-c', `
+import sys, json, openpyxl
+wb = openpyxl.load_workbook(sys.argv[1])
+out = {}
+for ws in wb.worksheets:
+    d = {}
+    for row in ws.iter_rows(values_only=True):
+        if row and row[0] in ('Total a pagar CUP','Total a pagar USD','Folio'): d[row[0]] = row[1]
+    out[ws.title] = d
+print(json.dumps(out))`, tmp], { encoding: 'utf-8' });
+  assert.equal(py.status, 0, py.stderr);
+  const hojas = JSON.parse(py.stdout);
+  assert.equal(Object.keys(hojas).length, 2);
+  for (const id of ids) {
+    const o = await ordenes.obtenerOrden(id);
+    const t = ordenes.calcularTotales(o.materiales, o.servicios);
+    const h = hojas[o.numeroOrden];
+    assert.ok(h, `falta la hoja ${o.numeroOrden}`);
+    assert.equal(h['Folio'], o.numeroOrden);
+    assert.equal(h['Total a pagar CUP'], moneda.normalizarImporte(t.totalCUP));
+    assert.equal(h['Total a pagar USD'], moneda.normalizarImporte(t.totalUSD));
+  }
+  assert.equal(hojas['000001']['Total a pagar CUP'], moneda.normalizarImporte(12345.67 * 16 + 10.1 * 2.5));
+});
+
+prueba('T26 PDF por orden: todas las secciones y totales idénticos a los de pantalla, con caracteres especiales escapados', async () => {
+  await crearDosOrdenesParaExportar();
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesPDF(lista);
+  const html = estado.ultimoHtml;
+  for (const t of ['1. Encabezado', '2. Clasificación', '3. Información del Cliente', '4. Información del Servicio', '5. Detalles', '6. Materiales', '7. Servicios Prestados', '8. Totales Generales', '9. Firmas']) {
+    assert.equal((html.match(new RegExp(t.replace('.', '\\.'), 'g')) || []).length, 2, `sección «${t}» debe aparecer en las 2 órdenes`);
+  }
+  assert.ok(html.includes('Cliente &lt;Uno&gt; &amp; Cía'));
+  assert.ok(!html.includes('<Uno>'));
+  const o1 = await ordenes.obtenerOrden(lista.find((x) => x.folio === '000001').id);
+  const t1 = ordenes.calcularTotales(o1.materiales, o1.servicios);
+  assert.ok(html.includes(moneda.formatearImporte(t1.totalCUP, 'CUP')));
+  assert.equal((html.match(/page-break-after/g) || []).length >= 1, true);
+});
+
+prueba('T27 JSON de traspaso: validación de versión, tipos, cantidades, importes y totales; conflictos antes de aplicar; atómico', async () => {
+  const ids = await crearDosOrdenesParaExportar();
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesJSON(lista);
+  const archivo = Object.entries(estado.compartidos).filter(([n]) => n.includes('traspaso')).pop()[1];
+  const j = JSON.parse(archivo);
+  assert.equal(j.version, 2);
+  assert.ok(j.ordenes.every((o) => o.totales && 'totalCUP' in o.totales));
+  assert.equal(j.ordenes.find((o) => o.folio === '000001').equipos.length, 2);
+
+  // dispositivo limpio con rango propio de Ana
+  const preparar = async (obj) => { await reiniciarBase(); const a = await tecnico('Ana'); await folios.asignarRango(a, 100, 110); return respaldo.prepararTraspasoDesdeTexto(JSON.stringify(obj)); };
+  const ok = await preparar(j);
+  assert.equal(ok.aImportar.length, 2); assert.equal(ok.omitidas.length, 0);
+
+  const clon = () => JSON.parse(JSON.stringify(j));
+  const uno = (x) => x.ordenes.find((o) => o.folio === '000001');
+  const casos = [
+    ['cantidad cero', (x) => { uno(x).servicios[0].cantidad = 0; }],
+    ['cantidad texto', (x) => { uno(x).servicios[0].cantidad = '3'; }],
+    ['importe negativo', (x) => { uno(x).materiales[0].importeCUP = -1; }],
+    ['importe no numérico', (x) => { uno(x).servicios[0].importeUSD = 'abc'; }],
+    ['total alterado', (x) => { uno(x).totales.totalCUP = 1; }],
+    ['múltiple sin equipos', (x) => { uno(x).equipos = []; }],
+    ['estado desconocido', (x) => { uno(x).estado = 'rara'; }],
+  ];
+  for (const [nombre, mut] of casos) {
+    const x = clon(); mut(x);
+    const prep = await preparar(x);
+    assert.equal(prep.omitidas.length, 1, `«${nombre}» debe omitirse`);
+    assert.equal(prep.aImportar.length, 1, `«${nombre}»: la otra orden sí se importa`);
+  }
+  const malaVersion = clon(); malaVersion.version = 7;
+  await rechaza(preparar(malaVersion), 'TRASPASO_INVALIDO');
+
+  // aplicar: los importes importados son idénticos a los exportados y no se tocó nada más
+  const prep = await preparar(j);
+  const res = await respaldo.aplicarTraspaso(prep);
+  assert.equal(res.importadas, 2);
+  for (const orig of j.ordenes) {
+    const fila = await q1('SELECT id FROM ordenes WHERE numeroOrden=?', orig.folio);
+    const o = await ordenes.obtenerOrden(fila.id);
+    const t = ordenes.calcularTotales(o.materiales, o.servicios);
+    assert.equal(moneda.normalizarImporte(t.totalCUP), moneda.normalizarImporte(orig.totales.totalCUP));
+    assert.equal(moneda.normalizarImporte(t.totalUSD), moneda.normalizarImporte(orig.totales.totalUSD));
+    assert.equal(o.equipos.length, orig.equipos.length);
+  }
+  // segunda importación: choque de folios → se omiten y se listan, sin duplicar
+  const otra = await respaldo.prepararTraspasoDesdeTexto(JSON.stringify(j));
+  assert.equal(otra.aImportar.length, 0); assert.equal(otra.omitidas.length, 2);
+  assert.equal((await q('SELECT * FROM ordenes')).length, 2);
+});
+
+
+prueba('T28 datos antiguos con cantidad ≤ 0: SQL y calcularTotales coinciden (la línea no suma)', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 5);
+  const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a }));
+  const dbx = await dbMod.getDatabase();
+  await dbx.runAsync(`INSERT INTO orden_servicios (ordenId, codigo, descripcion, cantidad, importeCUP, importeUSD) VALUES (?, 'LEG', 'legado', 0, 500, 0)`, id);
+  await dbx.runAsync(`INSERT INTO orden_servicios (ordenId, codigo, descripcion, cantidad, importeCUP, importeUSD) VALUES (?, 'NEG', 'legado', -2, 700, 0)`, id);
+  const o = await ordenes.obtenerOrden(id);
+  const t = ordenes.calcularTotales(o.materiales, o.servicios);
+  const ult = await analitica.obtenerUltimasOrdenes(10);
+  assert.equal(moneda.normalizarImporte(ult[0].totalCUP), moneda.normalizarImporte(t.totalCUP));
+  assert.equal(t.totalCUP, 100 * 3 + 10 * 2);
 });
 
 // ------------------------------------------------------------------

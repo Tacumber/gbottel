@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { formatearFecha } from '@/utils/fechas';
@@ -10,7 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { eliminarOrden } from '@/services/ordenesService';
 import { avisosDeFolios, type AvisoFolios } from '@/services/foliosService';
-import { aplicarTraspaso, exportarOrdenesCSV, exportarOrdenesJSON, exportarOrdenesPDF, prepararTraspaso, type PreparacionTraspaso } from '@/services/respaldoService';
+import { aplicarTraspaso, exportarOrdenesCSV, exportarOrdenesJSON, exportarOrdenesPDF, exportarOrdenesXLSX, prepararTraspaso, type PreparacionTraspaso } from '@/services/respaldoService';
 import { obtenerOrdenesFiltradas, obtenerResumenDashboard, type OrdenDashboard } from '@/services/analyticsService';
 import type { EstadoOrden } from '@/types/ordenes.types';
 import { formatearImporte } from '@/utils/moneda';
@@ -30,6 +30,7 @@ export default function OrdenesScreen(){
   const [seleccionados,setSeleccionados]=useState<Set<number>>(new Set());
   const [modoSeleccion,setModoSeleccion]=useState(false);
   const [exportando,setExportando]=useState(false);
+  const [elegirFormato,setElegirFormato]=useState(false);
   const [avisos,setAvisos]=useState<AvisoFolios[]>([]);
 
   const cargar=useCallback(async()=>{
@@ -64,12 +65,7 @@ export default function OrdenesScreen(){
   const exportar=()=>{
     const objetivo=seleccionados.size?rows.filter((r)=>seleccionados.has(r.id)):rows;
     if(!objetivo.length){ Alert.alert('Nada para exportar','No hay órdenes en la vista actual.'); return; }
-    Alert.alert('Exportar','¿En qué formato?',[
-      {text:'Cancelar',style:'cancel'},
-      {text:'PDF',onPress:()=>void ejecutarExport(()=>exportarOrdenesPDF(objetivo))},
-      {text:'Excel (CSV)',onPress:()=>void ejecutarExport(()=>exportarOrdenesCSV(objetivo))},
-      {text:'JSON (traspaso)',onPress:()=>void ejecutarExport(()=>exportarOrdenesJSON(objetivo))},
-    ]);
+    setElegirFormato(true);
   };
   const ejecutarExport=async(fn:()=>Promise<void>)=>{
     setExportando(true);
@@ -107,7 +103,27 @@ export default function OrdenesScreen(){
     finally{ setExportando(false); }
   };
 
+  const objetivoExport=()=>seleccionados.size?rows.filter((r)=>seleccionados.has(r.id)):rows;
+  const formatos:[string,string,()=>Promise<void>][]=[
+    ['PDF — órdenes completas','Una página por orden, lista para imprimir',()=>exportarOrdenesPDF(objetivoExport())],
+    ['Excel (.xlsx) — una hoja por orden','Libro XLSX real con la orden completa',()=>exportarOrdenesXLSX(objetivoExport())],
+    ['JSON — traspaso importable','Órdenes completas; se valida y previsualiza al importar',()=>exportarOrdenesJSON(objetivoExport())],
+    ['CSV — solo listado','Resumen de folio, cliente, estado y totales (no es la orden completa)',()=>exportarOrdenesCSV(objetivoExport())],
+  ];
   return <SafeAreaView style={styles.flex} edges={['top']}><ThemedView style={styles.flex}>
+    <Modal visible={elegirFormato} transparent animationType="fade" onRequestClose={()=>setElegirFormato(false)}>
+      <View style={styles.modalFondo}>
+        <ThemedView type="surface" style={styles.modalCaja}>
+          <ThemedText type="smallBold">Exportar {seleccionados.size?`${seleccionados.size} orden${seleccionados.size===1?'':'es'} seleccionada${seleccionados.size===1?'':'s'}`:`las ${rows.length} órdenes mostradas`}</ThemedText>
+          {formatos.map(([titulo,detalle,accion])=>
+            <Pressable key={titulo} onPress={()=>{setElegirFormato(false);void ejecutarExport(accion);}} style={[styles.modalOpcion,{borderColor:theme.border}]}>
+              <ThemedText type="smallBold">{titulo}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{detalle}</ThemedText>
+            </Pressable>)}
+          <Pressable onPress={()=>setElegirFormato(false)} style={styles.modalOpcion}><ThemedText type="small" style={{color:theme.primary}}>Cancelar</ThemedText></Pressable>
+        </ThemedView>
+      </View>
+    </Modal>
     <View style={[styles.header,{alignItems:'flex-start'}]}>
       <View><ThemedText type="title" style={styles.title}>Órdenes de Servicio</ThemedText><ThemedText themeColor="textSecondary">{loading?'Actualizando…':`${rows.length} orden${rows.length===1?'':'es'} en la vista`}</ThemedText></View>
       <Pressable onPress={()=>router.push('/orden-nueva')}><ThemedView type="primary" style={styles.new}><ThemedText style={[styles.white,styles.newIcon]}>+</ThemedText></ThemedView></Pressable>
@@ -202,5 +218,8 @@ const styles=StyleSheet.create({
   money:{width:92,textAlign:'right'},
   badge:{alignSelf:'flex-start',paddingHorizontal:6,paddingVertical:4,borderRadius:999},
   list:{paddingBottom:Spacing.six},
+  modalFondo:{flex:1,backgroundColor:'rgba(0,0,0,0.45)',justifyContent:'center',padding:Spacing.four},
+  modalCaja:{borderRadius:12,padding:Spacing.three,gap:Spacing.two},
+  modalOpcion:{borderWidth:StyleSheet.hairlineWidth,borderRadius:8,padding:Spacing.two,gap:2},
   empty:{padding:Spacing.six,alignItems:'center',width:'100%'},
 });

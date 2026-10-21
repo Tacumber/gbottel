@@ -15,8 +15,8 @@ export type ServicioRendimiento = { servicio: string; codigo: string; cantidad: 
 
 const REVENUE_STATES = `('finalizada','facturada')`;
 
-const TOTAL_CUP = `(SELECT COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeCUP * COALESCE(om.cantidad,1)),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
-const TOTAL_USD = `(SELECT COALESCE(SUM(os.importeUSD * COALESCE(os.cantidad,1)),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeUSD * COALESCE(om.cantidad,1)),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
+const TOTAL_CUP = `(SELECT COALESCE(SUM(os.importeCUP * (CASE WHEN os.cantidad > 0 THEN os.cantidad ELSE 0 END)),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeCUP * (CASE WHEN om.cantidad > 0 THEN om.cantidad ELSE 0 END)),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
+const TOTAL_USD = `(SELECT COALESCE(SUM(os.importeUSD * (CASE WHEN os.cantidad > 0 THEN os.cantidad ELSE 0 END)),0) FROM orden_servicios os WHERE os.ordenId=o.id) + (SELECT COALESCE(SUM(om.importeUSD * (CASE WHEN om.cantidad > 0 THEN om.cantidad ELSE 0 END)),0) FROM orden_materiales om WHERE om.ordenId=o.id)`;
 
 function inicioMesISO(meses: number): string {
   const hoy = new Date();
@@ -105,8 +105,8 @@ export async function obtenerRendimientoServicios(meses = 12): Promise<ServicioR
     `SELECT COALESCE(os.descripcion,'Servicio sin descripción') servicio,
             COALESCE(os.codigo,'') codigo,
             SUM(os.cantidad) cantidad,
-            COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) cup,
-            COALESCE(SUM(os.importeUSD * COALESCE(os.cantidad,1)),0) usd
+            COALESCE(SUM(os.importeCUP * (CASE WHEN os.cantidad > 0 THEN os.cantidad ELSE 0 END)),0) cup,
+            COALESCE(SUM(os.importeUSD * (CASE WHEN os.cantidad > 0 THEN os.cantidad ELSE 0 END)),0) usd
      FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
      WHERE o.estado IN ${REVENUE_STATES}
        AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)
@@ -122,7 +122,7 @@ export async function obtenerAceptacionServiciosPorMes(meses = 12): Promise<{ me
     `WITH base AS (
        SELECT substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) mes,
               COALESCE(os.descripcion,'Sin descripción') servicio,
-              SUM(os.cantidad) cantidad, COALESCE(SUM(os.importeCUP * COALESCE(os.cantidad,1)),0) cup
+              SUM(os.cantidad) cantidad, COALESCE(SUM(os.importeCUP * (CASE WHEN os.cantidad > 0 THEN os.cantidad ELSE 0 END)),0) cup
        FROM orden_servicios os JOIN ordenes o ON o.id=os.ordenId
        WHERE o.estado IN ${REVENUE_STATES}
          AND substr(COALESCE(NULLIF(o.fechaInicio,''),NULLIF(o.fechaReporte,''),datetime(o.creadoEn,'localtime')),1,7) >= substr(?,1,7)

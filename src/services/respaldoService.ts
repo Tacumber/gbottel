@@ -6,13 +6,14 @@ import { getDatabase } from '../database/db';
 import { SCHEMA_VERSION } from '../database/schema';
 import type { OrdenDashboard } from './analyticsService';
 import { ErrorFolios, FOLIO_MAXIMO, enSerieFolios, numeroDeFolio, registrarFolioExterno } from './foliosService';
-import { insertarOrdenNueva, obtenerOrden, reemplazarHijosDeOrden } from './ordenesService';
+import { calcularTotales, insertarOrdenNueva, obtenerOrden, reemplazarHijosDeOrden } from './ordenesService';
 import type { ServicioParaGuardar } from './ordenesService';
-import type { NuevaOrden, NuevoOrdenEquipo, NuevoOrdenMaterial, NuevoOrdenTecnico } from '../types/ordenes.types';
+import type { NuevaOrden, NuevoOrdenEquipo, NuevoOrdenMaterial, NuevoOrdenTecnico, OrdenCompleta, TotalesOrden } from '../types/ordenes.types';
 import type { NuevoServicio, Servicio } from '../types/tarifario.types';
 import { importarServiciosDesdeJSON, listarServicios } from './tarifarioService';
 import { fechaHoyISO, formatearFecha } from '@/utils/fechas';
-import { formatearImporte, importeComoTexto } from '@/utils/moneda';
+import { importeComoTexto, normalizarImporte } from '@/utils/moneda';
+import { filasOrden, generarXLSX, htmlDocumento, nombreHoja } from '@/utils/ordenExport';
 
 // v4 = v3 del tablero anterior (orden_equipos) + folio_rangos y folios_emitidos.
 // Se aceptan v1–v3: sin folios (sus órdenes pasan al libro al restaurar) y, antes
@@ -616,8 +617,6 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente: 'Pendiente', finalizada: 'Finalizada', facturada: 'Facturada',
 };
 
-const moneda = formatearImporte;
-
 function protegerCSV(valor: string): string {
   return /^[=+\-@]/.test(valor) ? `'${valor}` : valor;
 }
@@ -625,10 +624,6 @@ function protegerCSV(valor: string): string {
 function escaparCSV(valor: string): string {
   const seguro = protegerCSV(valor);
   return /[",\n]/.test(seguro) ? `"${seguro.replace(/"/g, '""')}"` : seguro;
-}
-
-function escaparHTML(valor: string): string {
-  return valor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /**
@@ -648,37 +643,49 @@ export async function exportarOrdenesCSV(ordenes: OrdenDashboard[]): Promise<voi
   await compartirTexto(csv, nombreArchivoConFecha('gbottel-ordenes', 'csv'));
 }
 
+/** Lee de SQLite cada orden COMPLETA (nunca del estado de pantalla) con sus totales persistidos. */
+async function leerOrdenesCompletas(ordenes: OrdenDashboard[]): Promise<{ orden: OrdenCompleta; totales: TotalesOrden }[]> {
+  const salida: { orden: OrdenCompleta; totales: TotalesOrden }[] = [];
+  for (const resumen of ordenes) {
+    const orden = await obtenerOrden(resumen.id);
+    if (!orden) continue;
+    salida.push({ orden, totales: calcularTotales(orden.materiales, orden.servicios) });
+  }
+  if (!salida.length) throw new Error('Las órdenes seleccionadas ya no existen.');
+  return salida;
+}
+
+async function compartirBytes(bytes: Uint8Array, nombreArchivo: string, mimeType: string): Promise<void> {
+  const archivo = new File(Paths.cache, nombreArchivo);
+  if (archivo.exists) archivo.delete();
+  archivo.create();
+  archivo.write(bytes);
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(archivo.uri, { mimeType });
+  } else {
+    throw new Error('Este dispositivo no tiene disponible la función de compartir archivos.');
+  }
+}
+
+/** Libro XLSX real: una hoja por orden, con la orden completa (todas las secciones). */
+export async function exportarOrdenesXLSX(ordenes: OrdenDashboard[]): Promise<void> {
+  const completas = await leerOrdenesCompletas(ordenes);
+  const usados = new Set<string>();
+  const hojas = completas.map(({ orden, totales }) => ({
+    nombre: nombreHoja(orden.numeroOrden, usados),
+    filas: filasOrden(orden, totales),
+  }));
+  await compartirBytes(
+    generarXLSX(hojas),
+    nombreArchivoConFecha('gbottel-ordenes', 'xlsx'),
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+}
+
+/** PDF imprimible: una página por orden, siempre completa. */
 export async function exportarOrdenesPDF(ordenes: OrdenDashboard[]): Promise<void> {
-  const filas = ordenes
-    .map(
-      (o) => `<tr>
-        <td>${escaparHTML(o.folio)}</td>
-        <td>${escaparHTML(o.cliente)}</td>
-        <td>${escaparHTML(formatearFecha(o.fecha))}</td>
-        <td>${escaparHTML(ETIQUETA_ESTADO[o.estado] ?? o.estado)}</td>
-        <td style="text-align:right">${escaparHTML(moneda(o.totalCUP, 'CUP'))}</td>
-        <td style="text-align:right">${escaparHTML(moneda(o.totalUSD, 'USD'))}</td>
-      </tr>`
-    )
-    .join('');
-  const html = `<html><head><meta charset="utf-8" />
-    <style>
-      body { font-family: Helvetica, Arial, sans-serif; padding: 20px; color: #1a1a1a; }
-      h1 { font-size: 16px; margin-bottom: 2px; }
-      .sub { font-size: 11px; color: #666; margin-bottom: 14px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border: 1px solid #ddd; padding: 5px 7px; font-size: 10px; text-align: left; }
-      th { background: #f2f2f2; }
-    </style></head>
-    <body>
-      <h1>GBOTtel — Órdenes de Servicio</h1>
-      <div class="sub">Generado el ${formatearFecha(fechaHoyISO())} · ${ordenes.length} orden${ordenes.length === 1 ? '' : 'es'}</div>
-      <table>
-        <thead><tr><th>Folio</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th>CUP</th><th>USD</th></tr></thead>
-        <tbody>${filas}</tbody>
-      </table>
-    </body></html>`;
-  const { uri } = await Print.printToFileAsync({ html });
+  const completas = await leerOrdenesCompletas(ordenes);
+  const { uri } = await Print.printToFileAsync({ html: htmlDocumento(completas) });
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
   } else {
@@ -737,10 +744,51 @@ export async function exportarOrdenesJSON(ordenes: OrdenDashboard[]): Promise<vo
       servicios: completa.servicios.map(({ id, ordenId, ...s }) => s),
       tecnicos: completa.tecnicos.map(({ id, ordenId, ...t }) => t),
       equipos: completa.equipos.map(({ id, ordenId, ...e }) => e),
+      // Totales persistidos: al importar se comprueba que las líneas los reproducen exactamente.
+      totales: (({ totalCUP, totalUSD }) => ({ totalCUP, totalUSD }))(calcularTotales(completa.materiales, completa.servicios)),
     });
   }
   const payload = { version: 2, exportadoEn: new Date().toISOString(), ordenes: completas };
   await compartirTexto(JSON.stringify(payload, null, 2), nombreArchivoConFecha('gbottel-ordenes-traspaso', 'json'));
+}
+
+function numeroFinito(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+/**
+ * Valida tipos, cantidades, importes y totales de UNA orden de un archivo de traspaso.
+ * Devuelve el motivo del rechazo, o null si es aceptable. No modifica nada.
+ */
+export function motivoOrdenInvalida(o: Record<string, unknown>): string | null {
+  for (const [lista, nombre] of [['servicios', 'servicio'], ['materiales', 'material']] as const) {
+    const filas = o[lista];
+    if (filas !== undefined && !Array.isArray(filas)) return `La lista de ${lista} no es válida.`;
+    for (const fila of (filas ?? []) as unknown[]) {
+      if (!esObjeto(fila)) return `Hay un ${nombre} que no es un objeto.`;
+      if (!numeroFinito(fila.cantidad) || fila.cantidad <= 0) return `Un ${nombre} tiene una cantidad no válida (debe ser un número mayor que cero).`;
+      for (const campo of ['importeCUP', 'importeUSD'] as const) {
+        if (!numeroFinito(fila[campo]) || fila[campo] < 0) return `Un ${nombre} tiene un importe ${campo} no válido.`;
+      }
+    }
+  }
+  const equipos = o.equipos;
+  if (equipos !== undefined && !Array.isArray(equipos)) return 'La lista de equipos no es válida.';
+  if (o.modalidadMultiple === 1 && (!Array.isArray(equipos) || equipos.length < 2)) {
+    return 'Orden de modalidad múltiple con menos de dos equipos.';
+  }
+  if (o.tecnicos !== undefined && !Array.isArray(o.tecnicos)) return 'La lista de técnicos no es válida.';
+  if (o.estado !== undefined && !['pendiente', 'finalizada', 'facturada'].includes(String(o.estado))) return 'Estado de orden desconocido.';
+  if (esObjeto(o.totales)) {
+    const mat = (o.materiales ?? []) as { cantidad: number; importeCUP: number; importeUSD: number }[];
+    const ser = (o.servicios ?? []) as { cantidad: number; importeCUP: number; importeUSD: number }[];
+    const suma = (campo: 'importeCUP' | 'importeUSD') =>
+      normalizarImporte([...mat, ...ser].reduce((acc, x) => acc + x[campo] * x.cantidad, 0));
+    if (normalizarImporte(Number(o.totales.totalCUP)) !== suma('importeCUP') || normalizarImporte(Number(o.totales.totalUSD)) !== suma('importeUSD')) {
+      return 'Los importes de las líneas no coinciden con el total declarado en el archivo.';
+    }
+  }
+  return null;
 }
 
 function descripcionOrden(o: Record<string, unknown>): { folio: string; cliente: string } {
@@ -760,6 +808,10 @@ export async function prepararTraspasoDesdeTexto(contenido: string): Promise<Pre
   }
   if (!esObjeto(datos) || !Array.isArray(datos.ordenes)) {
     throw new ErrorFolios('TRASPASO_INVALIDO', 'El archivo no tiene el formato esperado de traspaso de órdenes.');
+  }
+  // v1 (sin folio) se acepta para poder explicar orden por orden por qué se omite; otras versiones, no.
+  if (datos.version !== 1 && datos.version !== 2) {
+    throw new ErrorFolios('TRASPASO_INVALIDO', `Versión de traspaso no compatible (${String(datos.version)}). Se acepta la versión 2.`);
   }
 
   const db = await getDatabase();
@@ -792,6 +844,11 @@ async function clasificarTraspaso(db: Awaited<ReturnType<typeof getDatabase>>, o
     const folio = typeof bruta.folio === 'string' ? bruta.folio : '';
     if (!folio) {
       omitir('Archivo antiguo sin folio permanente: vuelve a exportarla desde esta versión de GBOTtel.');
+      continue;
+    }
+    const invalida = motivoOrdenInvalida(bruta);
+    if (invalida) {
+      omitir(invalida);
       continue;
     }
     if (vistos.has(folio)) {
@@ -847,7 +904,7 @@ export async function aplicarTraspaso(prep: PreparacionTraspaso): Promise<Result
 
       const ordenadas = [...vigente.aImportar].sort((a, b) => String(a.fechaReporte ?? '').localeCompare(String(b.fechaReporte ?? '')));
       for (const o of ordenadas) {
-        const { folio, folioOrigen, tecnicoNombre, principalNombre, equipos, materiales, servicios, tecnicos, ...datosOrden } = o as Record<string, unknown> & {
+        const { folio, folioOrigen, tecnicoNombre, principalNombre, equipos, materiales, servicios, tecnicos, totales: _totales, ...datosOrden } = o as Record<string, unknown> & {
           folio: string;
           folioOrigen?: string;
           tecnicoNombre?: string | null;
