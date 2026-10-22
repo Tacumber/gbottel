@@ -116,6 +116,7 @@ const preferencias = require(path.join(SRC, 'services/preferenciasService.ts'));
 const moneda = require(path.join(SRC, 'utils/moneda.ts'));
 const formOrden = require(path.join(SRC, 'utils/ordenForm.ts'));
 const exportador = require(path.join(SRC, 'utils/ordenExport.ts'));
+const procedimientos = require(path.join(SRC, 'services/procedimientosService.ts'));
 
 // ------------------------------------------------------------------
 // Utilidades
@@ -832,6 +833,27 @@ prueba('T26 PDF por orden: todas las secciones y totales idénticos a los de pan
   const t1 = ordenes.calcularTotales(o1.materiales, o1.servicios);
   assert.ok(html.includes(moneda.formatearImporte(t1.totalCUP, 'CUP')));
   assert.equal((html.match(/page-break-after/g) || []).length >= 1, true);
+});
+
+prueba('T29 Procedimientos del tarifario: coincidencia exacta por código, sin herencia por familia, pasos separados y datos coherentes con el catálogo', async () => {
+  assert.equal(procedimientos.claveCodigo('25-0100-TER'), '0100');
+  assert.equal(procedimientos.claveCodigo('0100'), '0100');
+  const p = procedimientos.obtenerProcedimiento('25-0100-TER');
+  assert.ok(p, 'el servicio 0100 debe tener procedimiento');
+  assert.equal(p.categoriaId, '01');
+  assert.ok(p.pasos.length === 6 && p.pasos[0].startsWith('Inspección') && p.pasos[5].startsWith('Llenado'));
+  assert.ok(p.herramientas.includes('Taladro percutor'));
+  assert.equal(p.complejidad, 'Media');
+  // un servicio de la misma familia (01xx) que NO está en el archivo no hereda nada
+  assert.equal(procedimientos.obtenerProcedimiento('25-0139-TER'), null);
+  assert.equal(procedimientos.obtenerProcedimiento('XX-9999-YYY'), null);
+  assert.deepEqual(procedimientos.separarPasos(''), []);
+  assert.deepEqual(procedimientos.separarPasos('Sin numeración'), ['Sin numeración']);
+  assert.equal(procedimientos.cantidadServiciosConProcedimiento(), 20);
+  // todos los códigos del archivo existen en el catálogo real
+  const catalogo = new Set(JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf-8')).map((x) => procedimientos.claveCodigo(x.codigoServicio)));
+  const ficheros = JSON.parse(fs.readFileSync(path.join(SRC, 'data/procedimientos_tarifario.json'), 'utf-8'));
+  for (const c of ficheros.categorias) for (const sv of c.servicios) assert.ok(catalogo.has(sv.codigo), `código ${sv.codigo} no está en el catálogo`);
 });
 
 prueba('T27 JSON de traspaso: validación de versión, tipos, cantidades, importes y totales; conflictos antes de aplicar; atómico', async () => {
