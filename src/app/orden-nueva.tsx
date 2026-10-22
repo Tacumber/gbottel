@@ -34,6 +34,7 @@ import {
 } from "@/services/orderDraftStore";
 
 import { buscarServicios, obtenerServicioPorId } from "@/services/tarifarioService";
+import { listarTarifaPoblacion } from "@/services/tarifarioPoblacionService";
 import { listarTecnicos } from "@/services/tecnicosService";
 
 import {
@@ -503,6 +504,7 @@ export default function OrdenNuevaScreen() {
     }, []),
   );
 
+  const tipoCliente = form.clienteTipo;
   useEffect(() => {
     const texto = buscarTexto.trim();
     if (!texto) {
@@ -515,13 +517,19 @@ export default function OrdenNuevaScreen() {
       return () => clearTimeout(t);
     }
     const t = setTimeout(() => {
+      // Cliente de Población: se busca en el tarifario de Población (independiente);
+      // cualquier otro tipo usa el tarifario Estatal / Interno.
+      if (tipoCliente === "Población") {
+        setResultadosBusqueda(listarTarifaPoblacion(texto).slice(0, 8));
+        return;
+      }
       setBuscando(true);
       buscarServicios(texto, { limite: 8 })
         .then(setResultadosBusqueda)
         .finally(() => setBuscando(false));
     }, 250);
     return () => clearTimeout(t);
-  }, [buscarTexto]);
+  }, [buscarTexto, tipoCliente]);
 
   // Preferencia de secciones del técnico principal (solo presentación).
   useEffect(() => {
