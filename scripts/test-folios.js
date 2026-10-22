@@ -894,6 +894,14 @@ prueba('T30 Tarifario de Población: 82 prestaciones independientes, importes ex
   assert.ok(pob.listarTarifaPoblacion('REVISION').length >= 2);
   assert.equal(pob.listarTarifaPoblacion('zzzz-no-existe').length, 0);
   assert.equal(pob.listarTarifaPoblacion('0905')[0].precioBase, 500);
+  // procedimiento por equivalencia: solo vínculo, los precios no cambian
+  const enlazadas = todas.filter((i) => i.procedimientoDe);
+  assert.equal(enlazadas.length, 67);
+  assert.ok(enlazadas.every((i) => procedimientos.obtenerProcedimiento(i.procedimientoDe) && ['nombre_igual', 'nombre_similar'].includes(i.coincidencia)));
+  assert.equal(enlazadas.filter((i) => i.coincidencia === 'nombre_igual').length, 57);
+  const sinEnlace = todas.filter((i) => !i.procedimientoDe).map((i) => i.codigoServicio);
+  for (const c of ['0905', '2036', '8338', '8418', '3017']) assert.ok(sinEnlace.includes(c), `${c} no debe vincularse sin confirmar`);
+  assert.equal(todas.find((i) => i.codigoServicio === '1011').procedimientoDe, '1011');
   assert.deepEqual(pob.validarTarifaPoblacion([{ codigo: 'A', nombre: 'x', unidad: 'UNO', precioCUP: -1 }, { codigo: 'A', nombre: '', unidad: 'UNO', precioCUP: 1 }]).length, 3);
 });
 

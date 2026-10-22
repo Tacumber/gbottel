@@ -7,7 +7,9 @@
  * cálculo ni redondeo. Estatal e Interno usan el catálogo de la tabla `servicios`; Población usa
  * esta otra lista de precios. No modifica la base ni el esquema.
  *
- * Es un tarifario INDEPENDIENTE: no se compara ni se mezcla con el de Estatal / Interno. Sus filas
+ * Es un tarifario INDEPENDIENTE: no se compara ni se mezcla con el de Estatal / Interno. La única
+ * relación es `procedimiento_de` (generado por scripts/vincular_poblacion.py): código del servicio
+ * equivalente, solo para mostrar su procedimiento técnico. Sus filas
  * no se enlazan con la tabla `servicios` (id negativo; en la orden `servicioId` = null) y no
  * heredan tiempo ni técnicos de ningún otro tarifario.
  */
@@ -19,17 +21,22 @@ export interface PrestacionPoblacion {
   nombre: string;
   unidad: string;
   precioCUP: number;
+  /** Código del servicio equivalente de Estatal / Interno cuyo procedimiento técnico se muestra (solo procedimiento, nunca precios). */
+  procedimiento_de?: string | null;
+  coincidencia?: 'nombre_igual' | 'nombre_similar' | null;
 }
 
 /** Tarifa a la que pertenece una fila mostrada en el Tarifario. */
 export type TarifaServicio = 'estatal' | 'poblacion';
-export type ItemTarifario = Servicio & { tarifa: TarifaServicio; clave: string };
+export type ItemTarifario = Servicio & { tarifa: TarifaServicio; clave: string; procedimientoDe?: string | null; coincidencia?: PrestacionPoblacion['coincidencia'] };
 
 export const PRESTACIONES_POBLACION: PrestacionPoblacion[] = (datos as PrestacionPoblacion[]).map((p) => ({
   codigo: String(p.codigo).trim(),
   nombre: String(p.nombre).trim(),
   unidad: String(p.unidad).trim(),
   precioCUP: p.precioCUP,
+  procedimiento_de: p.procedimiento_de ?? null,
+  coincidencia: p.coincidencia ?? null,
 }));
 
 /** Problemas de integridad de los datos (vacío = todo bien). */
@@ -73,6 +80,8 @@ export function aItemPoblacion(p: PrestacionPoblacion, indice: number): ItemTari
     actualizadoEn: '',
     tarifa: 'poblacion',
     clave: `poblacion:${id}`,
+    procedimientoDe: p.procedimiento_de ?? null,
+    coincidencia: p.coincidencia ?? null,
   };
 }
 
