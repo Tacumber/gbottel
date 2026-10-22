@@ -1,11 +1,15 @@
 /**
- * Exportación de órdenes completas (hoja de cálculo XLSX real, HTML para PDF). Sin dependencias
- * externas ni acceso a la base: recibe la orden ya leída de SQLite y sus totales calculados con
- * `calcularTotales`, de modo que el importe exportado es EXACTAMENTE el guardado.
- * Siempre incluye todas las secciones: ocultar secciones en pantalla no afecta a la exportación.
+ * Exportación de órdenes completas con la disposición del MODELO OFICIAL de la Orden de Servicio
+ * COPEXTEL (cabecera con folio, cobertura, cliente / servicio / equipo, materiales, servicios,
+ * totales y conformidad). Genera un libro XLSX real (una hoja por orden) y el HTML para el PDF
+ * a partir de UNA misma descripción del formulario (`formularioOrden`), de modo que ambos
+ * formatos son idénticos. Sin dependencias externas ni acceso a la base: recibe la orden ya leída
+ * de SQLite y sus totales de `calcularTotales`, así el importe exportado es EXACTAMENTE el guardado.
+ * Siempre incluye todo el formulario: ocultar secciones en pantalla no afecta a la exportación.
  *
- * AVISO: la plantilla oficial de la Orden de Servicio no está en el repositorio. La disposición
- * sigue las 9 secciones del formulario; no está verificada contra el formato oficial.
+ * Importe de cada línea = precio unitario × cantidad, calculado UNA vez (cantidad ≤ 0 aporta 0,
+ * igual que calcularTotales). Nota: el modelo impreso rotula la segunda moneda «CUC»; la app
+ * guarda USD, por eso las columnas se rotulan «CUP» y «USD».
  */
 import type { OrdenCompleta, TotalesOrden } from '../types/ordenes.types';
 import { formatearFecha } from './fechas';
@@ -15,81 +19,169 @@ export interface CeldaImporte {
   importe: number;
   moneda: 'CUP' | 'USD';
 }
-export type Celda = string | number | null | CeldaImporte;
+
+export type EstiloCelda =
+  | 'logo'
+  | 'titulo'
+  | 'seccion'
+  | 'etiqueta'
+  | 'valor'
+  | 'encabezado'
+  | 'numero'
+  | 'importe'
+  | 'total'
+  | 'totalImporte'
+  | 'folio'
+  | 'libre';
+
+export interface CeldaForm {
+  /** Columnas que ocupa (la fila completa suma COLUMNAS). */
+  span: number;
+  texto?: string | null;
+  numero?: number | null;
+  importe?: CeldaImporte;
+  estilo: EstiloCelda;
+}
+export interface FilaForm {
+  celdas: CeldaForm[];
+  /** Alto en puntos (filas altas como Observaciones). */
+  alto?: number;
+}
 export interface Hoja {
   nombre: string;
-  filas: Celda[][];
+  filas: FilaForm[];
 }
 
-const ETIQUETA_ESTADO: Record<string, string> = { pendiente: 'Pendiente', finalizada: 'Finalizada', facturada: 'Facturada' };
+/** Columnas de la rejilla del formulario. */
+export const COLUMNAS = 12;
+/** Anchos relativos de las 12 columnas (caracteres en XLSX, proporción en PDF). */
+const ANCHOS = [8, 11, 11, 13, 13, 13, 6, 6, 10, 10, 14, 14];
+const MIN_FILAS_MATERIALES = 8;
+const MIN_FILAS_SERVICIOS = 6;
 
-function modalidades(valor: string | null): string {
-  if (!valor) return '';
+function modalidadesSet(valor: string | null): Set<string> {
+  if (!valor) return new Set();
   try {
     const d: unknown = JSON.parse(valor);
-    return Array.isArray(d) ? d.filter((x) => typeof x === 'string').join(', ') : '';
+    return new Set(Array.isArray(d) ? d.filter((x): x is string => typeof x === 'string') : []);
   } catch {
-    return '';
+    return new Set();
   }
 }
 
 /** Misma regla que calcularTotales: una cantidad no válida (≤ 0) no suma. */
 const cv = (c: number) => (Number.isFinite(c) && c > 0 ? c : 0);
-const si = (n: number) => (n ? 'Sí' : 'No');
 const cup = (n: number): CeldaImporte => ({ importe: normalizarImporte(n), moneda: 'CUP' });
 const usd = (n: number): CeldaImporte => ({ importe: normalizarImporte(n), moneda: 'USD' });
+const marca = (activo: boolean, texto: string) => `${activo ? '[X]' : '[  ]'} ${texto}`;
 
-/** Filas de la hoja de una orden: todas las secciones, importes como NÚMEROS exactos. */
-export function filasOrden(o: OrdenCompleta, t: TotalesOrden): Celda[][] {
-  const f: Celda[][] = [];
-  const sec = (titulo: string) => f.push([], [titulo]);
-  f.push([`COPEXTEL — Orden de Servicio ${o.numeroOrden}`]);
-  f.push(['Estado', ETIQUETA_ESTADO[o.estado] ?? o.estado]);
+const E = (texto: string, span: number): CeldaForm => ({ span, texto, estilo: 'etiqueta' });
+const V = (texto: string | null | undefined, span: number): CeldaForm => ({ span, texto: texto ?? '', estilo: 'valor' });
+const N = (numero: number | null | undefined, span: number): CeldaForm => ({ span, numero: numero ?? null, estilo: 'numero' });
+const I = (importe: CeldaImporte | undefined, span: number): CeldaForm => ({ span, importe, estilo: 'importe' });
+const H = (texto: string, span: number): CeldaForm => ({ span, texto, estilo: 'encabezado' });
+const S = (texto: string, span: number): CeldaForm => ({ span, texto, estilo: 'seccion' });
+const L = (texto: string, span: number): CeldaForm => ({ span, texto, estilo: 'libre' });
+const fila = (celdas: CeldaForm[], alto?: number): FilaForm => ({ celdas, alto });
 
-  sec('1. Encabezado y Control del Documento');
-  f.push(['Folio', o.numeroOrden], ['Compañía', o.compania], ['Código de reporte', o.codigoReporte], ['Reportado por', o.reportadoPor]);
-  f.push(['Fecha de reporte', formatearFecha(o.fechaReporte)], ['Código de orden', o.codigoOrden], ['Código de factura', o.codigoFactura]);
-  f.push(['Revisor', o.revisorNombre], ['Cargo del revisor', o.revisorCargo], ['Fecha de revisión', formatearFecha(o.revisorFecha)], ['Revisor firmó', si(o.revisorFirmado)]);
+/**
+ * Formulario de UNA orden con la disposición del modelo oficial. Cada fila suma exactamente
+ * COLUMNAS columnas (se comprueba al construirlo).
+ */
+export function formularioOrden(o: OrdenCompleta, t: TotalesOrden): FilaForm[] {
+  const f: FilaForm[] = [];
+  const tipo = (o.clienteTipo ?? '').trim();
+  const sufijoCliente = tipo ? ` Cliente ${tipo}` : ' Cliente';
+  const mods = modalidadesSet(o.modalidadesServicio);
+  const cob = o.tipoCobertura;
 
-  sec('2. Clasificación del Servicio');
-  f.push(['Tipo de cobertura', o.tipoCobertura], ['Modalidad múltiple', si(o.modalidadMultiple)], ['Modalidades de servicio', modalidades(o.modalidadesServicio)]);
+  f.push(fila([{ span: COLUMNAS, texto: 'ORDEN DE SERVICIO', estilo: 'titulo' }], 24));
+  f.push(fila([{ span: 6, texto: 'COPEXTEL', estilo: 'logo' }, { span: 6, texto: '', estilo: 'libre' }], 22));
 
-  sec('3. Información del Cliente');
-  f.push(['Código', o.clienteCodigo], ['Tipo', o.clienteTipo], ['Nombre', o.clienteNombre], ['Dirección', o.clienteDireccion], ['Municipio', o.clienteMunicipio], ['Provincia', o.clienteProvincia]);
+  // Cabecera: reporte (izquierda) y folio / códigos (derecha)
+  f.push(fila([E('Código del Reporte', 2), V(o.codigoReporte, 3), E('Folio de la Orden', 3), { span: 4, texto: o.numeroOrden, estilo: 'folio' }], 20));
+  f.push(fila([E('Reportado por', 2), V(o.reportadoPor, 3), E('Código de la Orden', 3), V(o.codigoOrden, 4)]));
+  f.push(fila([E('Fecha del Reporte', 2), V(formatearFecha(o.fechaReporte), 3), E('Código de la Factura', 3), V(o.codigoFactura, 4)]));
 
-  sec('4. Información del Servicio y Equipo');
-  f.push(['Tipo de equipo', o.equipoTipo], ['Fecha de inicio', formatearFecha(o.fechaInicio)], ['Fecha de fin', formatearFecha(o.fechaFin)], ['Tiempo de trabajo (minutos)', o.tiempoTrabajoMinutos]);
-  if (o.equipos.length) {
-    f.push(['Equipo', 'Marca', 'Modelo', 'N.º de serie']);
-    o.equipos.forEach((e, i) => f.push([i + 1, e.marca, e.modelo, e.nroSerie]));
-  } else {
-    f.push(['Marca', o.equipoMarca], ['Modelo', o.equipoModelo], ['N.º de serie', o.equipoNroSerie]);
+  // Cobertura y múltiple
+  f.push(
+    fila([
+      V(marca(cob === 'garantia', 'Garantía'), 3),
+      V(marca(cob === 'postgarantia', 'Postgarantía'), 3),
+      V(marca(cob === 'garantia_servicio', 'Garantía de Servicio'), 3),
+      E('MÚLTIPLE', 2),
+      V(o.modalidadMultiple ? '[X]' : '[  ]', 1),
+    ])
+  );
+
+  // Cliente (izquierda) y Servicio / Equipo (derecha)
+  const eq0 = o.equipos[0];
+  const marcaEq = eq0 ? eq0.marca : o.equipoMarca;
+  const modeloEq = eq0 ? eq0.modelo : o.equipoModelo;
+  const serieEq = eq0 ? eq0.nroSerie : o.equipoNroSerie;
+  const cli = (etiqueta: string, valor: string | null | undefined) => [E(etiqueta, 2), V(valor, 4)];
+  const eqp = (etiqueta: string, valor: string | null | undefined) => [E(etiqueta, 2), V(valor, 4)];
+  f.push(fila([S('Información del Cliente', 6), S('Información del Servicio', 6)]));
+  f.push(fila([...cli('Código', o.clienteCodigo), V(marca(mods.has('revision_diagnostico'), 'Revis. y Diagnóstico'), 3), V(marca(mods.has('reparacion'), 'Reparación'), 3)]));
+  f.push(fila([...cli('Tipo', o.clienteTipo), V(marca(mods.has('instalacion_montaje'), 'Instalación y Montaje'), 3), V(marca(mods.has('mantenimiento'), 'Mantenimiento'), 3)]));
+  f.push(fila([...cli('Nombre', o.clienteNombre), V(marca(mods.has('servicio_taller'), 'Servicio en Taller'), 3), V(marca(mods.has('visita_tecnica'), 'Visita Técnica'), 3)]));
+  f.push(fila([...cli('Dirección', o.clienteDireccion), S('Información del Equipo', 6)]));
+  f.push(fila([...cli('Municipio', o.clienteMunicipio), ...eqp('Tipo', o.equipoTipo)]));
+  f.push(fila([...cli('Provincia', o.clienteProvincia), ...eqp('Marca', marcaEq)]));
+  f.push(fila([...cli('Fecha Inicio', formatearFecha(o.fechaInicio)), ...eqp('Modelo', modeloEq)]));
+  f.push(fila([...cli('Fecha Fin', formatearFecha(o.fechaFin)), ...eqp('N° Serie/ Inv.', serieEq)]));
+  if (o.equipos.length > 1) {
+    f.push(fila([S(`Equipos adicionales (${o.equipos.length - 1})`, COLUMNAS)]));
+    f.push(fila([H('N.º', 1), H('Marca', 4), H('Modelo', 4), H('N° Serie/ Inv.', 3)]));
+    o.equipos.slice(1).forEach((e, i) => f.push(fila([N(i + 2, 1), V(e.marca, 4), V(e.modelo, 4), V(e.nroSerie, 3)])));
   }
+  f.push(fila([E('Tiempo de Trabajo (Minutos)', 4), N(o.tiempoTrabajoMinutos, 8)]));
+  f.push(fila([E('Observaciones del Trabajo Realizado', 4), V(o.observaciones, 8)], 54));
 
-  sec('5. Detalles del Trabajo');
-  f.push(['Observaciones', o.observaciones]);
-
-  sec('6. Materiales Utilizados');
-  f.push(['Vale', 'Código', 'Descripción', 'U/M', 'Cantidad', 'N.º de serie', 'Precio unit. CUP', 'Precio unit. USD', 'Importe CUP', 'Importe USD']);
+  // Materiales utilizados
+  f.push(fila([S('Listado de los Materiales Utilizados', COLUMNAS)]));
+  f.push(fila([L('', 10), H(`${tipo.toUpperCase() || 'CLIENTE'} · Importe`, 2)]));
+  f.push(fila([H('Vale', 1), H('Código', 2), H('Descripción', 3), H('UM', 1), H('Cant', 1), H('Nro Serie', 2), H('CUP', 1), H('USD', 1)]));
   for (const m of o.materiales) {
-    f.push([m.vale, m.codigo, m.descripcion, m.unidadMedida, m.cantidad, m.nroSerie, cup(m.importeCUP), usd(m.importeUSD), cup(m.importeCUP * cv(m.cantidad)), usd(m.importeUSD * cv(m.cantidad))]);
+    const c = cv(m.cantidad);
+    f.push(fila([V(m.vale, 1), V(m.codigo, 2), V(m.descripcion, 3), V(m.unidadMedida, 1), N(m.cantidad, 1), V(m.nroSerie, 2), I(cup(m.importeCUP * c), 1), I(usd(m.importeUSD * c), 1)]));
   }
-  f.push(['Total materiales', null, null, null, null, null, null, null, cup(t.materialesCUP), usd(t.materialesUSD)]);
+  for (let i = o.materiales.length; i < MIN_FILAS_MATERIALES; i++) f.push(fila([V('', 1), V('', 2), V('', 3), V('', 1), V('', 1), V('', 2), V('', 1), V('', 1)]));
+  f.push(fila([{ span: 10, texto: `Valores Totales Materiales Utilizados${sufijoCliente}`, estilo: 'total' }, { span: 1, importe: cup(t.materialesCUP), estilo: 'totalImporte' }, { span: 1, importe: usd(t.materialesUSD), estilo: 'totalImporte' }]));
 
-  sec('7. Servicios Prestados');
-  f.push(['Código', 'Descripción', 'Cantidad', 'Precio unit. CUP', 'Precio unit. USD', 'Importe CUP', 'Importe USD']);
+  // Servicios prestados
+  f.push(fila([S('Listado de los Servicios Prestados', COLUMNAS)]));
+  f.push(fila([L('', 9), H(`${tipo.toUpperCase() || 'CLIENTE'} · Importe`, 3)]));
+  f.push(fila([H('Código', 3), H('Descripción', 6), H('Cant', 1), H('CUP', 1), H('USD', 1)]));
   for (const s of o.servicios) {
-    f.push([s.codigo, s.descripcion, s.cantidad, cup(s.importeCUP), usd(s.importeUSD), cup(s.importeCUP * cv(s.cantidad)), usd(s.importeUSD * cv(s.cantidad))]);
+    const c = cv(s.cantidad);
+    f.push(fila([V(s.codigo, 3), V(s.descripcion, 6), N(s.cantidad, 1), I(cup(s.importeCUP * c), 1), I(usd(s.importeUSD * c), 1)]));
   }
-  f.push(['Total servicios', null, null, null, null, cup(t.serviciosCUP), usd(t.serviciosUSD)]);
+  for (let i = o.servicios.length; i < MIN_FILAS_SERVICIOS; i++) f.push(fila([V('', 3), V('', 6), V('', 1), V('', 1), V('', 1)]));
+  f.push(fila([{ span: 10, texto: `Valores Totales de los Servicios Prestados${sufijoCliente}`, estilo: 'total' }, { span: 1, importe: cup(t.serviciosCUP), estilo: 'totalImporte' }, { span: 1, importe: usd(t.serviciosUSD), estilo: 'totalImporte' }]));
+  f.push(fila([{ span: 10, texto: `Totales Generales a Pagar${sufijoCliente}`, estilo: 'total' }, { span: 1, importe: cup(t.totalCUP), estilo: 'totalImporte' }, { span: 1, importe: usd(t.totalUSD), estilo: 'totalImporte' }]));
 
-  sec('8. Totales Generales');
-  f.push(['Total a pagar CUP', cup(t.totalCUP)], ['Total a pagar USD', usd(t.totalUSD)]);
+  // Conformidad del trabajo
+  const principal = o.tecnicos.find((x) => x.tecnicoId != null && x.tecnicoId === o.tecnicoPrincipalId) ?? o.tecnicos[0];
+  const otros = o.tecnicos.filter((x) => x !== principal);
+  const firma = (firmado: number | boolean | undefined) => (firmado ? 'Firmado' : '');
+  f.push(fila([S('Conformidad del Trabajo', COLUMNAS)]));
+  f.push(fila([S('Control del Folio', 4), S('Técnico Responsable', 4), S('Cliente', 4)]));
+  const bloque = (a: [string, string | null | undefined], b: [string, string | null | undefined], c: [string, string | null | undefined], alto?: number) =>
+    f.push(fila([E(a[0], 1), V(a[1], 3), E(b[0], 1), V(b[1], 3), E(c[0], 1), V(c[1], 3)], alto));
+  bloque(['Nombre', o.revisorNombre], ['Nombre', principal?.nombre], ['Nombre', o.clienteFirmaNombre]);
+  bloque(['Cargo', o.revisorCargo], ['Cargo', principal?.cargo], ['Cargo', o.clienteFirmaCargo]);
+  bloque(['', ''], ['CI', principal?.ci], ['CI', o.clienteFirmaCI]);
+  bloque(['Firma', firma(o.revisorFirmado)], ['Firma', firma(principal?.firmado)], ['Firma', firma(o.clienteFirmado)], 30);
+  bloque(['Fecha', formatearFecha(o.revisorFecha)], ['Fecha', ''], ['Fecha', formatearFecha(o.clienteFirmaFecha)]);
+  for (const x of otros) {
+    f.push(fila([L(`Otro técnico: ${x.nombre ?? ''}${x.cargo ? ` — ${x.cargo}` : ''}${x.ci ? ` — CI ${x.ci}` : ''}${x.firmado ? ' — Firmado' : ''}`, COLUMNAS)]));
+  }
 
-  sec('9. Firmas y Conformidad');
-  f.push(['Técnico', 'Cargo', 'CI', 'Firmó']);
-  for (const x of o.tecnicos) f.push([x.nombre, x.cargo, x.ci, si(x.firmado)]);
-  f.push(['Cliente', o.clienteFirmaNombre], ['Cargo del cliente', o.clienteFirmaCargo], ['CI del cliente', o.clienteFirmaCI], ['Fecha de conformidad', formatearFecha(o.clienteFirmaFecha)], ['Cliente firmó', si(o.clienteFirmado)]);
+  for (const r of f) {
+    const suma = r.celdas.reduce((a, c) => a + c.span, 0);
+    if (suma !== COLUMNAS) throw new Error(`Fila del formulario con ${suma} columnas (se esperaban ${COLUMNAS}).`);
+  }
   return f;
 }
 
@@ -140,32 +232,56 @@ function letraColumna(i: number): string {
   return s;
 }
 
-function xmlHoja(filas: Celda[][]): string {
-  const esTitulo = (fila: Celda[]) => fila.length === 1 && typeof fila[0] === 'string';
+// Índices de estilo (cellXfs) de ESTILOS
+const ESTILO_XF: Record<EstiloCelda, number> = {
+  libre: 0,
+  logo: 1,
+  titulo: 2,
+  seccion: 3,
+  etiqueta: 4,
+  valor: 5,
+  encabezado: 6,
+  numero: 7,
+  importe: 8,
+  total: 9,
+  totalImporte: 10,
+  folio: 11,
+};
+
+function xmlHoja(filas: FilaForm[]): string {
+  const merges: string[] = [];
   const filasXml = filas
     .map((fila, r) => {
-      const celdas = fila
-        .map((v, c) => {
-          if (v === null || v === undefined || v === '') return '';
-          const ref = `${letraColumna(c)}${r + 1}`;
-          if (typeof v === 'object') {
-            return Number.isFinite(v.importe) ? `<c r="${ref}" s="2"><v>${v.importe}</v></c>` : '';
-          }
-          if (typeof v === 'number') {
-            return Number.isFinite(v) ? `<c r="${ref}"><v>${v}</v></c>` : '';
-          }
-          return `<c r="${ref}" t="inlineStr"${esTitulo(fila) ? ' s="1"' : ''}><is><t xml:space="preserve">${escaparXML(v)}</t></is></c>`;
-        })
-        .join('');
-      return `<row r="${r + 1}">${celdas}</row>`;
+      let col = 0;
+      const celdas: string[] = [];
+      for (const c of fila.celdas) {
+        const ref = `${letraColumna(col)}${r + 1}`;
+        const s = ESTILO_XF[c.estilo];
+        if (c.importe !== undefined) {
+          celdas.push(Number.isFinite(c.importe.importe) ? `<c r="${ref}" s="${s}"><v>${c.importe.importe}</v></c>` : `<c r="${ref}" s="${s}"/>`);
+        } else if (c.numero !== undefined && c.numero !== null) {
+          celdas.push(Number.isFinite(c.numero) ? `<c r="${ref}" s="${s}"><v>${c.numero}</v></c>` : `<c r="${ref}" s="${s}"/>`);
+        } else if (c.texto) {
+          celdas.push(`<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${escaparXML(c.texto)}</t></is></c>`);
+        } else {
+          celdas.push(`<c r="${ref}" s="${s}"/>`);
+        }
+        // celdas cubiertas por la combinación: mismo estilo para que el borde se vea completo
+        for (let k = 1; k < c.span; k++) celdas.push(`<c r="${letraColumna(col + k)}${r + 1}" s="${s}"/>`);
+        if (c.span > 1) merges.push(`<mergeCell ref="${ref}:${letraColumna(col + c.span - 1)}${r + 1}"/>`);
+        col += c.span;
+      }
+      const alto = fila.alto ? ` ht="${fila.alto}" customHeight="1"` : '';
+      return `<row r="${r + 1}"${alto}>${celdas.join('')}</row>`;
     })
     .join('');
+  const cols = ANCHOS.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('');
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="3" width="30" customWidth="1"/><col min="4" max="10" width="16" customWidth="1"/></cols><sheetData>${filasXml}</sheetData><pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews><cols>${cols}</cols><sheetData>${filasXml}</sheetData><mergeCells count="${merges.length}">${merges.join('')}</mergeCells><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/></worksheet>`;
 }
 
 const ESTILOS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00##########"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00##########"/></numFmts><fonts count="5"><font><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="12"/><color rgb="FFC00000"/><name val="Calibri"/></font><font><b/><sz val="16"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE3E3E3"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="12"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="1" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
 
 interface Entrada {
   nombre: string;
@@ -262,31 +378,34 @@ function h(v: unknown): string {
 }
 
 export function htmlOrden(o: OrdenCompleta, t: TotalesOrden): string {
-  const filas = filasOrden(o, t);
-  const cuerpo = filas
+  const cuerpo = formularioOrden(o, t)
     .map((fila) => {
-      if (!fila.length) return '';
-      if (fila.length === 1) return `<tr><th colspan="10" class="sec">${h(fila[0])}</th></tr>`;
-      const celdas = fila
-        .map((v) =>
-          v !== null && typeof v === 'object'
-            ? `<td class="n">${h(formatearImporte(v.importe, v.moneda))}</td>`
-            : typeof v === 'number'
-              ? `<td class="n">${h(v)}</td>`
-              : `<td>${h(v)}</td>`,
-        )
+      const celdas = fila.celdas
+        .map((c) => {
+          const contenido = c.importe ? h(formatearImporte(c.importe.importe, c.importe.moneda)) : c.numero != null ? h(c.numero) : h(c.texto);
+          return `<td colspan="${c.span}" class="${c.estilo}">${contenido || '&nbsp;'}</td>`;
+        })
         .join('');
-      return `<tr>${celdas}</tr>`;
+      return `<tr${fila.alto ? ` style="height:${Math.round(fila.alto * 0.9)}px"` : ''}>${celdas}</tr>`;
     })
     .join('');
-  return `<section class="orden"><table>${cuerpo}</table></section>`;
+  const total = ANCHOS.reduce((a, b) => a + b, 0);
+  const cols = ANCHOS.map((w) => `<col style="width:${((w / total) * 100).toFixed(3)}%" />`).join('');
+  return `<section class="orden"><table><colgroup>${cols}</colgroup>${cuerpo}</table></section>`;
 }
 
 export function htmlDocumento(ordenes: { orden: OrdenCompleta; totales: TotalesOrden }[]): string {
   return `<html><head><meta charset="utf-8" /><style>
-    body{font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:14px}
+    @page{size:A4 portrait;margin:8mm}
+    body{font-family:Helvetica,Arial,sans-serif;color:#111;margin:0;padding:0}
     .orden{page-break-after:always} .orden:last-child{page-break-after:auto}
-    table{width:100%;border-collapse:collapse} td,th{border:1px solid #ddd;padding:3px 5px;font-size:9px;text-align:left}
-    th.sec{background:#e8eef9;font-size:10px} td.n{text-align:right}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    td{border:1px solid #333;padding:2px 4px;font-size:8.5px;text-align:left;vertical-align:middle;word-wrap:break-word;overflow-wrap:anywhere}
+    td.libre{border:none} td.logo{border:none;font-size:18px;font-weight:bold;letter-spacing:2px}
+    td.titulo{border:none;text-align:center;font-size:15px;font-weight:bold}
+    td.seccion,td.encabezado{background:#e3e3e3;font-weight:bold;text-align:center}
+    td.etiqueta,td.total{font-weight:bold} td.total,td.numero,td.importe,td.totalImporte{text-align:right}
+    td.totalImporte{font-weight:bold}
+    td.folio{color:#c00000;font-weight:bold;font-size:13px;text-align:center}
   </style></head><body>${ordenes.map((x) => htmlOrden(x.orden, x.totales)).join('')}</body></html>`;
 }

@@ -13,7 +13,7 @@ import type { NuevoServicio, Servicio } from '../types/tarifario.types';
 import { importarServiciosDesdeJSON, listarServicios } from './tarifarioService';
 import { fechaHoyISO, formatearFecha } from '@/utils/fechas';
 import { importeComoTexto, normalizarImporte } from '@/utils/moneda';
-import { filasOrden, generarXLSX, htmlDocumento, nombreHoja } from '@/utils/ordenExport';
+import { formularioOrden, generarXLSX, htmlDocumento, nombreHoja } from '@/utils/ordenExport';
 
 // v4 = v3 del tablero anterior (orden_equipos) + folio_rangos y folios_emitidos.
 // Se aceptan v1–v3: sin folios (sus órdenes pasan al libro al restaurar) y, antes
@@ -673,7 +673,7 @@ export async function exportarOrdenesXLSX(ordenes: OrdenDashboard[]): Promise<vo
   const usados = new Set<string>();
   const hojas = completas.map(({ orden, totales }) => ({
     nombre: nombreHoja(orden.numeroOrden, usados),
-    filas: filasOrden(orden, totales),
+    filas: formularioOrden(orden, totales),
   }));
   await compartirBytes(
     generarXLSX(hojas),

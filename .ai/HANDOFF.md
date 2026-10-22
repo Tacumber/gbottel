@@ -69,3 +69,6 @@ Gemini (QA/revisión) tras la revisión del usuario de la matriz.
 
 ### Instrucciones para la siguiente IA
 1. No mergear; revisar el PR de esta rama. 2. Probar en dispositivo/emulador los flujos de UI listados como PARCIAL en la matriz. 3. No tocar Tarifario ni `main`. 4. Resolver E2 solo con respuesta del usuario. 5. Anotar en este archivo comandos y resultados.
+
+### Actualización (21/10 noche): plantilla oficial PDF/XLSX
+Hecha con el modelo oficial (`docs/modelo-oficial-orden-servicio.png`). Ver matriz. QA pendiente: imprimir un PDF real en el móvil y compararlo con el papel; abrir el XLSX en Excel.

@@ -789,9 +789,17 @@ import sys, json, openpyxl
 wb = openpyxl.load_workbook(sys.argv[1])
 out = {}
 for ws in wb.worksheets:
-    d = {}
+    d = {'merges': len(ws.merged_cells.ranges)}
     for row in ws.iter_rows(values_only=True):
-        if row and row[0] in ('Total a pagar CUP','Total a pagar USD','Folio'): d[row[0]] = row[1]
+        vals = [v for v in row if v is not None]
+        if not vals: continue
+        if 'Folio de la Orden' in vals:
+            i = vals.index('Folio de la Orden'); d['Folio'] = vals[i + 1] if len(vals) > i + 1 else None
+        if isinstance(vals[0], str) and vals[0].startswith('Totales Generales a Pagar'): d['Total a pagar CUP'], d['Total a pagar USD'] = vals[1], vals[2]
+        if isinstance(vals[0], str) and vals[0].startswith('ORDEN DE SERVICIO'): d['titulo'] = True
+        if isinstance(vals[0], str) and vals[0].startswith('Listado de los Materiales'): d['materiales'] = True
+        if isinstance(vals[0], str) and vals[0].startswith('Listado de los Servicios'): d['servicios'] = True
+        if vals[0] == 'Conformidad del Trabajo': d['conformidad'] = True
     out[ws.title] = d
 print(json.dumps(out))`, tmp], { encoding: 'utf-8' });
   assert.equal(py.status, 0, py.stderr);
@@ -803,6 +811,7 @@ print(json.dumps(out))`, tmp], { encoding: 'utf-8' });
     const h = hojas[o.numeroOrden];
     assert.ok(h, `falta la hoja ${o.numeroOrden}`);
     assert.equal(h['Folio'], o.numeroOrden);
+    assert.ok(h.titulo && h.materiales && h.servicios && h.conformidad && h.merges > 10, 'disposición del modelo oficial');
     assert.equal(h['Total a pagar CUP'], moneda.normalizarImporte(t.totalCUP));
     assert.equal(h['Total a pagar USD'], moneda.normalizarImporte(t.totalUSD));
   }
@@ -814,8 +823,8 @@ prueba('T26 PDF por orden: todas las secciones y totales idénticos a los de pan
   const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
   await respaldo.exportarOrdenesPDF(lista);
   const html = estado.ultimoHtml;
-  for (const t of ['1. Encabezado', '2. Clasificación', '3. Información del Cliente', '4. Información del Servicio', '5. Detalles', '6. Materiales', '7. Servicios Prestados', '8. Totales Generales', '9. Firmas']) {
-    assert.equal((html.match(new RegExp(t.replace('.', '\\.'), 'g')) || []).length, 2, `sección «${t}» debe aparecer en las 2 órdenes`);
+  for (const t of ['ORDEN DE SERVICIO', 'Folio de la Orden', 'Información del Cliente', 'Información del Servicio', 'Información del Equipo', 'Tiempo de Trabajo (Minutos)', 'Observaciones del Trabajo Realizado', 'Listado de los Materiales Utilizados', 'Listado de los Servicios Prestados', 'Totales Generales a Pagar', 'Conformidad del Trabajo', 'Control del Folio', 'Técnico Responsable']) {
+    assert.equal((html.match(new RegExp(t.replace(/[().]/g, '\\$&'), 'g')) || []).length, 2, `«${t}» debe aparecer en las 2 órdenes`);
   }
   assert.ok(html.includes('Cliente &lt;Uno&gt; &amp; Cía'));
   assert.ok(!html.includes('<Uno>'));
