@@ -7,7 +7,8 @@ Generado por `scripts/vincular_poblacion.py`. Población es un tarifario indepen
 | Prestaciones de Población | 82 |
 | Con procedimiento — nombre idéntico | 57 |
 | Con procedimiento — nombre similar (misma prestación) | 10 |
-| Sin vincular (revisar) | 15 |
+| Con procedimiento — confirmado por el usuario (nombre distinto) | 6 |
+| Sin vincular (revisar) | 9 |
 
 ## Nombre similar (vinculadas; confirma que son el mismo servicio)
 
@@ -22,6 +23,15 @@ Generado por `scripts/vincular_poblacion.py`. Población es un tarifario indepen
 - 7005: «Revisión y Diagnóstico Complejo de equipos de clima y refrigeración» ↔ Estatal «Revisión y Diagnóstico Compleja  equipos de clima y refrigeración» (similitud 0.71)
 - 7045: «Montaje Split más de 2.6 a 5 Toneladas» ↔ Estatal «Montaje Split mas de 2,6 a 5  Tonelada» (similitud 0.71)
 
+## Confirmados por el usuario (nombre distinto, mismo servicio)
+
+- 2036: «Traslado de materiales hasta una Distancia de 50 M» ↔ Estatal «Carga y Acarreo de Materiales Manual (vagón) Hasta una Distancia de 50 M»
+- 2628: «Puesta en marcha de la Instalación y Montaje de eléctrico.» ↔ Estatal «Puesta en marcha de la Instalacion y Montaje de respaldo elect.»
+- 3017: «Instalación y montaje de calentador solar» ↔ Estatal «Inst.y Montaje Calentador Solar ( 1 Colector compacto)»
+- 7046: «Montaje Split de Cassette» ↔ Estatal «Montaje Split de Casette»
+- 8338: «Reparación sencilla de Freezer» ↔ Estatal «Reparación General a Equipos  Eléctricos: Freezer.»
+- 8418: «Reparación compleja de Freezer» ↔ Estatal «Reparación Media a Equipos Eléctricos: Freezer»
+
 ## Sin vincular (no tienen procedimiento en Población hasta que se confirme)
 
 - 0905: «Atención en el local del cliente» — el código no existe en Estatal / Interno
@@ -30,12 +40,6 @@ Generado por `scripts/vincular_poblacion.py`. Población es un tarifario indepen
 - 1041: «Reparación sencilla de cocina de inducción» — el código no existe en Estatal / Interno
 - 1042: «Reparación compleja de cocina de inducción» — el código no existe en Estatal / Interno
 - 0200: «Levantamiento técnico-comercial» ↔ Estatal «Levantamiento técnico-comercial» — el servicio equivalente no tiene procedimiento
-- 2036: «Traslado de materiales hasta una Distancia de 50 M» ↔ Estatal «Carga y Acarreo de Materiales Manual (vagón) Hasta una Distancia de 50 M» — nombre distinto (similitud 0.44)
-- 2628: «Puesta en marcha de la Instalación y Montaje de eléctrico.» ↔ Estatal «Puesta en marcha de la Instalacion y Montaje de respaldo elect.» — nombre distinto (similitud 0.57)
-- 3017: «Instalación y montaje de calentador solar» ↔ Estatal «Inst.y Montaje Calentador Solar ( 1 Colector compacto)» — nombre distinto (similitud 0.38)
-- 7046: «Montaje Split de Cassette» ↔ Estatal «Montaje Split de Casette» — nombre distinto (similitud 0.50)
 - 7192: «Reparación sencilla de aire ventana» ↔ Estatal «Reparación sencilla de aire ventana» — el servicio equivalente no tiene procedimiento
 - 7193: «Reparación Compleja de aire ventana» ↔ Estatal «Reparación Compleja de aire ventana» — el servicio equivalente no tiene procedimiento
 - 7200: «Reparación Compleja de Split Cassette» ↔ Estatal «Reparación  Compleja  de split Cassette» — el servicio equivalente no tiene procedimiento
-- 8338: «Reparación sencilla de Freezer» ↔ Estatal «Reparación General a Equipos  Eléctricos: Freezer.» — nombre distinto (similitud 0.33)
-- 8418: «Reparación compleja de Freezer» ↔ Estatal «Reparación Media a Equipos Eléctricos: Freezer» — nombre distinto (similitud 0.33)

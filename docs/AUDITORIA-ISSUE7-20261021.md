@@ -105,3 +105,4 @@ Entrada: ZIP «Procedimientos» (19 libros «NN Nombre 22.xlsx»). `scripts/extr
 
 ### Procedimientos de Población (22/10, pedido expreso)
 Comparación Población ↔ Estatal por código y nombre (`scripts/vincular_poblacion.py`, informe `docs/INFORME-POBLACION.md`): de 82 prestaciones, 57 con nombre idéntico y 10 con nombre similar quedan vinculadas (`procedimiento_de`) y muestran el procedimiento técnico del servicio equivalente; 15 no se vinculan (5 sin código en Estatal/Interno, 4 sin procedimiento en Estatal, 6 con nombre distinto: 2036, 2628, 3017, 7046, 8338, 8418). Los precios de Población no se tocan (suma 162 580 intacta, verificada por el script y T30) ni se comparan con los de Estatal. Pruebas 30/30.
+- (22/10) El usuario confirmó los 6 de nombre distinto (2036, 2628, 3017, 7046, 8338, 8418): vinculados como «confirmado». Quedan 9 sin vincular (5 sin código en Estatal/Interno y 4 sin procedimiento en Estatal). 73 de 82 con procedimiento.

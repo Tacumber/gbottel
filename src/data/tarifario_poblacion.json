@@ -143,7 +143,9 @@
   "codigo": "2036",
   "nombre": "Traslado de materiales hasta una Distancia de 50 M",
   "unidad": "UNO",
-  "precioCUP": 616
+  "precioCUP": 616,
+  "procedimiento_de": "2036",
+  "coincidencia": "confirmado"
  },
  {
   "codigo": "2037",
@@ -181,7 +183,9 @@
   "codigo": "2628",
   "nombre": "Puesta en marcha de la Instalación y Montaje de eléctrico.",
   "unidad": "UNO",
-  "precioCUP": 8113
+  "precioCUP": 8113,
+  "procedimiento_de": "2628",
+  "coincidencia": "confirmado"
  },
  {
   "codigo": "2633",
@@ -219,7 +223,9 @@
   "codigo": "3017",
   "nombre": "Instalación y montaje de calentador solar",
   "unidad": "UNO",
-  "precioCUP": 3521
+  "precioCUP": 3521,
+  "procedimiento_de": "3017",
+  "coincidencia": "confirmado"
  },
  {
   "codigo": "3020",
@@ -553,7 +559,9 @@
   "codigo": "7046",
   "nombre": "Montaje Split de Cassette",
   "unidad": "UNO",
-  "precioCUP": 3185
+  "precioCUP": 3185,
+  "procedimiento_de": "7046",
+  "coincidencia": "confirmado"
  },
  {
   "codigo": "7047",
@@ -617,12 +625,16 @@
   "codigo": "8338",
   "nombre": "Reparación sencilla de Freezer",
   "unidad": "UNO",
-  "precioCUP": 2352
+  "precioCUP": 2352,
+  "procedimiento_de": "8338",
+  "coincidencia": "confirmado"
  },
  {
   "codigo": "8418",
   "nombre": "Reparación compleja de Freezer",
   "unidad": "UNO",
-  "precioCUP": 3815
+  "precioCUP": 3815,
+  "procedimiento_de": "8418",
+  "coincidencia": "confirmado"
  }
 ]

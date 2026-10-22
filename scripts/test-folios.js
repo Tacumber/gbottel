@@ -896,11 +896,13 @@ prueba('T30 Tarifario de Población: 82 prestaciones independientes, importes ex
   assert.equal(pob.listarTarifaPoblacion('0905')[0].precioBase, 500);
   // procedimiento por equivalencia: solo vínculo, los precios no cambian
   const enlazadas = todas.filter((i) => i.procedimientoDe);
-  assert.equal(enlazadas.length, 67);
-  assert.ok(enlazadas.every((i) => procedimientos.obtenerProcedimiento(i.procedimientoDe) && ['nombre_igual', 'nombre_similar'].includes(i.coincidencia)));
+  assert.equal(enlazadas.length, 73);
+  assert.ok(enlazadas.every((i) => procedimientos.obtenerProcedimiento(i.procedimientoDe) && ['nombre_igual', 'nombre_similar', 'confirmado'].includes(i.coincidencia)));
   assert.equal(enlazadas.filter((i) => i.coincidencia === 'nombre_igual').length, 57);
   const sinEnlace = todas.filter((i) => !i.procedimientoDe).map((i) => i.codigoServicio);
-  for (const c of ['0905', '2036', '8338', '8418', '3017']) assert.ok(sinEnlace.includes(c), `${c} no debe vincularse sin confirmar`);
+  for (const c of ['0905', '1039', '0200']) assert.ok(sinEnlace.includes(c), `${c} no debe vincularse`);
+  assert.equal(enlazadas.filter((i) => i.coincidencia === 'confirmado').length, 6);
+  for (const c of ['2036', '2628', '3017', '7046', '8338', '8418']) assert.equal(todas.find((i) => i.codigoServicio === c).procedimientoDe, c);
   assert.equal(todas.find((i) => i.codigoServicio === '1011').procedimientoDe, '1011');
   assert.deepEqual(pob.validarTarifaPoblacion([{ codigo: 'A', nombre: 'x', unidad: 'UNO', precioCUP: -1 }, { codigo: 'A', nombre: '', unidad: 'UNO', precioCUP: 1 }]).length, 3);
 });

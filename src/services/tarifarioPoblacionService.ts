@@ -23,7 +23,7 @@ export interface PrestacionPoblacion {
   precioCUP: number;
   /** Código del servicio equivalente de Estatal / Interno cuyo procedimiento técnico se muestra (solo procedimiento, nunca precios). */
   procedimiento_de?: string | null;
-  coincidencia?: 'nombre_igual' | 'nombre_similar' | null;
+  coincidencia?: 'nombre_igual' | 'nombre_similar' | 'confirmado' | null;
 }
 
 /** Tarifa a la que pertenece una fila mostrada en el Tarifario. */
