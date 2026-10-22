@@ -835,35 +835,48 @@ prueba('T26 PDF por orden: todas las secciones y totales idénticos a los de pan
   assert.equal((html.match(/page-break-after/g) || []).length >= 1, true);
 });
 
-prueba('T29 Tarifario Estatal/Interno en el modelo de categorías: 1858 servicios con los mismos precios del catálogo; procedimiento por servicio, sin herencia', async () => {
-  assert.equal(procedimientos.claveCodigo('25-0100-TER'), '0100');
-  assert.equal(procedimientos.claveCodigo('0100'), '0100');
-  const p = procedimientos.obtenerProcedimiento('25-0100-TER');
-  assert.ok(p, 'el servicio 0100 debe tener procedimiento');
-  assert.equal(p.categoriaId, '01');
-  assert.ok(p.pasos.length === 6 && p.pasos[0].startsWith('Inspección') && p.pasos[5].startsWith('Llenado'));
-  assert.ok(p.herramientas.includes('Taladro percutor'));
-  assert.equal(p.complejidad, 'Media');
-  // un servicio de la misma categoría sin procedimiento propio no hereda nada
-  assert.equal(procedimientos.obtenerProcedimiento('25-0139-TER'), null);
+prueba('T29 Tarifario Estatal/Interno (modelo por familias) con procedimientos oficiales: 1858 servicios con los mismos precios del catálogo; procedimiento por servicio, sin herencia', async () => {
+  assert.equal(procedimientos.claveCodigo('25-2035-TER'), '2035');
+  assert.equal(procedimientos.claveCodigo('2035'), '2035');
+  const p = procedimientos.obtenerProcedimiento('25-2035-TER');
+  assert.ok(p, 'el servicio 2035 debe tener procedimiento');
+  assert.equal(p.categoriaId, '20');
+  assert.equal(p.tecnicos, 3);
+  assert.equal(p.tiempoMinutos, 81);
+  assert.equal(p.actividades.length, 5);
+  assert.equal(p.actividades.reduce((a, x) => a + x.minutos, 0), 81);
+  assert.ok(p.actividades[4].actividad.startsWith('Llenado'));
+  assert.ok(p.insumos.some((i) => i.producto.startsWith('Papel Carta')));
   assert.equal(procedimientos.obtenerProcedimiento('XX-9999-YYY'), null);
-  assert.deepEqual(procedimientos.separarPasos(''), []);
-  assert.deepEqual(procedimientos.separarPasos('Sin numeración'), ['Sin numeración']);
-  assert.equal(procedimientos.cantidadServiciosConProcedimiento(), 20);
+  assert.equal(procedimientos.formatearMinutos(90), '90 min (1 h 30 min)');
+  assert.equal(procedimientos.formatearMinutos(45), '45 min');
+  assert.equal(procedimientos.formatearMinutos(120), '120 min (2 h)');
+  assert.equal(procedimientos.formatearMinutos(null), '—');
   assert.equal(procedimientos.cantidadServiciosTarifarioEstatal(), 1858);
   // integridad contra el catálogo real: mismos servicios y EXACTAMENTE los mismos precios
   const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf-8'));
   const modelo = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_estatal.json'), 'utf-8'));
   const porCodigo = new Map();
-  for (const c of modelo.categorias) for (const sv of c.servicios) porCodigo.set(sv.codigo_completo, sv);
+  for (const c of modelo.categorias) for (const sv of c.servicios) { assert.ok(!porCodigo.has(sv.codigo_completo), 'código repetido'); porCodigo.set(sv.codigo_completo, sv); }
   assert.equal(porCodigo.size, 1858);
+  let conProc = 0, sinProc = null;
   for (const x of seed) {
     const m = porCodigo.get(x.codigoServicio);
     assert.ok(m, `falta ${x.codigoServicio}`);
     assert.equal(m.tarifa, x.precioBase, `precio distinto en ${x.codigoServicio}`);
     assert.equal(m.descripcion, x.nombreServicio);
     assert.equal(m.modalidad, x.categoria);
+    if (m.procedimiento) {
+      conProc++;
+      const pr = m.procedimiento;
+      assert.ok(pr.actividades.length > 0 && pr.actividades.every((a) => typeof a.actividad === 'string' && (a.minutos === null || a.minutos >= 0)), `actividades inválidas en ${m.codigo}`);
+      assert.ok(Number.isFinite(pr.tiempo_minutos) && pr.tiempo_minutos > 0, `tiempo inválido en ${m.codigo}`);
+    } else sinProc = sinProc || x.codigoServicio;
   }
+  assert.equal(conProc, procedimientos.cantidadServiciosConProcedimiento());
+  assert.ok(conProc > 1300, `solo ${conProc} servicios con procedimiento`);
+  assert.ok(sinProc, 'debe haber servicios sin procedimiento');
+  assert.equal(procedimientos.obtenerProcedimiento(sinProc), null, 'sin procedimiento no hereda nada');
 });
 
 prueba('T30 Tarifario de Población: 82 prestaciones independientes, importes exactos del archivo, búsqueda sin acentos, sin enlace a la tabla servicios', async () => {

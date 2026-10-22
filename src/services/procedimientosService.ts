@@ -1,43 +1,61 @@
 /**
  * services/procedimientosService.ts
  *
- * Fichas del Tarifario Estatal / Interno (procedimiento, herramientas, complejidad): solo lectura y
- * 100 % offline. Datos: `src/data/tarifario_estatal.json`, el tarifario de 1858 servicios en el
- * modelo de categorías con servicios (generado por `scripts/generar_tarifario_estatal.py` desde el
- * catálogo real y el archivo de Gemini). Cada servicio tiene su propio campo `procedimiento`:
- * para agregar un procedimiento a un servicio basta completar ese campo en el archivo.
+ * Procedimientos técnicos del tarifario Estatal / Interno: solo lectura y 100 % offline.
+ * Datos: `src/data/tarifario_estatal.json` — los 1858 servicios del catálogo agrupados por familia
+ * (categoría → servicios), generado por `scripts/generar_tarifario_estatal.py` a partir del catálogo
+ * y de los libros oficiales «NN Nombre 22.xlsx». Cada servicio trae su propio `procedimiento`
+ * (actividades con minutos, tiempo de solución técnica, técnicos e insumos) o null.
  *
  * Reglas:
- *  - El procedimiento es POR SERVICIO (coincidencia exacta por código). Un servicio sin
- *    procedimiento devuelve null: nunca hereda el de otro ni el de su categoría.
- *  - Los importes NO salen de este archivo para las órdenes: manda el catálogo de la base. Una
- *    prueba comprueba que `tarifa` del archivo coincide con el catálogo en los 1858 servicios.
- *  - No toca la base de datos ni el esquema. Población tiene su propio archivo y servicio.
+ *  - El procedimiento es POR SERVICIO y se busca por código exacto. Un servicio sin procedimiento
+ *    devuelve null: nunca hereda el de otro servicio ni el de su familia.
+ *  - Los importes NO se leen de aquí para las órdenes: manda el catálogo de la base. Una prueba
+ *    comprueba que `tarifa` coincide con el catálogo en los 1858 servicios.
+ *  - No toca la base de datos ni el esquema. Población tiene su propio archivo y NO usa estos
+ *    procedimientos (tarifarios independientes).
  */
 import datos from '../data/tarifario_estatal.json';
 
+export interface ActividadProcedimiento {
+  n: number;
+  actividad: string;
+  minutos: number | null;
+}
+export interface InsumoProcedimiento {
+  codigo: string;
+  producto: string;
+  um: string;
+  norma_consumo: number | null;
+}
 export interface ProcedimientoServicio {
   categoriaId: string;
   categoriaNombre: string;
-  /** Texto original del archivo. */
-  procedimiento: string;
-  /** El mismo texto separado en pasos numerados. */
-  pasos: string[];
-  herramientas: string[];
-  complejidad: string | null;
+  /** Instalación y Montaje / Mantenimiento / Reparación / Revisión y Diagnóstico (según el libro). */
+  tipoServicio: string | null;
+  tiempoMinutos: number | null;
+  tecnicos: number | null;
+  actividades: ActividadProcedimiento[];
+  insumos: InsumoProcedimiento[];
+  fuente: { libro: string; hoja: string; fila: number };
 }
 
-interface FichaServicio {
+interface ServicioModelo {
   codigo: string;
-  herramientas_requeridas?: string[];
-  complejidad?: string | null;
-  procedimiento?: string | null;
+  tarifa: number;
+  tipo_servicio: string | null;
+  procedimiento: {
+    fuente: { libro: string; hoja: string; fila: number };
+    tecnicos: number | null;
+    tiempo_minutos: number | null;
+    actividades: ActividadProcedimiento[];
+    insumos: InsumoProcedimiento[];
+  } | null;
 }
-interface FichaCategoria {
+interface CategoriaModelo {
   id_categoria: string;
-  nombre_categoria: string | null;
-  procedimiento: string | null;
-  servicios: FichaServicio[];
+  nombre_categoria: string;
+  servicios: ServicioModelo[];
 }
 
 /** «25-0100-TER» → «0100». Un código sin guiones se devuelve igual. */
@@ -46,44 +64,47 @@ export function claveCodigo(codigoServicio: string): string {
   return partes.length >= 3 ? partes[1] : codigoServicio.trim();
 }
 
-/** «1. Uno. 2. Dos.» → ['Uno.', 'Dos.']; si no hay numeración devuelve el texto entero. */
-export function separarPasos(texto: string): string[] {
-  const t = texto.trim();
-  if (!t) return [];
-  const partes = t.split(/\s*(?:^|\s)\d+\.\s+/).map((p) => p.trim()).filter(Boolean);
-  return partes.length ? partes : [t];
-}
-
-const INDICE: Map<string, { cat: FichaCategoria; ficha: FichaServicio }> = (() => {
-  const m = new Map<string, { cat: FichaCategoria; ficha: FichaServicio }>();
-  const categorias = ((datos as { categorias?: FichaCategoria[] }).categorias ?? []) as FichaCategoria[];
-  for (const cat of categorias) for (const ficha of cat.servicios ?? []) m.set(String(ficha.codigo).trim(), { cat, ficha });
+const INDICE: Map<string, { cat: CategoriaModelo; serv: ServicioModelo }> = (() => {
+  const m = new Map<string, { cat: CategoriaModelo; serv: ServicioModelo }>();
+  const categorias = ((datos as { categorias?: CategoriaModelo[] }).categorias ?? []) as CategoriaModelo[];
+  for (const cat of categorias) for (const serv of cat.servicios ?? []) m.set(String(serv.codigo).trim(), { cat, serv });
   return m;
 })();
 
-/** Procedimiento del servicio o null si el archivo no lo trae (coincidencia exacta). */
+/** Procedimiento del servicio o null si no tiene (coincidencia exacta por código). */
 export function obtenerProcedimiento(codigoServicio: string): ProcedimientoServicio | null {
   const hallado = INDICE.get(claveCodigo(codigoServicio));
-  if (!hallado) return null;
-  const { cat, ficha } = hallado;
-  const texto = typeof ficha.procedimiento === 'string' ? ficha.procedimiento.trim() : '';
-  if (!texto) return null;
+  const p = hallado?.serv.procedimiento;
+  if (!hallado || !p) return null;
+  const { cat, serv } = hallado;
   return {
     categoriaId: cat.id_categoria,
-    categoriaNombre: cat.nombre_categoria ?? `Familia ${cat.id_categoria}`,
-    procedimiento: texto,
-    pasos: separarPasos(texto),
-    herramientas: Array.isArray(ficha.herramientas_requeridas) ? ficha.herramientas_requeridas.filter((x) => typeof x === 'string') : [],
-    complejidad: typeof ficha.complejidad === 'string' ? ficha.complejidad : null,
+    categoriaNombre: cat.nombre_categoria,
+    tipoServicio: serv.tipo_servicio ?? null,
+    tiempoMinutos: p.tiempo_minutos,
+    tecnicos: p.tecnicos,
+    actividades: p.actividades,
+    insumos: p.insumos,
+    fuente: p.fuente,
   };
 }
 
 export function cantidadServiciosConProcedimiento(): number {
   let n = 0;
-  for (const { ficha } of INDICE.values()) if (typeof ficha.procedimiento === 'string' && ficha.procedimiento.trim()) n++;
+  for (const { serv } of INDICE.values()) if (serv.procedimiento) n++;
   return n;
 }
 
 export function cantidadServiciosTarifarioEstatal(): number {
   return INDICE.size;
+}
+
+/** «90» → «90 min»; «150» → «150 min (2 h 30 min)»; admite decimales sin ruido. */
+export function formatearMinutos(min: number | null | undefined): string {
+  if (min == null || !Number.isFinite(min)) return '—';
+  const limpio = Number(min.toFixed(2));
+  if (limpio < 60) return `${limpio} min`;
+  const h = Math.floor(limpio / 60);
+  const r = Number((limpio - h * 60).toFixed(2));
+  return r ? `${limpio} min (${h} h ${r} min)` : `${limpio} min (${h} h)`;
 }
