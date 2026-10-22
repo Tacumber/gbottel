@@ -1,0 +1,494 @@
+[
+ {
+  "codigo": "0905",
+  "nombre": "Atención en el local del cliente",
+  "unidad": "UNO",
+  "precioCUP": 500
+ },
+ {
+  "codigo": "1003",
+  "nombre": "Revisión y Diagnóstico Línea Blanca",
+  "unidad": "UNO",
+  "precioCUP": 560
+ },
+ {
+  "codigo": "1004",
+  "nombre": "Revisión y Diagnóstico Línea Marrona",
+  "unidad": "UNO",
+  "precioCUP": 651
+ },
+ {
+  "codigo": "1007",
+  "nombre": "Dictamen Técnico",
+  "unidad": "UNO",
+  "precioCUP": 380
+ },
+ {
+  "codigo": "1011",
+  "nombre": "Mantenimiento Ligero a Línea Blanca",
+  "unidad": "UNO",
+  "precioCUP": 1407
+ },
+ {
+  "codigo": "1012",
+  "nombre": "Mantenimiento Pesado a Línea Blanca ( solo a Lavadoras)",
+  "unidad": "UNO",
+  "precioCUP": 1715
+ },
+ {
+  "codigo": "1013",
+  "nombre": "Mantenimiento a Línea Marrona",
+  "unidad": "UNO",
+  "precioCUP": 1636
+ },
+ {
+  "codigo": "1014",
+  "nombre": "Mantenimiento a Enseres Menores",
+  "unidad": "UNO",
+  "precioCUP": 1206
+ },
+ {
+  "codigo": "1016",
+  "nombre": "Reparación Ligera a Línea Blanca",
+  "unidad": "UNO",
+  "precioCUP": 1509
+ },
+ {
+  "codigo": "1017",
+  "nombre": "Reparación Pesada a Línea Blanca",
+  "unidad": "UNO",
+  "precioCUP": 3185
+ },
+ {
+  "codigo": "1018",
+  "nombre": "Reparación Ligera a Línea Marrona (Excepto para TV 21\" TRC Atec Haier y ATEC Panda)",
+  "unidad": "UNO",
+  "precioCUP": 1204
+ },
+ {
+  "codigo": "1019",
+  "nombre": "Reparación Pesada a Línea Marrona (Excepto para TV 21\" TRC Atec Haier y ATEC Panda)",
+  "unidad": "UNO",
+  "precioCUP": 1365
+ },
+ {
+  "codigo": "1020",
+  "nombre": "Reparación de Enseres menores",
+  "unidad": "UNO",
+  "precioCUP": 1500
+ },
+ {
+  "codigo": "1023",
+  "nombre": "Reparación de caja decodificadora",
+  "unidad": "UNO",
+  "precioCUP": 500
+ },
+ {
+  "codigo": "1039",
+  "nombre": "Reparación sencilla de TV 21\" TRC ATEC Haier y ATEC Panda",
+  "unidad": "UNO",
+  "precioCUP": 350
+ },
+ {
+  "codigo": "1040",
+  "nombre": "Reparación compleja de TV 21\" TRC ATEC Haier y ATEC Panda",
+  "unidad": "UNO",
+  "precioCUP": 600
+ },
+ {
+  "codigo": "1041",
+  "nombre": "Reparación sencilla de cocina de inducción",
+  "unidad": "UNO",
+  "precioCUP": 350
+ },
+ {
+  "codigo": "1042",
+  "nombre": "Reparación compleja de cocina de inducción",
+  "unidad": "UNO",
+  "precioCUP": 500
+ },
+ {
+  "codigo": "0200",
+  "nombre": "Levantamiento técnico-comercial",
+  "unidad": "UNO",
+  "precioCUP": 1500
+ },
+ {
+  "codigo": "2036",
+  "nombre": "Traslado de materiales hasta una Distancia de 50 M",
+  "unidad": "UNO",
+  "precioCUP": 616
+ },
+ {
+  "codigo": "2037",
+  "nombre": "Montaje e Instalación de UN Metro CABLE Desnudo 50 ó 70 mm² Expuesto Hasta una H ≤ 1,5 ML",
+  "unidad": "UNO",
+  "precioCUP": 172
+ },
+ {
+  "codigo": "2051",
+  "nombre": "Hincado y Conexión de UNA PICA de Cu Ø 16 mm² X 3 M con Equipo Eléctrico",
+  "unidad": "UNO",
+  "precioCUP": 189
+ },
+ {
+  "codigo": "2058",
+  "nombre": "Comprobación y Mediciones de UN Sistema de Puesta a Tierra",
+  "unidad": "UNO",
+  "precioCUP": 266
+ },
+ {
+  "codigo": "2627",
+  "nombre": "Estudio para Instalación y Montaje de respaldo eléctrico.",
+  "unidad": "UNO",
+  "precioCUP": 6048
+ },
+ {
+  "codigo": "2628",
+  "nombre": "Puesta en marcha de la Instalación y Montaje de eléctrico.",
+  "unidad": "UNO",
+  "precioCUP": 8113
+ },
+ {
+  "codigo": "2633",
+  "nombre": "Emplazamiento, cableado y Puesta en marcha de Inversores de 4 hasta 12 baterías.",
+  "unidad": "UNO",
+  "precioCUP": 5541
+ },
+ {
+  "codigo": "2634",
+  "nombre": "Emplazamiento, cableado y Puesta en marcha de Inversores de 12 hasta 20 baterías.",
+  "unidad": "UNO",
+  "precioCUP": 7021
+ },
+ {
+  "codigo": "2639",
+  "nombre": "Corrección preventiva a inversores de 4 hasta 12 baterías.",
+  "unidad": "UNO",
+  "precioCUP": 2894
+ },
+ {
+  "codigo": "2640",
+  "nombre": "Corrección Preventiva a inversores de 12 hasta 20 baterías.",
+  "unidad": "UNO",
+  "precioCUP": 3646
+ },
+ {
+  "codigo": "3017",
+  "nombre": "Instalación y montaje de calentador solar",
+  "unidad": "UNO",
+  "precioCUP": 3521
+ },
+ {
+  "codigo": "3020",
+  "nombre": "Instalación y Montaje Sistema Fotovoltaico Aislado de 1 KWp (estructuras, paneles, pizarras, inversores, reguladores y baterías)",
+  "unidad": "UNO",
+  "precioCUP": 5551
+ },
+ {
+  "codigo": "3021",
+  "nombre": "Instalación y Montaje Sistema Fotovoltaico Conectado a RED de 1 KWp (estructuras, paneles, inversores y pizarras)",
+  "unidad": "UNO",
+  "precioCUP": 6370
+ },
+ {
+  "codigo": "3030",
+  "nombre": "Mantenimiento Sistema Fotovoltaico Aislado de 1 KWp",
+  "unidad": "UNO",
+  "precioCUP": 2858
+ },
+ {
+  "codigo": "3037",
+  "nombre": "Mantenimiento Calentador Solar (Colector compacto)",
+  "unidad": "UNO",
+  "precioCUP": 2583
+ },
+ {
+  "codigo": "3048",
+  "nombre": "Reparación de calentador solar",
+  "unidad": "UNO",
+  "precioCUP": 3290
+ },
+ {
+  "codigo": "3073",
+  "nombre": "Protocolo de Pruebas y Mediciones.",
+  "unidad": "UNO",
+  "precioCUP": 151
+ },
+ {
+  "codigo": "5006",
+  "nombre": "Instalación de Software y/o Sistemas Operativos",
+  "unidad": "UNO",
+  "precioCUP": 1021
+ },
+ {
+  "codigo": "5008",
+  "nombre": "Instalación de una PC",
+  "unidad": "UNO",
+  "precioCUP": 1409
+ },
+ {
+  "codigo": "5015",
+  "nombre": "Mantenimiento de una PC",
+  "unidad": "UNO",
+  "precioCUP": 1470
+ },
+ {
+  "codigo": "5016",
+  "nombre": "Mantenimiento de un Monitor",
+  "unidad": "UNO",
+  "precioCUP": 666
+ },
+ {
+  "codigo": "5017",
+  "nombre": "Mantenimiento de una UPS",
+  "unidad": "UNO",
+  "precioCUP": 666
+ },
+ {
+  "codigo": "5018",
+  "nombre": "Mantenimiento de un Mouse o Bocina",
+  "unidad": "UNO",
+  "precioCUP": 368
+ },
+ {
+  "codigo": "5019",
+  "nombre": "Mantenimiento de un Teclado",
+  "unidad": "UNO",
+  "precioCUP": 449
+ },
+ {
+  "codigo": "5020",
+  "nombre": "Mantenimiento de una Notebook",
+  "unidad": "UNO",
+  "precioCUP": 1960
+ },
+ {
+  "codigo": "5021",
+  "nombre": "Mantenimiento a Otros Equipos Informáticos",
+  "unidad": "UNO",
+  "precioCUP": 653
+ },
+ {
+  "codigo": "5022",
+  "nombre": "Mantenimiento de una Impresora Matricial",
+  "unidad": "UNO",
+  "precioCUP": 693
+ },
+ {
+  "codigo": "5023",
+  "nombre": "Mantenimiento de una Impresora de Inyección de Tinta",
+  "unidad": "UNO",
+  "precioCUP": 1838
+ },
+ {
+  "codigo": "5024",
+  "nombre": "Mantenimiento de una Impresora Láser",
+  "unidad": "UNO",
+  "precioCUP": 980
+ },
+ {
+  "codigo": "5025",
+  "nombre": "Mantenimiento de una Impresora Láser Color",
+  "unidad": "UNO",
+  "precioCUP": 1796
+ },
+ {
+  "codigo": "5026",
+  "nombre": "Mantenimiento de una Impresora de Línea",
+  "unidad": "UNO",
+  "precioCUP": 735
+ },
+ {
+  "codigo": "5027",
+  "nombre": "Reparación de una PC",
+  "unidad": "UNO",
+  "precioCUP": 2132
+ },
+ {
+  "codigo": "5028",
+  "nombre": "Reparación de un Monitor",
+  "unidad": "UNO",
+  "precioCUP": 1498
+ },
+ {
+  "codigo": "5029",
+  "nombre": "Reparación de una UPS",
+  "unidad": "UNO",
+  "precioCUP": 1197
+ },
+ {
+  "codigo": "5030",
+  "nombre": "Reparación de un Mouse o Bocina",
+  "unidad": "UNO",
+  "precioCUP": 364
+ },
+ {
+  "codigo": "5031",
+  "nombre": "Reparación de un Teclado",
+  "unidad": "UNO",
+  "precioCUP": 203
+ },
+ {
+  "codigo": "5032",
+  "nombre": "Reparación de una Notebook",
+  "unidad": "UNO",
+  "precioCUP": 2611
+ },
+ {
+  "codigo": "5033",
+  "nombre": "Reparación de Otros Equipos Informáticos",
+  "unidad": "UNO",
+  "precioCUP": 2695
+ },
+ {
+  "codigo": "5034",
+  "nombre": "Reparación de una Impresora Matricial",
+  "unidad": "UNO",
+  "precioCUP": 735
+ },
+ {
+  "codigo": "5035",
+  "nombre": "Reparación de una Impresora Inyección de Tinta",
+  "unidad": "UNO",
+  "precioCUP": 2877
+ },
+ {
+  "codigo": "5036",
+  "nombre": "Reparación de una Impresora Láser",
+  "unidad": "UNO",
+  "precioCUP": 2303
+ },
+ {
+  "codigo": "5037",
+  "nombre": "Reparación de una Impresora Láser Color",
+  "unidad": "UNO",
+  "precioCUP": 3185
+ },
+ {
+  "codigo": "5038",
+  "nombre": "Reparación de una Impresora de Línea",
+  "unidad": "UNO",
+  "precioCUP": 490
+ },
+ {
+  "codigo": "5039",
+  "nombre": "Reparación de una Fuente Interna",
+  "unidad": "UNO",
+  "precioCUP": 1428
+ },
+ {
+  "codigo": "5041",
+  "nombre": "Reparación de PCB",
+  "unidad": "UNO",
+  "precioCUP": 1428
+ },
+ {
+  "codigo": "5042",
+  "nombre": "Recuperación de Informaciones / Reparación de HDD",
+  "unidad": "UNO",
+  "precioCUP": 1103
+ },
+ {
+  "codigo": "7003",
+  "nombre": "Revisión y Diagnóstico Simple equipos de clima y refrigeración",
+  "unidad": "UNO",
+  "precioCUP": 898
+ },
+ {
+  "codigo": "7005",
+  "nombre": "Revisión y Diagnóstico Complejo de equipos de clima y refrigeración",
+  "unidad": "UNO",
+  "precioCUP": 1532
+ },
+ {
+  "codigo": "7019",
+  "nombre": "Instalación y Montaje de aire de ventana",
+  "unidad": "UNO",
+  "precioCUP": 2107
+ },
+ {
+  "codigo": "7040",
+  "nombre": "Instalación y montaje de Split de pared",
+  "unidad": "UNO",
+  "precioCUP": 3255
+ },
+ {
+  "codigo": "7041",
+  "nombre": "Instalación y montaje de Split piso techo hasta 3 Tr",
+  "unidad": "UNO",
+  "precioCUP": 4492
+ },
+ {
+  "codigo": "7045",
+  "nombre": "Montaje Split más de 2.6 a 5 Toneladas",
+  "unidad": "UNO",
+  "precioCUP": 6452
+ },
+ {
+  "codigo": "7046",
+  "nombre": "Montaje Split de Cassette",
+  "unidad": "UNO",
+  "precioCUP": 3185
+ },
+ {
+  "codigo": "7047",
+  "nombre": "Desmontaje Split hasta 2.5tr",
+  "unidad": "UNO",
+  "precioCUP": 931
+ },
+ {
+  "codigo": "7048",
+  "nombre": "Desmontaje Split Mayor 2.5tr",
+  "unidad": "UNO",
+  "precioCUP": 1225
+ },
+ {
+  "codigo": "7108",
+  "nombre": "Mtto. 1 split hasta 2tr",
+  "unidad": "UNO",
+  "precioCUP": 2793
+ },
+ {
+  "codigo": "7109",
+  "nombre": "Mtto. 1 split mayor 2tr",
+  "unidad": "UNO",
+  "precioCUP": 3591
+ },
+ {
+  "codigo": "7178",
+  "nombre": "Mtto. de Aire de Ventana 2",
+  "unidad": "UNO",
+  "precioCUP": 1764
+ },
+ {
+  "codigo": "7192",
+  "nombre": "Reparación sencilla de aire ventana",
+  "unidad": "UNO",
+  "precioCUP": 1511
+ },
+ {
+  "codigo": "7193",
+  "nombre": "Reparación Compleja de aire ventana",
+  "unidad": "UNO",
+  "precioCUP": 3267
+ },
+ {
+  "codigo": "7200",
+  "nombre": "Reparación Compleja de Split Cassette",
+  "unidad": "UNO",
+  "precioCUP": 1009
+ },
+ {
+  "codigo": "8338",
+  "nombre": "Reparación sencilla de Freezer",
+  "unidad": "UNO",
+  "precioCUP": 2352
+ },
+ {
+  "codigo": "8418",
+  "nombre": "Reparación compleja de Freezer",
+  "unidad": "UNO",
+  "precioCUP": 3815
+ }
+]

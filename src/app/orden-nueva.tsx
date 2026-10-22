@@ -296,7 +296,7 @@ export default function OrdenNuevaScreen() {
               ...prev.servicios,
               ...seleccion.map((servicio) => ({
                 clave: `s-${servicio.id}-${Date.now()}-${Math.random()}`,
-                servicioId: servicio.id,
+                servicioId: servicio.id > 0 ? servicio.id : null,
                 codigo: servicio.codigoServicio,
                 descripcion: servicio.nombreServicio,
                 cantidad: cantidadInicial(prev.modalidadMultiple, prev.equipos.length),
@@ -329,7 +329,7 @@ export default function OrdenNuevaScreen() {
             ...prev,
             servicios: seleccion.map((s) => ({
               clave: `s-${s.id}-${Date.now()}-${Math.random()}`,
-              servicioId: s.id,
+              servicioId: s.id > 0 ? s.id : null,
               codigo: s.codigoServicio,
               descripcion: s.nombreServicio,
               cantidad: "1",
@@ -620,7 +620,7 @@ export default function OrdenNuevaScreen() {
     setForm((prev) => {
       const nuevo = {
         clave: `s-nuevo-${Date.now()}-${Math.random()}`,
-        servicioId: servicio.id,
+        servicioId: servicio.id > 0 ? servicio.id : null,
         codigo: servicio.codigoServicio,
         descripcion: servicio.nombreServicio,
         cantidad: cantidadInicial(prev.modalidadMultiple, prev.equipos.length),

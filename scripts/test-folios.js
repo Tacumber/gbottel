@@ -835,7 +835,7 @@ prueba('T26 PDF por orden: todas las secciones y totales idénticos a los de pan
   assert.equal((html.match(/page-break-after/g) || []).length >= 1, true);
 });
 
-prueba('T29 Procedimientos del tarifario: coincidencia exacta por código, sin herencia por familia, pasos separados y datos coherentes con el catálogo', async () => {
+prueba('T29 Tarifario Estatal/Interno en el modelo de categorías: 1858 servicios con los mismos precios del catálogo; procedimiento por servicio, sin herencia', async () => {
   assert.equal(procedimientos.claveCodigo('25-0100-TER'), '0100');
   assert.equal(procedimientos.claveCodigo('0100'), '0100');
   const p = procedimientos.obtenerProcedimiento('25-0100-TER');
@@ -844,16 +844,44 @@ prueba('T29 Procedimientos del tarifario: coincidencia exacta por código, sin h
   assert.ok(p.pasos.length === 6 && p.pasos[0].startsWith('Inspección') && p.pasos[5].startsWith('Llenado'));
   assert.ok(p.herramientas.includes('Taladro percutor'));
   assert.equal(p.complejidad, 'Media');
-  // un servicio de la misma familia (01xx) que NO está en el archivo no hereda nada
+  // un servicio de la misma categoría sin procedimiento propio no hereda nada
   assert.equal(procedimientos.obtenerProcedimiento('25-0139-TER'), null);
   assert.equal(procedimientos.obtenerProcedimiento('XX-9999-YYY'), null);
   assert.deepEqual(procedimientos.separarPasos(''), []);
   assert.deepEqual(procedimientos.separarPasos('Sin numeración'), ['Sin numeración']);
   assert.equal(procedimientos.cantidadServiciosConProcedimiento(), 20);
-  // todos los códigos del archivo existen en el catálogo real
-  const catalogo = new Set(JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf-8')).map((x) => procedimientos.claveCodigo(x.codigoServicio)));
-  const ficheros = JSON.parse(fs.readFileSync(path.join(SRC, 'data/procedimientos_tarifario.json'), 'utf-8'));
-  for (const c of ficheros.categorias) for (const sv of c.servicios) assert.ok(catalogo.has(sv.codigo), `código ${sv.codigo} no está en el catálogo`);
+  assert.equal(procedimientos.cantidadServiciosTarifarioEstatal(), 1858);
+  // integridad contra el catálogo real: mismos servicios y EXACTAMENTE los mismos precios
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf-8'));
+  const modelo = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_estatal.json'), 'utf-8'));
+  const porCodigo = new Map();
+  for (const c of modelo.categorias) for (const sv of c.servicios) porCodigo.set(sv.codigo_completo, sv);
+  assert.equal(porCodigo.size, 1858);
+  for (const x of seed) {
+    const m = porCodigo.get(x.codigoServicio);
+    assert.ok(m, `falta ${x.codigoServicio}`);
+    assert.equal(m.tarifa, x.precioBase, `precio distinto en ${x.codigoServicio}`);
+    assert.equal(m.descripcion, x.nombreServicio);
+    assert.equal(m.modalidad, x.categoria);
+  }
+});
+
+prueba('T30 Tarifario de Población: 82 prestaciones independientes, importes exactos del archivo, búsqueda sin acentos, sin enlace a la tabla servicios', async () => {
+  const pob = require(path.join(SRC, 'services/tarifarioPoblacionService.ts'));
+  assert.deepEqual(pob.validarTarifaPoblacion(), []);
+  assert.equal(pob.PRESTACIONES_POBLACION.length, 82);
+  assert.equal(pob.PRESTACIONES_POBLACION.reduce((a, x) => a + x.precioCUP, 0), 162580);
+  const todas = pob.listarTarifaPoblacion();
+  assert.equal(todas.length, 82);
+  assert.ok(todas.every((i) => i.id < 0 && i.tarifa === 'poblacion' && i.categoria === 'Población'));
+  assert.equal(new Set(todas.map((i) => i.id)).size, 82);
+  const mto = todas.find((i) => i.codigoServicio === '1011');
+  assert.equal(mto.precioBase, 1407);
+  assert.equal(pob.listarTarifaPoblacion('revision diagnostico').every((i) => /revisi[oó]n/i.test(i.nombreServicio)), true);
+  assert.ok(pob.listarTarifaPoblacion('REVISION').length >= 2);
+  assert.equal(pob.listarTarifaPoblacion('zzzz-no-existe').length, 0);
+  assert.equal(pob.listarTarifaPoblacion('0905')[0].precioBase, 500);
+  assert.deepEqual(pob.validarTarifaPoblacion([{ codigo: 'A', nombre: 'x', unidad: 'UNO', precioCUP: -1 }, { codigo: 'A', nombre: '', unidad: 'UNO', precioCUP: 1 }]).length, 3);
 });
 
 prueba('T27 JSON de traspaso: validación de versión, tipos, cantidades, importes y totales; conflictos antes de aplicar; atómico', async () => {
