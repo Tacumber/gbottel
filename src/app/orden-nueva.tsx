@@ -34,7 +34,7 @@ import {
 } from "@/services/orderDraftStore";
 
 import { buscarServicios, obtenerServicioPorId } from "@/services/tarifarioService";
-import { listarTarifaPoblacion } from "@/services/tarifarioPoblacionService";
+import { aItemCatalogo, listarTarifaPoblacion } from "@/services/tarifarioPoblacionService";
 import { listarTecnicos } from "@/services/tecnicosService";
 
 import {
@@ -525,7 +525,7 @@ export default function OrdenNuevaScreen() {
       }
       setBuscando(true);
       buscarServicios(texto, { limite: 8 })
-        .then(setResultadosBusqueda)
+        .then((r) => setResultadosBusqueda(r.map(aItemCatalogo)))
         .finally(() => setBuscando(false));
     }, 250);
     return () => clearTimeout(t);

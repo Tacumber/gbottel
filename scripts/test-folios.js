@@ -835,7 +835,7 @@ prueba('T26 PDF por orden: todas las secciones y totales idénticos a los de pan
   assert.equal((html.match(/page-break-after/g) || []).length >= 1, true);
 });
 
-prueba('T29 Tarifario Estatal/Interno (modelo por familias) con procedimientos oficiales: 1858 servicios con los mismos precios del catálogo; procedimiento por servicio, sin herencia', async () => {
+prueba('T29 Tarifario unificado: 1858 servicios del Anexo 1 con las mismas tarifas del catálogo; procedimiento por servicio, sin herencia', async () => {
   assert.equal(procedimientos.claveCodigo('25-2035-TER'), '2035');
   assert.equal(procedimientos.claveCodigo('2035'), '2035');
   const p = procedimientos.obtenerProcedimiento('25-2035-TER');
@@ -853,19 +853,20 @@ prueba('T29 Tarifario Estatal/Interno (modelo por familias) con procedimientos o
   assert.equal(procedimientos.formatearMinutos(120), '120 min (2 h)');
   assert.equal(procedimientos.formatearMinutos(null), '—');
   assert.equal(procedimientos.cantidadServiciosTarifarioEstatal(), 1858);
-  // integridad contra el catálogo real: mismos servicios y EXACTAMENTE los mismos precios
+  // integridad contra el catálogo real: mismos servicios y EXACTAMENTE las mismas tarifas
   const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf-8'));
-  const modelo = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_estatal.json'), 'utf-8'));
+  const modelo = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_copextel.json'), 'utf-8'));
   const porCodigo = new Map();
-  for (const c of modelo.categorias) for (const sv of c.servicios) { assert.ok(!porCodigo.has(sv.codigo_completo), 'código repetido'); porCodigo.set(sv.codigo_completo, sv); }
-  assert.equal(porCodigo.size, 1858);
-  let conProc = 0, sinProc = null;
+  for (const c of modelo.categorias) for (const sv of c.servicios) { assert.ok(!porCodigo.has(sv.codigo), 'código repetido'); porCodigo.set(sv.codigo, sv); }
+  assert.equal(porCodigo.size, 1863, '1858 del Anexo 1 + 5 solo de Población');
+  let conProc = 0, sinProc = null, nombresOficiales = 0;
   for (const x of seed) {
-    const m = porCodigo.get(x.codigoServicio);
+    const m = porCodigo.get(x.codigoServicio.split('-')[1]);
     assert.ok(m, `falta ${x.codigoServicio}`);
-    assert.equal(m.tarifa, x.precioBase, `precio distinto en ${x.codigoServicio}`);
-    assert.equal(m.descripcion, x.nombreServicio);
-    assert.equal(m.modalidad, x.categoria);
+    assert.equal(m.codigo_completo, x.codigoServicio);
+    assert.equal(m.tarifas.estatal_interno, x.precioBase, `tarifa distinta en ${x.codigoServicio}`);
+    assert.equal(procedimientos.nombreOficial(x.codigoServicio), m.descripcion);
+    if (m.descripcion !== x.nombreServicio) nombresOficiales++;
     if (m.procedimiento) {
       conProc++;
       const pr = m.procedimiento;
@@ -873,13 +874,19 @@ prueba('T29 Tarifario Estatal/Interno (modelo por familias) con procedimientos o
       assert.ok(Number.isFinite(pr.tiempo_minutos) && pr.tiempo_minutos > 0, `tiempo inválido en ${m.codigo}`);
     } else sinProc = sinProc || x.codigoServicio;
   }
+  assert.ok(nombresOficiales >= 50, 'el Anexo 1 corrige nombres del catálogo');
   assert.equal(conProc, procedimientos.cantidadServiciosConProcedimiento());
   assert.ok(conProc > 1300, `solo ${conProc} servicios con procedimiento`);
   assert.ok(sinProc, 'debe haber servicios sin procedimiento');
   assert.equal(procedimientos.obtenerProcedimiento(sinProc), null, 'sin procedimiento no hereda nada');
+  // los 5 solo de Población no existen en el catálogo ni tienen tarifa Estatal / Interno
+  for (const c of ['0905', '1039', '1040', '1041', '1042']) {
+    const m = porCodigo.get(c);
+    assert.ok(m && m.codigo_completo === null && m.tarifas.estatal_interno === null && m.tarifas.poblacion > 0 && m.procedimiento === null, `${c} solo de Población`);
+  }
 });
 
-prueba('T30 Tarifario de Población: 82 prestaciones independientes, importes exactos del archivo, búsqueda sin acentos, sin enlace a la tabla servicios', async () => {
+prueba('T30 Tarifario de Población: 82 prestaciones, importes exactos del archivo, búsqueda sin acentos, procedimiento por equivalencia, sin enlace a la tabla servicios', async () => {
   const pob = require(path.join(SRC, 'services/tarifarioPoblacionService.ts'));
   assert.deepEqual(pob.validarTarifaPoblacion(), []);
   assert.equal(pob.PRESTACIONES_POBLACION.length, 82);
@@ -888,22 +895,24 @@ prueba('T30 Tarifario de Población: 82 prestaciones independientes, importes ex
   assert.equal(todas.length, 82);
   assert.ok(todas.every((i) => i.id < 0 && i.tarifa === 'poblacion' && i.categoria === 'Población'));
   assert.equal(new Set(todas.map((i) => i.id)).size, 82);
+  assert.equal(todas[0].codigoServicio, '0905', 'orden del tarifario original');
   const mto = todas.find((i) => i.codigoServicio === '1011');
   assert.equal(mto.precioBase, 1407);
   assert.equal(pob.listarTarifaPoblacion('revision diagnostico').every((i) => /revisi[oó]n/i.test(i.nombreServicio)), true);
   assert.ok(pob.listarTarifaPoblacion('REVISION').length >= 2);
   assert.equal(pob.listarTarifaPoblacion('zzzz-no-existe').length, 0);
   assert.equal(pob.listarTarifaPoblacion('0905')[0].precioBase, 500);
-  // procedimiento por equivalencia: solo vínculo, los precios no cambian
+  // procedimiento por equivalencia: solo vínculo, los precios de Población no cambian
   const enlazadas = todas.filter((i) => i.procedimientoDe);
   assert.equal(enlazadas.length, 73);
-  assert.ok(enlazadas.every((i) => procedimientos.obtenerProcedimiento(i.procedimientoDe) && ['nombre_igual', 'nombre_similar', 'confirmado'].includes(i.coincidencia)));
-  assert.equal(enlazadas.filter((i) => i.coincidencia === 'nombre_igual').length, 57);
-  const sinEnlace = todas.filter((i) => !i.procedimientoDe).map((i) => i.codigoServicio);
-  for (const c of ['0905', '1039', '0200']) assert.ok(sinEnlace.includes(c), `${c} no debe vincularse`);
-  assert.equal(enlazadas.filter((i) => i.coincidencia === 'confirmado').length, 6);
+  assert.ok(enlazadas.every((i) => procedimientos.obtenerProcedimiento(i.procedimientoDe)));
+  const cuenta = (t) => todas.filter((i) => i.coincidencia === t).length;
+  assert.deepEqual([cuenta('nombre_igual'), cuenta('nombre_similar'), cuenta('confirmado')], [62, 9, 6]);
+  const sinEnlace = todas.filter((i) => !i.procedimientoDe).map((i) => i.codigoServicio).sort();
+  assert.deepEqual(sinEnlace, ['0200', '0905', '1039', '1040', '1041', '1042', '7192', '7193', '7200']);
   for (const c of ['2036', '2628', '3017', '7046', '8338', '8418']) assert.equal(todas.find((i) => i.codigoServicio === c).procedimientoDe, c);
-  assert.equal(todas.find((i) => i.codigoServicio === '1011').procedimientoDe, '1011');
+  // la Población conserva su propio nombre cuando difiere del oficial
+  assert.equal(todas.find((i) => i.codigoServicio === '8338').nombreServicio, 'Reparación sencilla de Freezer');
   assert.deepEqual(pob.validarTarifaPoblacion([{ codigo: 'A', nombre: 'x', unidad: 'UNO', precioCUP: -1 }, { codigo: 'A', nombre: '', unidad: 'UNO', precioCUP: 1 }]).length, 3);
 });
 

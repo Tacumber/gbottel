@@ -1,33 +1,22 @@
 /**
  * services/procedimientosService.ts
  *
- * Procedimientos técnicos del tarifario Estatal / Interno: solo lectura y 100 % offline.
- * Datos: `src/data/tarifario_estatal.json` — los 1858 servicios del catálogo agrupados por familia
- * (categoría → servicios), generado por `scripts/generar_tarifario_estatal.py` a partir del catálogo
- * y de los libros oficiales «NN Nombre 22.xlsx». Cada servicio trae su propio `procedimiento`
- * (actividades con minutos, tiempo de solución técnica, técnicos e insumos) o null.
+ * Procedimientos técnicos y nombres oficiales del tarifario unificado (ver tarifarioModelo.ts).
  *
  * Reglas:
  *  - El procedimiento es POR SERVICIO y se busca por código exacto. Un servicio sin procedimiento
  *    devuelve null: nunca hereda el de otro servicio ni el de su familia.
- *  - Los importes NO se leen de aquí para las órdenes: manda el catálogo de la base. Una prueba
- *    comprueba que `tarifa` coincide con el catálogo en los 1858 servicios.
- *  - No toca la base de datos ni el esquema. Población tiene su propio archivo y NO usa estos
- *    procedimientos (tarifarios independientes).
+ *  - Un servicio de Población comparte fila (y procedimiento) con el servicio de igual código cuando
+ *    el nombre es equivalente; ver `scripts/generar_tarifario.py`.
+ *  - Los importes de las órdenes NO salen de aquí: Estatal / Interno manda el catálogo de la base y
+ *    Población su propio campo. Una prueba comprueba las tarifas del archivo contra el catálogo.
  */
-import datos from '../data/tarifario_estatal.json';
+import { INDICE_MODELO, claveCodigo } from './tarifarioModelo';
+import type { ActividadProcedimiento, InsumoProcedimiento } from './tarifarioModelo';
 
-export interface ActividadProcedimiento {
-  n: number;
-  actividad: string;
-  minutos: number | null;
-}
-export interface InsumoProcedimiento {
-  codigo: string;
-  producto: string;
-  um: string;
-  norma_consumo: number | null;
-}
+export { claveCodigo };
+export type { ActividadProcedimiento, InsumoProcedimiento };
+
 export interface ProcedimientoServicio {
   categoriaId: string;
   categoriaNombre: string;
@@ -40,40 +29,9 @@ export interface ProcedimientoServicio {
   fuente: { libro: string; hoja: string; fila: number };
 }
 
-interface ServicioModelo {
-  codigo: string;
-  tarifa: number;
-  tipo_servicio: string | null;
-  procedimiento: {
-    fuente: { libro: string; hoja: string; fila: number };
-    tecnicos: number | null;
-    tiempo_minutos: number | null;
-    actividades: ActividadProcedimiento[];
-    insumos: InsumoProcedimiento[];
-  } | null;
-}
-interface CategoriaModelo {
-  id_categoria: string;
-  nombre_categoria: string;
-  servicios: ServicioModelo[];
-}
-
-/** «25-0100-TER» → «0100». Un código sin guiones se devuelve igual. */
-export function claveCodigo(codigoServicio: string): string {
-  const partes = codigoServicio.trim().split('-');
-  return partes.length >= 3 ? partes[1] : codigoServicio.trim();
-}
-
-const INDICE: Map<string, { cat: CategoriaModelo; serv: ServicioModelo }> = (() => {
-  const m = new Map<string, { cat: CategoriaModelo; serv: ServicioModelo }>();
-  const categorias = ((datos as { categorias?: CategoriaModelo[] }).categorias ?? []) as CategoriaModelo[];
-  for (const cat of categorias) for (const serv of cat.servicios ?? []) m.set(String(serv.codigo).trim(), { cat, serv });
-  return m;
-})();
-
 /** Procedimiento del servicio o null si no tiene (coincidencia exacta por código). */
 export function obtenerProcedimiento(codigoServicio: string): ProcedimientoServicio | null {
-  const hallado = INDICE.get(claveCodigo(codigoServicio));
+  const hallado = INDICE_MODELO.get(claveCodigo(codigoServicio));
   const p = hallado?.serv.procedimiento;
   if (!hallado || !p) return null;
   const { cat, serv } = hallado;
@@ -89,17 +47,26 @@ export function obtenerProcedimiento(codigoServicio: string): ProcedimientoServi
   };
 }
 
+/** Nombre oficial (Anexo 1) de un servicio del catálogo, o null si no está. */
+export function nombreOficial(codigoServicio: string): string | null {
+  const s = INDICE_MODELO.get(claveCodigo(codigoServicio))?.serv;
+  return s && s.codigo_completo ? s.descripcion : null;
+}
+
 export function cantidadServiciosConProcedimiento(): number {
   let n = 0;
-  for (const { serv } of INDICE.values()) if (serv.procedimiento) n++;
+  for (const { serv } of INDICE_MODELO.values()) if (serv.procedimiento) n++;
   return n;
 }
 
+/** Servicios con tarifa Estatal / Interno (el catálogo de la app: 1858). */
 export function cantidadServiciosTarifarioEstatal(): number {
-  return INDICE.size;
+  let n = 0;
+  for (const { serv } of INDICE_MODELO.values()) if (serv.tarifas.estatal_interno != null) n++;
+  return n;
 }
 
-/** «90» → «90 min»; «150» → «150 min (2 h 30 min)»; admite decimales sin ruido. */
+/** «90» → «90 min (1 h 30 min)»; «45» → «45 min»; admite decimales sin ruido. */
 export function formatearMinutos(min: number | null | undefined): string {
   if (min == null || !Number.isFinite(min)) return '—';
   const limpio = Number(min.toFixed(2));
