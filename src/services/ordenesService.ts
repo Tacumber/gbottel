@@ -1,7 +1,7 @@
 import type * as SQLite from 'expo-sqlite';
 
 import { getDatabase } from '../database/db';
-import { ErrorFolios, enSerieFolios, reservarFolio } from './foliosService';
+import { ErrorFolios, enSerieFolios, reservarFolio, reservarFolioManual } from './foliosService';
 import type {
   ActualizacionOrden,
   EstadoOrden,
@@ -128,6 +128,13 @@ export interface OrdenCompletaParaGuardar {
   tecnicos: NuevoOrdenTecnico[];
   /** Obligatorio al CREAR (ordenId null): de su rango sale el folio. Se ignora al editar. */
   tecnicoPrincipalId?: number | null;
+  /**
+   * Solo al CREAR: número de folio escrito por el técnico (debe estar en su bloque y no haberse
+   * emitido). Sin él, el folio sale automáticamente del bloque.
+   */
+  folioManual?: number | null;
+  /** Con `folioManual`: continuar la secuencia del bloque desde ese número (si está por delante). */
+  continuarSecuencia?: boolean;
   /**
    * Clave única del formulario abierto. Si ya existe una orden con esta
    * clave, se devuelve esa orden en vez de crear otra (doble toque en
@@ -270,7 +277,10 @@ export async function guardarOrdenCompleta(
             return;
           }
         }
-        const folio = await reservarFolio(txn, payload.tecnicoPrincipalId as number);
+        const folio =
+          payload.folioManual != null
+            ? await reservarFolioManual(txn, payload.tecnicoPrincipalId as number, payload.folioManual, payload.continuarSecuencia === true)
+            : await reservarFolio(txn, payload.tecnicoPrincipalId as number);
         id = await insertarOrdenNueva(txn, folio, payload.tecnicoPrincipalId as number, clave, payload.datos);
       } else {
         const entradas = entradasDeOrden(payload.datos);
