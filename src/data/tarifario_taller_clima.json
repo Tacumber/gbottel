@@ -1,11 +1,32 @@
 {
   "version": 1,
   "taller": "Taller de Clima",
-  "fuente": "gbottel-tarifario-taller-clima.json (formato antiguo) + tarifario_copextel.json",
+  "fuentes": [
+    "gbottel-tarifario-taller-clima.json (base del taller)",
+    "tarifario_copextel.json (procedimientos oficiales, libro 70 Clima-Agua y otros)"
+  ],
   "categorias": [
     {
-      "id_categoria": 1,
-      "nombre_categoria": "Aire de Ventana",
+      "id_categoria": "estatal",
+      "nombre_categoria": "Estatal",
+      "aplica_a": [
+        "Estatal",
+        "Interno"
+      ],
+      "tarifa": "estatal_interno",
+      "modalidades": [
+        "Aire de Ventana",
+        "Split",
+        "Roof Top y Consolas",
+        "Cámara Fría",
+        "Clima Centralizado",
+        "Bebederos",
+        "Refrigeradores",
+        "Caja de Agua",
+        "Freezer",
+        "Otras Tarifas",
+        "Clima Vehicular"
+      ],
       "servicios": [
         {
           "codigo": "7011",
@@ -15,13 +36,15 @@
           "tarifas": {
             "estatal_interno": 1116.9
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 2",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 165,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Revisión y Diagnóstico de  aire de ventana",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -119,13 +142,15 @@
           "tarifas": {
             "estatal_interno": 320.88
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 30,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Instalación y Montaje de  aire de ventana",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -188,13 +213,15 @@
           "tarifas": {
             "estatal_interno": 320.88
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 30,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje de  aire de ventana",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -257,13 +284,15 @@
           "tarifas": {
             "estatal_interno": 437.63
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 50,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Instalación y Montaje de protecciones electricas d",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -331,13 +360,15 @@
           "tarifas": {
             "estatal_interno": 349.18
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 35,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en Marcha Aire ventana",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -405,13 +436,15 @@
           "tarifas": {
             "estatal_interno": 1871.85
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 256,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Aire de Ventana 2",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -569,13 +602,15 @@
           "tarifas": {
             "estatal_interno": 644.78
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 91,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Aire de Ventana 1",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -676,13 +711,15 @@
           "tarifas": {
             "estatal_interno": 746.33
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 100,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación sencilla de aire ventana",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -693,13 +730,15 @@
           "tarifas": {
             "estatal_interno": 1659.1
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 255,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Compleja de aire ventana",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -710,13 +749,15 @@
           "tarifas": {
             "estatal_interno": 1630.8
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 250,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Compleja de aire ventana(Cambio rodamie",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -727,13 +768,15 @@
           "tarifas": {
             "estatal_interno": 2338.37
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 370,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación por recuperacion de piezas de aire vent",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -744,13 +787,15 @@
           "tarifas": {
             "estatal_interno": 4075.46
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 665,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Capital  de AV",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -761,13 +806,15 @@
           "tarifas": {
             "estatal_interno": 1371.47
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 219,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de filtro.A/V",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -778,13 +825,15 @@
           "tarifas": {
             "estatal_interno": 892.29
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 123,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de Paleta o turbina de aire de ventana",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -795,13 +844,15 @@
           "tarifas": {
             "estatal_interno": 1099.05
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 173,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Eliminar salidero de AV",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -812,21 +863,17 @@
           "tarifas": {
             "estatal_interno": 2308.47
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Aire de Ventana",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en reparación del Sistema eléctrico del",
+          "poblacion_coincidencia": null,
           "procedimiento": null
-        }
-      ]
-    },
-    {
-      "id_categoria": 2,
-      "nombre_categoria": "Split",
-      "servicios": [
+        },
         {
           "codigo": "7010",
           "codigo_completo": "25-7010-TER",
@@ -835,13 +882,15 @@
           "tarifas": {
             "estatal_interno": 1694.39
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 2",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 220,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Revisión y Diagnóstico a equipos Split  y Consolas",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -975,13 +1024,15 @@
           "tarifas": {
             "estatal_interno": 939.68
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 72,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Instalacion y montaje de Split de pared",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -1122,13 +1173,15 @@
           "tarifas": {
             "estatal_interno": 2602.48
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 390,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Instalacion y montaje de Split piso techo hasta 3 ",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -1279,13 +1332,15 @@
           "tarifas": {
             "estatal_interno": 3150.85
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 483,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Instalacion y montaje de split cassettes",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -1456,13 +1511,15 @@
           "tarifas": {
             "estatal_interno": 2938.58
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 447,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Instalacion y montaje de split piso techo de 3.1 h",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -1613,13 +1670,15 @@
           "tarifas": {
             "estatal_interno": 2332.18
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 305,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Split hasta 2,5 Tonelada",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -1752,13 +1811,15 @@
           "tarifas": {
             "estatal_interno": 3513.83
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 505,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Split mas de 2,6 a 5  Tonelada",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -1891,13 +1952,15 @@
           "tarifas": {
             "estatal_interno": 4221.4
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 625,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Split de Casette",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -2030,13 +2093,15 @@
           "tarifas": {
             "estatal_interno": 1419.42
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 150,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Split hasta 2.5tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -2169,13 +2234,15 @@
           "tarifas": {
             "estatal_interno": 1950.09
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Split Mayor 2.5tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -2308,13 +2375,15 @@
           "tarifas": {
             "estatal_interno": 2392.33
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 315,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Split de Cassette",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -2447,13 +2516,15 @@
           "tarifas": {
             "estatal_interno": 2180.3
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 295,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento 1 split hasta 2tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -2591,13 +2662,15 @@
           "tarifas": {
             "estatal_interno": 2799.42
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 400,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento 1 split mayor 2tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -2735,13 +2808,15 @@
           "tarifas": {
             "estatal_interno": 3209.81
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 470,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento 2 split hasta 2tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -2899,13 +2974,15 @@
           "tarifas": {
             "estatal_interno": 3977.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 600,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento 2 split mayor 2tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -3063,13 +3140,15 @@
           "tarifas": {
             "estatal_interno": 3977.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 600,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento  2 split Cassette",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -3227,13 +3306,15 @@
           "tarifas": {
             "estatal_interno": 620.02
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 87,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de split de pared y piso techo 1",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -3324,13 +3405,15 @@
           "tarifas": {
             "estatal_interno": 1888.63
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 282,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de split de pared 2",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -3493,13 +3576,15 @@
           "tarifas": {
             "estatal_interno": 1992.25
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 315,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de split piso techo 2",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -3662,13 +3747,15 @@
           "tarifas": {
             "estatal_interno": 2549.07
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 391,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Split Cassette 2",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -3861,13 +3948,15 @@
           "tarifas": {
             "estatal_interno": 988.87
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 129,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Split Cassette 1",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -3985,13 +4074,15 @@
           "tarifas": {
             "estatal_interno": 1391.11
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 145,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Sencilla Split",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4002,13 +4093,15 @@
           "tarifas": {
             "estatal_interno": 1801.5
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 215,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación  Compleja  de split",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4019,13 +4112,15 @@
           "tarifas": {
             "estatal_interno": 2569.22
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 345,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación  Compleja  de split Cassette",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4036,13 +4131,15 @@
           "tarifas": {
             "estatal_interno": 2509.07
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 335,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Compleja de split(Cambio rodamientos de",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4053,13 +4150,15 @@
           "tarifas": {
             "estatal_interno": 2509.07
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 335,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Compleja de split(Cambio Fan de la unid",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4070,13 +4169,15 @@
           "tarifas": {
             "estatal_interno": 4189.56
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 620,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación por recuperacion de piezas de Split",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4087,13 +4188,15 @@
           "tarifas": {
             "estatal_interno": 4486.74
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 670,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Capital de Split",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4104,13 +4207,15 @@
           "tarifas": {
             "estatal_interno": 832.14
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 113,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de turbina de split",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4121,13 +4226,15 @@
           "tarifas": {
             "estatal_interno": 1309.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 151,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Eliminar salidero en split ,consola decorativa y c",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -4138,13 +4245,15 @@
           "tarifas": {
             "estatal_interno": 1282.66
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 205,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en Marcha de Split",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -4204,13 +4313,15 @@
           "tarifas": {
             "estatal_interno": 11813.9
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1245,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Instalación y puesta en marcha de split inverter tipo cassette hasta 2.5 TR c/ 2 unidades interiores",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -4481,13 +4592,15 @@
           "tarifas": {
             "estatal_interno": 12652.37
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1340,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Instalación y puesta en marcha de split inverter tipo cassette > 2.5 h/ 5.0, c/ 2 unidades interiores",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -4758,21 +4871,17 @@
           "tarifas": {
             "estatal_interno": 2898.68
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Split",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": null,
+          "familia": "Sin clasificar",
           "tiempo_estimado_minutos": 36,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Eliminar salidero en split ,consola decorativa y cassette.",
+          "poblacion_coincidencia": null,
           "procedimiento": null
-        }
-      ]
-    },
-    {
-      "id_categoria": 3,
-      "nombre_categoria": "Roof Top y Consolas",
-      "servicios": [
+        },
         {
           "codigo": "7018",
           "codigo_completo": "25-7018-TER",
@@ -4781,13 +4890,15 @@
           "tarifas": {
             "estatal_interno": 9357.26
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1505,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en marcha de Consola y Roof Top",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -4907,13 +5018,15 @@
           "tarifas": {
             "estatal_interno": 5565.5
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 900,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta Marcha Roof Top más de 30 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -5002,13 +5115,15 @@
           "tarifas": {
             "estatal_interno": 1416.31
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Roof Top",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -5165,13 +5280,15 @@
           "tarifas": {
             "estatal_interno": 4808.68
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 725,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Consola y Roof top hasta 10tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -5304,13 +5421,15 @@
           "tarifas": {
             "estatal_interno": 8346.54
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1325,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Consola y Roof top Mayor 10tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -5443,13 +5562,15 @@
           "tarifas": {
             "estatal_interno": 1320.07
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en Marcha RooF Top",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -5653,13 +5774,15 @@
           "tarifas": {
             "estatal_interno": 2564.31
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 1 Roof Top más de 30 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -5872,13 +5995,15 @@
           "tarifas": {
             "estatal_interno": 3625.66
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 2 Roof Top más de 30 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -6101,13 +6226,15 @@
           "tarifas": {
             "estatal_interno": 2564.31
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento  Consola",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -6330,13 +6457,15 @@
           "tarifas": {
             "estatal_interno": 3747.33
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 545,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "mantenimiento 1 a Consolas y Roof top hasta 10tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -6494,13 +6623,15 @@
           "tarifas": {
             "estatal_interno": 6577.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1025,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "mantenimiento 1 a Consolas y Roof top Mayor de 10t",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -6658,13 +6789,15 @@
           "tarifas": {
             "estatal_interno": 6400.72
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 995,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "mantenimiento 2 a Consolas y Roof top hasta 10tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -6842,13 +6975,15 @@
           "tarifas": {
             "estatal_interno": 10999.94
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1775,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "mantenimiento 2 a Consolas y Roof top Mayor 10tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -7026,13 +7161,15 @@
           "tarifas": {
             "estatal_interno": 2564.31
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento 2 Roof Top de hasta 30 TR",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -7255,13 +7392,15 @@
           "tarifas": {
             "estatal_interno": 1967.49
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 311,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de consolas decorativas",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -7424,13 +7563,15 @@
           "tarifas": {
             "estatal_interno": 1607.49
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 241,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de consola duct (10 - 30 Tr)",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -7593,13 +7734,15 @@
           "tarifas": {
             "estatal_interno": 1980.86
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 293,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Roof Top",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -7747,13 +7890,15 @@
           "tarifas": {
             "estatal_interno": 2066.84
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 260,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación  simple a Consola y Roof Top  hasta 10t",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -7764,13 +7909,15 @@
           "tarifas": {
             "estatal_interno": 3481.99
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 500,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Compleja de Consola y Roof Top hasta 10",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -7781,13 +7928,15 @@
           "tarifas": {
             "estatal_interno": 3481.99
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 500,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación  simple a Consola y Roof Top  Mayor 10t",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -7798,13 +7947,15 @@
           "tarifas": {
             "estatal_interno": 6312.27
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 980,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Compleja de Consola y Roof Top Mayor 10",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -7815,13 +7966,15 @@
           "tarifas": {
             "estatal_interno": 1679.92
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 272,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparacion de salidero (Consola o Roof top)",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -7832,13 +7985,15 @@
           "tarifas": {
             "estatal_interno": 1594.35
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 257,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de válvula de expansión termostática (conso",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -7849,13 +8004,15 @@
           "tarifas": {
             "estatal_interno": 4687.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 2",
+          "modalidad": "Roof Top y Consolas",
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 740,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Revisión y Diagnóstico a Consolas y Roof top",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -7974,13 +8131,7 @@
               }
             ]
           }
-        }
-      ]
-    },
-    {
-      "id_categoria": 4,
-      "nombre_categoria": "Cámara Fría",
-      "servicios": [
+        },
         {
           "codigo": "7050",
           "codigo_completo": "25-7050-TER",
@@ -7989,13 +8140,15 @@
           "tarifas": {
             "estatal_interno": 1168.66
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 138,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Cámara Fría",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -8099,13 +8252,15 @@
           "tarifas": {
             "estatal_interno": 4815.9
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Fría de Mantenimiento 0.5 a 1 Hp",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -8395,13 +8550,15 @@
           "tarifas": {
             "estatal_interno": 4815.9
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 719,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Fría de Mantenimiento 1.1 a 4 HP",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -8691,13 +8848,15 @@
           "tarifas": {
             "estatal_interno": 13330.29
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 2159,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Fría de Mantenimiento 4.4 a 7.5 HP",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -8999,13 +9158,15 @@
           "tarifas": {
             "estatal_interno": 13330.77
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 2160,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Fría de Congelación 0.5 a 4 HP",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -9327,13 +9488,15 @@
           "tarifas": {
             "estatal_interno": 19698.91
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 3239,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Fría de Congelación 4.1 a 7.5 HP",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -9655,13 +9818,15 @@
           "tarifas": {
             "estatal_interno": 1320.07
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en Marcha Cámara Fría",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -9865,13 +10030,15 @@
           "tarifas": {
             "estatal_interno": 1215.91
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Camara Fria",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -9989,13 +10156,15 @@
           "tarifas": {
             "estatal_interno": 1331.69
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación Cámara Fría Simple",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -10006,13 +10175,15 @@
           "tarifas": {
             "estatal_interno": 2923.73
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 270,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación Cámara Fría Media",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -10023,13 +10194,15 @@
           "tarifas": {
             "estatal_interno": 4515.76
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 450,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación Cámara Fría Compleja",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -10040,13 +10213,15 @@
           "tarifas": {
             "estatal_interno": 1665.11
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 269,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de válvula de expansión termostática (cámar",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -10057,13 +10232,15 @@
           "tarifas": {
             "estatal_interno": 40014.59
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 4480,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Modular 2x2x2.4 ",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -10278,13 +10455,15 @@
           "tarifas": {
             "estatal_interno": 57207.52
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 6400,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Modular 3x3x2.4 ",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -10499,13 +10678,15 @@
           "tarifas": {
             "estatal_interno": 75691.07
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 8490,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Montaje Cámara Modular 4x4x2.4 ",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -10720,13 +10901,15 @@
           "tarifas": {
             "estatal_interno": 134705.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 9525,
           "cantidad_tecnicos": 4,
           "id_propietario": 175,
           "detalle_factura": "Panelizacion Camaras Frias Pequeña hasta 10  metros cubicos",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -11007,13 +11190,15 @@
           "tarifas": {
             "estatal_interno": 199009.75
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 9985,
           "cantidad_tecnicos": 6,
           "id_propietario": 175,
           "detalle_factura": "Panelizacion camaras frias de 11 a 21 metros cubicos",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -11294,13 +11479,15 @@
           "tarifas": {
             "estatal_interno": 260476.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Cámara Fría",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 10095,
           "cantidad_tecnicos": 8,
           "id_propietario": 175,
           "detalle_factura": "Panelizacion camras frias de 21 a 40  metros cubicos",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -11572,13 +11759,7 @@
               }
             ]
           }
-        }
-      ]
-    },
-    {
-      "id_categoria": 5,
-      "nombre_categoria": "Clima Centralizado",
-      "servicios": [
+        },
         {
           "codigo": "7029",
           "codigo_completo": "25-7029-TER",
@@ -11587,13 +11768,15 @@
           "tarifas": {
             "estatal_interno": 4687.02
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta Marcha Manejadoras hasta 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -11736,13 +11919,15 @@
           "tarifas": {
             "estatal_interno": 6721.18
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta Marcha Manejadoras más 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -11867,13 +12052,15 @@
           "tarifas": {
             "estatal_interno": 2033.63
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 270,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 1 Manejadoras de Aire hasta 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -12076,13 +12263,15 @@
           "tarifas": {
             "estatal_interno": 2564.31
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 1 Manejadoras de Aire más de 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -12285,13 +12474,15 @@
           "tarifas": {
             "estatal_interno": 2564.31
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 2 Manejadoras de Aire hasta 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -12509,13 +12700,15 @@
           "tarifas": {
             "estatal_interno": 3625.66
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 2 Manejadoras de Aire más de 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -12733,13 +12926,15 @@
           "tarifas": {
             "estatal_interno": 3094.99
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 450,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 3 Manejadoras de Aire hasta 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -12962,13 +13157,15 @@
           "tarifas": {
             "estatal_interno": 4687.02
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mtto 3 Manejadoras de Aire más de 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -13191,13 +13388,15 @@
           "tarifas": {
             "estatal_interno": 1679.35
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Ligera Manejadoras de Aire hasta 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -13208,13 +13407,15 @@
           "tarifas": {
             "estatal_interno": 2210.03
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 270,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Ligera Manejadoras de Aire más de 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -13225,13 +13426,15 @@
           "tarifas": {
             "estatal_interno": 2740.71
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Media Manejadoras de Aire hasta 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -13242,13 +13445,15 @@
           "tarifas": {
             "estatal_interno": 3802.06
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Media Manejadoras de Aire más de 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -13259,13 +13464,15 @@
           "tarifas": {
             "estatal_interno": 6986.14
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Rep. Mayor Manejadoras de Aire hasta 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -13276,13 +13483,15 @@
           "tarifas": {
             "estatal_interno": 10170.21
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Rep. Mayor Manejadoras de Aire más de 10 tr",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -13293,13 +13502,15 @@
           "tarifas": {
             "estatal_interno": 1129.75
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Clima Centralizado",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Asistencia Técn.Diaria Equip.Clima Centralizado",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -13403,13 +13614,7 @@
             ],
             "insumos": []
           }
-        }
-      ]
-    },
-    {
-      "id_categoria": 6,
-      "nombre_categoria": "Bebederos",
-      "servicios": [
+        },
         {
           "codigo": "8230",
           "codigo_completo": "25-8230-TER",
@@ -13418,13 +13623,15 @@
           "tarifas": {
             "estatal_interno": 422.18
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Bebederos",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 60,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Montaje de Eq  Eléct. Bebedero de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -13477,13 +13684,15 @@
           "tarifas": {
             "estatal_interno": 2191.11
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Bebederos",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Rep Gral a Eq  Eléct: Bebedero de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -13580,13 +13789,15 @@
           "tarifas": {
             "estatal_interno": 1483.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Bebederos",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Rep Media a Equip Eléct: Bebedero de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -13683,21 +13894,17 @@
           "tarifas": {
             "estatal_interno": 1483.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Bebederos",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Mtto 2 a Equip Eléct.Bebedero de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": null
-        }
-      ]
-    },
-    {
-      "id_categoria": 7,
-      "nombre_categoria": "Refrigeradores",
-      "servicios": [
+        },
         {
           "codigo": "8284",
           "codigo_completo": "25-8284-TER",
@@ -13706,13 +13913,15 @@
           "tarifas": {
             "estatal_interno": 422.18
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Refrigeradores",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 60,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Montaje de Equipos Eléctricos. Refrigerador",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -13765,13 +13974,15 @@
           "tarifas": {
             "estatal_interno": 2898.68
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Refrigeradores",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 480,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Montaje de Equipos Eléctricos. Refrigerador desarmado",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -13824,13 +14035,15 @@
           "tarifas": {
             "estatal_interno": 2898.68
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Refrigeradores",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 480,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Rep Gral a Eq  Eléct: Refrigerador",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -13927,13 +14140,15 @@
           "tarifas": {
             "estatal_interno": 1483.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Refrigeradores",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Rep Media a Equip Eléct: Refrigerador",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -14030,21 +14245,17 @@
           "tarifas": {
             "estatal_interno": 1837.32
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Refrigeradores",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 300,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Mtto 2 a Equip Eléct.Refrigerador",
+          "poblacion_coincidencia": null,
           "procedimiento": null
-        }
-      ]
-    },
-    {
-      "id_categoria": 8,
-      "nombre_categoria": "Caja de Agua",
-      "servicios": [
+        },
         {
           "codigo": "8319",
           "codigo_completo": "25-8319-TER",
@@ -14053,13 +14264,15 @@
           "tarifas": {
             "estatal_interno": 2191.11
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Caja de Agua",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Rep Gral a Eq  Eléct:Caja de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -14156,13 +14369,15 @@
           "tarifas": {
             "estatal_interno": 1483.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Caja de Agua",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Rep Media a Equip Eléct: Caja de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -14259,13 +14474,15 @@
           "tarifas": {
             "estatal_interno": 775.96
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Caja de Agua",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 120,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Montaje de Equipos Eléctricos. Cajá de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -14318,21 +14535,17 @@
           "tarifas": {
             "estatal_interno": 1483.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Caja de Agua",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Mtto 2 a Equip Eléct.Caja de agua",
+          "poblacion_coincidencia": null,
           "procedimiento": null
-        }
-      ]
-    },
-    {
-      "id_categoria": 9,
-      "nombre_categoria": "Freezer",
-      "servicios": [
+        },
         {
           "codigo": "8338",
           "codigo_completo": "25-8338-TER",
@@ -14341,13 +14554,15 @@
           "tarifas": {
             "estatal_interno": 2898.68
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Freezer",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 480,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Reparación General a Equipos  Eléctricos: Freezer.",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -14444,13 +14659,15 @@
           "tarifas": {
             "estatal_interno": 1483.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Freezer",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Reparación Media a Equipos Eléctricos: Freezer",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -14547,21 +14764,17 @@
           "tarifas": {
             "estatal_interno": 1483.53
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 4",
+          "modalidad": "Freezer",
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Mtto 2 a Equip Eléct.Freezer",
+          "poblacion_coincidencia": null,
           "procedimiento": null
-        }
-      ]
-    },
-    {
-      "id_categoria": 10,
-      "nombre_categoria": "Otras Tarifas",
-      "servicios": [
+        },
         {
           "codigo": "0100",
           "codigo_completo": "25-0100-TER",
@@ -14570,13 +14783,15 @@
           "tarifas": {
             "estatal_interno": 676.57
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Obras Inducidas",
           "tiempo_estimado_minutos": 96,
           "cantidad_tecnicos": 2,
           "id_propietario": 28,
           "detalle_factura": "Colocación de conductos o conductores adosados a s",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14587,13 +14802,15 @@
           "tarifas": {
             "estatal_interno": 389.94
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Obras Inducidas",
           "tiempo_estimado_minutos": 48,
           "cantidad_tecnicos": 2,
           "id_propietario": 28,
           "detalle_factura": "Perf. d/orificio en paredes o cubiertas de edifica",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14604,13 +14821,15 @@
           "tarifas": {
             "estatal_interno": 86.84
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": null,
+          "familia": "VT, ST y AT",
           "tiempo_estimado_minutos": 60,
           "cantidad_tecnicos": 1,
           "id_propietario": 74,
           "detalle_factura": "Corta distancia (hasta 30 Km)",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14621,13 +14840,15 @@
           "tarifas": {
             "estatal_interno": 35.0
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": null,
+          "familia": "VT, ST y AT",
           "tiempo_estimado_minutos": 60,
           "cantidad_tecnicos": 1,
           "id_propietario": 74,
           "detalle_factura": "Larga  distancia (>  30 Km) x cada Km",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14638,13 +14859,15 @@
           "tarifas": {
             "estatal_interno": 112.62
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Equipos Electrodomésticos",
           "tiempo_estimado_minutos": 15,
           "cantidad_tecnicos": 1,
           "id_propietario": 177,
           "detalle_factura": "Dictamen Técnico",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "10 Equip Electrodom 22.xlsx",
@@ -14677,13 +14900,15 @@
           "tarifas": {
             "estatal_interno": 885.13
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Sistemas de Protección contra el Rayo (SPCR)",
           "tiempo_estimado_minutos": 81,
           "cantidad_tecnicos": 3,
           "id_propietario": 170,
           "detalle_factura": "Carga, Acarreo Mat con Transp Hasta una Dist 500 M",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "20 SPCR 22.xlsx",
@@ -14756,13 +14981,15 @@
           "tarifas": {
             "estatal_interno": 858.59
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Sistemas de Protección contra el Rayo (SPCR)",
           "tiempo_estimado_minutos": 78,
           "cantidad_tecnicos": 3,
           "id_propietario": 170,
           "detalle_factura": "Carga, Acarreo Mat Manual Hasta una Dist 500 M",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "20 SPCR 22.xlsx",
@@ -14835,13 +15062,15 @@
           "tarifas": {
             "estatal_interno": 4552.48
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 450,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación de 7,1 a 10 Tonelada (Cambio de Compres",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14852,13 +15081,15 @@
           "tarifas": {
             "estatal_interno": 6144.52
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 630,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación de 10,1 a 15 Tonelada (Cambio de Compre",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14869,13 +15100,15 @@
           "tarifas": {
             "estatal_interno": 8532.58
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 899,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación de 15.1 a 30 Tonelada (Cambio de Compre",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14886,13 +15119,15 @@
           "tarifas": {
             "estatal_interno": 10124.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación mas 30 Tonelada (Cambio de Compresor)",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14903,13 +15138,15 @@
           "tarifas": {
             "estatal_interno": 1222.77
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 190,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reconstrucción eléctrica",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14920,13 +15157,15 @@
           "tarifas": {
             "estatal_interno": 925.59
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 140,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación eléctrica",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14937,13 +15176,15 @@
           "tarifas": {
             "estatal_interno": 1209.39
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 192,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de filtro secador,cuerpo de valvula solenoi",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14954,13 +15195,15 @@
           "tarifas": {
             "estatal_interno": 3779.17
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 550,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Adaptacion de ( partes y piezas mecanicas o electr",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14971,13 +15214,15 @@
           "tarifas": {
             "estatal_interno": 1066.35
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reconstrucción Eléctrica, Cambio de Paleta, Comple",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -14988,13 +15233,15 @@
           "tarifas": {
             "estatal_interno": 1459.92
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 234,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de Capilares",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15005,13 +15252,15 @@
           "tarifas": {
             "estatal_interno": 1635.25
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 249,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación de araña de distribución",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15022,13 +15271,15 @@
           "tarifas": {
             "estatal_interno": 458.71
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 64,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de paleta de la unidad condensadora",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15039,13 +15290,15 @@
           "tarifas": {
             "estatal_interno": 5846.33
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 960,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación de piezas Recuperadas",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15056,13 +15309,15 @@
           "tarifas": {
             "estatal_interno": 3369.82
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en reparación del Compresor",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15073,13 +15328,15 @@
           "tarifas": {
             "estatal_interno": 1777.79
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en reparación del Condensador",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15090,13 +15347,15 @@
           "tarifas": {
             "estatal_interno": 1777.79
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en reparación del Evaporador",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15107,13 +15366,15 @@
           "tarifas": {
             "estatal_interno": 6680.94
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 695,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Reparación hasta 2 Ton (Cambio de Compresor)",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15124,13 +15385,15 @@
           "tarifas": {
             "estatal_interno": 10618.57
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1140,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Rep de 2,1 a  7 Tonelada (Cambio de Compresor)",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -15141,13 +15404,15 @@
           "tarifas": {
             "estatal_interno": 1446.55
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Automática",
           "tiempo_estimado_minutos": 78,
           "cantidad_tecnicos": 2,
           "id_propietario": 170,
           "detalle_factura": "Cableado e inst de Interruptor Mag Térmico Modular",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "23 Automatica 22.xlsx",
@@ -15249,13 +15514,15 @@
           "tarifas": {
             "estatal_interno": 374172.43
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 31077,
           "cantidad_tecnicos": 4,
           "id_propietario": 175,
           "detalle_factura": "Inst compleja  Sistm Clima Req Espec o Inverter",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -15527,13 +15794,15 @@
           "tarifas": {
             "estatal_interno": 377.96
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 2",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": 105,
           "cantidad_tecnicos": 1,
           "id_propietario": 61,
           "detalle_factura": "Revisión y Diagnostico (Reparar)",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -15576,13 +15845,15 @@
           "tarifas": {
             "estatal_interno": 2191.11
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Otras Tarifas",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Redes Informáticas",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 28,
           "detalle_factura": "Estudio previo para instalación",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "60 Redes 22.xlsx",
@@ -15621,13 +15892,7 @@
             ],
             "insumos": []
           }
-        }
-      ]
-    },
-    {
-      "id_categoria": 11,
-      "nombre_categoria": "Clima Vehicular",
-      "servicios": [
+        },
         {
           "codigo": "7061",
           "codigo_completo": "25-7061-TER",
@@ -15636,13 +15901,15 @@
           "tarifas": {
             "estatal_interno": 8758.21
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo Hasta ",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -15763,13 +16030,15 @@
           "tarifas": {
             "estatal_interno": 10880.93
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1800,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo de 6 H",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -15900,13 +16169,15 @@
           "tarifas": {
             "estatal_interno": 13003.65
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 2160,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo mayor ",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -16037,13 +16308,15 @@
           "tarifas": {
             "estatal_interno": 2390.07
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en Montaje Sistema Aire Acondicionado p",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -16114,13 +16387,15 @@
           "tarifas": {
             "estatal_interno": 13003.65
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 2160,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Sistema de Refrigeración Vehículo Hasta 9 ",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -16241,13 +16516,15 @@
           "tarifas": {
             "estatal_interno": 17249.08
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 3",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 2880,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Sistema de Refrigeración Vehículo más de 9",
+          "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -16378,13 +16655,15 @@
           "tarifas": {
             "estatal_interno": 3369.82
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Media en el Condensador Vehículo hasta 5 Asie",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16395,13 +16674,15 @@
           "tarifas": {
             "estatal_interno": 4431.18
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Media en el Condensador Vehículo de 6 hasta 1",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16412,13 +16693,15 @@
           "tarifas": {
             "estatal_interno": 4961.86
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 810,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Media en el Condensador Vehículo mayor de 14 ",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16429,13 +16712,15 @@
           "tarifas": {
             "estatal_interno": 4431.18
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Mayor en el Condensador Vehículo hasta 5 Asie",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16446,13 +16731,15 @@
           "tarifas": {
             "estatal_interno": 4961.86
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 810,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Mayor en el Condensador Vehículo de 6 hasta 1",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16463,13 +16750,15 @@
           "tarifas": {
             "estatal_interno": 6553.9
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Mayor en el Condensador Vehículo mayor de 14 ",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16480,13 +16769,15 @@
           "tarifas": {
             "estatal_interno": 9737.97
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1620,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Del Evaporador Vehículo hasta 5 Asientos",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16497,13 +16788,15 @@
           "tarifas": {
             "estatal_interno": 8676.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Del Evaporador Vehículo de 6 hasta 14 Asiento",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16514,13 +16807,15 @@
           "tarifas": {
             "estatal_interno": 8145.94
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1350,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Del Evaporador Vehículo mayor de 14 Asientos",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16531,13 +16826,15 @@
           "tarifas": {
             "estatal_interno": 716.43
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Menor del Condensador en cualquier  Vehículo",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16548,13 +16845,15 @@
           "tarifas": {
             "estatal_interno": 6553.9
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Media en el Condensador  de cualquier Vehícul",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16565,13 +16864,15 @@
           "tarifas": {
             "estatal_interno": 8676.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Mayor en el Condensador de cualquier Vehículo",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16582,13 +16883,15 @@
           "tarifas": {
             "estatal_interno": 716.43
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Menor en el Evaporador para cualquier vehícul",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16599,13 +16902,15 @@
           "tarifas": {
             "estatal_interno": 8676.61
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Media en el Evaporador para cualquier vehícul",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16616,20 +16921,27 @@
           "tarifas": {
             "estatal_interno": 10799.33
           },
-          "tipo_tarifa": "estatal_interno",
-          "modalidad": "Modalidad 1",
+          "modalidad": "Clima Vehicular",
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": 1800,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Rep. Mayor en el Evaporador para cualquier vehícul",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         }
       ]
     },
     {
-      "id_categoria": 12,
+      "id_categoria": "poblacion",
       "nombre_categoria": "Población",
+      "aplica_a": [
+        "Población"
+      ],
+      "tarifa": "poblacion",
+      "modalidades": [],
       "servicios": [
         {
           "codigo": "0905",
@@ -16639,13 +16951,15 @@
           "tarifas": {
             "poblacion": 500
           },
-          "tipo_tarifa": "poblacion",
           "modalidad": null,
+          "modalidad_oficial": null,
           "tipo_servicio": null,
+          "familia": "Sin clasificar",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Atención en el local del cliente",
+          "poblacion_coincidencia": null,
           "procedimiento": null
         },
         {
@@ -16656,13 +16970,15 @@
           "tarifas": {
             "poblacion": 380
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Equipos Electrodomésticos",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Dictamen Técnico",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "10 Equip Electrodom 22.xlsx",
@@ -16695,13 +17011,15 @@
           "tarifas": {
             "poblacion": 1500
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 2",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Gong",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Levantamiento técnico-comercial",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
         {
@@ -16712,13 +17030,15 @@
           "tarifas": {
             "poblacion": 616
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Sistemas de Protección contra el Rayo (SPCR)",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Traslado de materiales hasta una Distancia de 50 M",
+          "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
               "libro": "20 SPCR 22.xlsx",
@@ -16791,13 +17111,15 @@
           "tarifas": {
             "poblacion": 151
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Energía",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Protocolo de Pruebas y Mediciones.",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "30 Energia 22.xlsx",
@@ -16857,13 +17179,15 @@
           "tarifas": {
             "poblacion": 898
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 2",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Revisión y Diagnóstico Simple equipos de clima y r",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -16954,13 +17278,15 @@
           "tarifas": {
             "poblacion": 1532
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 2",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Revisión y Diagnóstico Complejo de equipos de clim",
+          "poblacion_coincidencia": "nombre_similar",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17051,13 +17377,15 @@
           "tarifas": {
             "poblacion": 2107
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Instalación y Montaje de aire de ventana",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17120,13 +17448,15 @@
           "tarifas": {
             "poblacion": 3255
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Instalación y montaje de Split de pared",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17267,13 +17597,15 @@
           "tarifas": {
             "poblacion": 4492
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Instalación y montaje de Split piso techo hasta 3 ",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17424,13 +17756,15 @@
           "tarifas": {
             "poblacion": 6452
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Montaje Split más de 2.6 a 5 Toneladas",
+          "poblacion_coincidencia": "nombre_similar",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17563,13 +17897,15 @@
           "tarifas": {
             "poblacion": 3185
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Montaje Split de Cassette",
+          "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17702,13 +18038,15 @@
           "tarifas": {
             "poblacion": 931
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Desmontaje Split hasta 2.5tr",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17841,13 +18179,15 @@
           "tarifas": {
             "poblacion": 1225
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Instalación y Montaje",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Desmontaje Split Mayor 2.5tr",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -17980,13 +18320,15 @@
           "tarifas": {
             "poblacion": 2793
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 4",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Mtto. 1 split hasta 2tr",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -18124,13 +18466,15 @@
           "tarifas": {
             "poblacion": 3591
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 4",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Mtto. 1 split mayor 2tr",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -18268,13 +18612,15 @@
           "tarifas": {
             "poblacion": 1764
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 4",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 4",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Mtto. de Aire de Ventana 2",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "70 Clima-Agua 22.xlsx",
@@ -18432,13 +18778,15 @@
           "tarifas": {
             "poblacion": 1511
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 1",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación sencilla de aire ventana",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
         {
@@ -18449,13 +18797,15 @@
           "tarifas": {
             "poblacion": 3267
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 1",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Compleja de aire ventana",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
         {
@@ -18466,13 +18816,15 @@
           "tarifas": {
             "poblacion": 1009
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 1",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Climatización y Agua",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Compleja de Split Cassette",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
         {
@@ -18483,13 +18835,15 @@
           "tarifas": {
             "poblacion": 2352
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 1",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación sencilla de Freezer",
+          "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -18586,13 +18940,15 @@
           "tarifas": {
             "poblacion": 3815
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 1",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 1",
           "tipo_servicio": "Reparación",
+          "familia": "Gastronomía",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación compleja de Freezer",
+          "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
               "libro": "82 Gastronomia 22.xlsx",
@@ -18689,13 +19045,15 @@
           "tarifas": {
             "poblacion": 560
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Revisión y Diagnóstico",
+          "familia": "Equipos Electrodomésticos",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Revisión y Diagnóstico Línea Blanca",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "10 Equip Electrodom 22.xlsx",
@@ -18763,13 +19121,15 @@
           "tarifas": {
             "poblacion": 1407
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Equipos Electrodomésticos",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Mantenimiento Ligero a Línea Blanca",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "10 Equip Electrodom 22.xlsx",
@@ -18851,13 +19211,15 @@
           "tarifas": {
             "poblacion": 1715
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 3",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 3",
           "tipo_servicio": "Mantenimiento",
+          "familia": "Equipos Electrodomésticos",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Mantenimiento Pesado a Línea Blanca ( solo a Lavad",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "10 Equip Electrodom 22.xlsx",
@@ -18960,13 +19322,15 @@
           "tarifas": {
             "poblacion": 1509
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 2",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Reparación",
+          "familia": "Equipos Electrodomésticos",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Ligera a Línea Blanca",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "10 Equip Electrodom 22.xlsx",
@@ -19028,13 +19392,15 @@
           "tarifas": {
             "poblacion": 3185
           },
-          "tipo_tarifa": "poblacion",
-          "modalidad": "Modalidad 2",
+          "modalidad": null,
+          "modalidad_oficial": "Modalidad 2",
           "tipo_servicio": "Reparación",
+          "familia": "Equipos Electrodomésticos",
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Pesada a Línea Blanca",
+          "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
               "libro": "10 Equip Electrodom 22.xlsx",

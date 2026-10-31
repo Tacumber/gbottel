@@ -1003,6 +1003,75 @@ prueba('T31 pago por transferencia (informativo): migración v8, guardado, PDF/X
   assert.deepEqual({ ...viajo }, { pagoTelefono: '55512345', pagoNroTransaccion: 'TM-98765 <x> & y', pagoRealizado: 1 });
 });
 
+prueba('T32 tarifario del taller de clima: modelo actual (Estatal/Interno y Población como categorías principales), procedimientos, y flujo Reemplazar sobre el catálogo de 1858 sin errores', async () => {
+  const taller = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima.json'), 'utf8'));
+  const modelo = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_copextel.json'), 'utf8'));
+  const porCodigo = new Map(modelo.categorias.flatMap((c) => c.servicios).map((s) => [s.codigo, s]));
+  // estructura: dos categorías principales; Población fuera de las modalidades
+  assert.deepEqual(taller.categorias.map((c) => c.id_categoria), ['estatal', 'poblacion']);
+  const [est, pob] = taller.categorias;
+  assert.deepEqual(est.aplica_a, ['Estatal', 'Interno']);
+  assert.equal(est.servicios.length, 173); assert.equal(pob.servicios.length, 27);
+  assert.deepEqual(pob.modalidades, []);
+  assert.ok(!est.modalidades.includes('Población'));
+  assert.equal(est.modalidades.length, 11);
+  assert.ok(est.servicios.every((s) => est.modalidades.includes(s.modalidad)));
+  assert.ok(pob.servicios.every((s) => s.modalidad === null));
+  // sin duplicados dentro de cada categoría; cada código existe en el tarifario oficial
+  for (const c of [est, pob]) assert.equal(new Set(c.servicios.map((s) => s.codigo)).size, c.servicios.length);
+  // importes idénticos al tarifario oficial (nunca redondeados) y procedimiento = el oficial del mismo código
+  for (const [c, clave] of [[est, 'estatal_interno'], [pob, 'poblacion']]) {
+    for (const s of c.servicios) {
+      const o = porCodigo.get(s.codigo);
+      assert.ok(o, s.codigo);
+      assert.deepEqual(Object.keys(s.tarifas), [clave]);
+      assert.strictEqual(s.tarifas[clave], o.tarifas[clave], `${s.codigo} ${clave}`);
+      assert.deepEqual(s.procedimiento, o.procedimiento, `procedimiento ${s.codigo}`);
+    }
+  }
+  const conProc = [...est.servicios, ...pob.servicios].filter((s) => s.procedimiento);
+  assert.equal(conProc.length, 119);
+  assert.ok(conProc.every((s) => s.procedimiento.actividades.length > 0));
+  // sin abreviaturas
+  const nombres = [...est.servicios, ...pob.servicios].map((s) => s.descripcion);
+  assert.ok(nombres.every((n) => !/(?<![\p{L}])(Mtto|Rep|tr|TR|Tr|HP|Hp|Km|Mts|AV|A\/V|A\/A|c\/|h\/|etc)(?![\p{L}])\.?/u.test(n)), 'quedan abreviaturas');
+  assert.ok(nombres.every((n) => n === n.trim() && !/\s{2,}/.test(n)));
+
+  // flujo real: catálogo de 1858 → «Reemplazar» con el archivo importable de clima → pantalla Tarifario
+  await reiniciarBase();
+  const tarifSvc = require(path.join(SRC, 'services/tarifarioService.ts'));
+  const pobSvc = require(path.join(SRC, 'services/tarifarioPoblacionService.ts'));
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf8'));
+  await tarifSvc.importarServiciosDesdeJSON(seed);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858);
+  const importable = fs.readFileSync(process.env.GBOT_CLIMA_IMPORTABLE || path.join(SRC, 'data/tarifario_taller_clima_importable.json'), 'utf8');
+  estado.archivoElegido = importable;
+  const r = await respaldo.reemplazarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(r.reemplazado, true);
+  assert.equal(r.resultado.importados, 200); assert.equal(r.resultado.duplicados, 0); assert.deepEqual(r.resultado.errores, []);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 200);
+  // lo que hace la pantalla tras reemplazar: categorías, listado, búsqueda, nombre oficial, procedimiento, Población
+  const cats = await tarifSvc.obtenerCategorias();
+  assert.equal(cats.length, 12);
+  const lista = (await tarifSvc.listarServicios({ limite: 300 })).map(pobSvc.aItemCatalogo);
+  assert.equal(lista.length, 200);
+  assert.ok(lista.every((s) => typeof s.nombreServicio === 'string' && s.clave));
+  for (const t of ['split', 'aire de ventana', 'camara fria', 'vehiculo', 'Mantenimiento']) {
+    const hit = await tarifSvc.buscarServicios(t, { limite: 300 });
+    assert.ok(hit.length > 0, t);
+    hit.map(pobSvc.aItemCatalogo);
+  }
+  for (const s of lista) procedimientos.obtenerProcedimiento(s.codigoServicio);   // no debe lanzar con ningún código del taller
+  assert.ok(procedimientos.obtenerProcedimiento('25-7011-TER'));
+  assert.equal(pobSvc.listarTarifaPoblacion('').length, 82);
+  // el cierre posterior no rompe nada: el servicio de órdenes sigue operando con el catálogo de clima
+  const a = await tecnico('Ana'); await folios.asignarRango(a, 1, 5);
+  const sv = (await tarifSvc.listarServicios({ limite: 1 }))[0];
+  const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, servicios: [{ servicioId: sv.id, codigo: sv.codigoServicio, descripcion: sv.nombreServicio, cantidad: 1, importeCUP: sv.precioBase, importeUSD: 0 }] }));
+  assert.ok(id > 0);
+});
+
 prueba('T27 JSON de traspaso: validación de versión, tipos, cantidades, importes y totales; conflictos antes de aplicar; atómico', async () => {
   const ids = await crearDosOrdenesParaExportar();
   const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });

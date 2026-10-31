@@ -1,7 +1,98 @@
 # Conversión taller de clima
 
-- Filas: 200 · precios verificados idénticos: 200
-- Nombres modificados: 127
+- Filas: 200 · precios verificados idénticos al tarifario: 200
+- Categorías principales: Estatal (173, sirve también a Interno) y Población (27).
+- Modalidades (solo Estatal/Interno): Aire de Ventana (16), Split (34), Roof Top y Consolas (24), Cámara Fría (18), Clima Centralizado (15), Bebederos (4), Refrigeradores (5), Caja de Agua (4), Freezer (3), Otras Tarifas (29), Clima Vehicular (21)
+- Con procedimiento oficial: 119 · sin procedimiento: 81. Ningún libro de procedimientos trae bloque para estos códigos ni por nombre; no se inventan ni se heredan.
+- Nombres modificados (abreviaturas y erratas): 127
+
+## Servicios sin procedimiento en los libros oficiales
+
+| Código | Categoría | Servicio |
+|---|---|---|
+| 7192 | Estatal - Aire de Ventana | Reparación sencilla de aire ventana |
+| 7193 | Estatal - Aire de Ventana | Reparación Compleja de aire ventana |
+| 7194 | Estatal - Aire de Ventana | Reparación Compleja de aire ventana (Cambio rodamiento del fan) |
+| 7195 | Estatal - Aire de Ventana | Reparación por recuperación de piezas de aire ventana |
+| 7196 | Estatal - Aire de Ventana | Reparación Capital de aire de ventana |
+| 7324 | Estatal - Aire de Ventana | Cambio de filtro de aire de ventana |
+| 7329 | Estatal - Aire de Ventana | Cambio de Paleta o turbina de aire de ventana |
+| 7332 | Estatal - Aire de Ventana | Eliminar salidero de aire de ventana |
+| 7345 | Estatal - Aire de Ventana | Adaptación en reparación del Sistema eléctrico del aire acondicionado |
+| 7198 | Estatal - Split | Reparación Sencilla Split |
+| 7199 | Estatal - Split | Reparación Compleja de split |
+| 7200 | Estatal - Split | Reparación Compleja de split Cassette |
+| 7201 | Estatal - Split | Reparación Compleja de split (Cambio rodamientos de los Fan) |
+| 7202 | Estatal - Split | Reparación Compleja de split (Cambio Fan de la unidad Interior) |
+| 7203 | Estatal - Split | Reparación por recuperación de piezas de Split |
+| 7204 | Estatal - Split | Reparación Capital de Split |
+| 7330 | Estatal - Split | Cambio de turbina de split |
+| 7333 | Estatal - Split | Eliminar salidero en split, consola decorativa y cassette |
+| 7419 | Estatal - Split | Eliminar salidero en split, consola decorativa y cassette |
+| 7188 | Estatal - Roof Top y Consolas | Reparación simple a Consola y Roof Top hasta 10 toneladas de refrigeración |
+| 7189 | Estatal - Roof Top y Consolas | Reparación Compleja de Consola y Roof Top hasta 10 toneladas de refrigeración |
+| 7190 | Estatal - Roof Top y Consolas | Reparación simple a Consola y Roof Top Mayor 10 toneladas de refrigeración |
+| 7191 | Estatal - Roof Top y Consolas | Reparación Compleja de Consola y Roof Top Mayor 10 toneladas de refrigeración |
+| 7322 | Estatal - Roof Top y Consolas | Reparacion de salidero (Consola o Roof top) |
+| 7326 | Estatal - Roof Top y Consolas | Cambio de válvula de expansión termostática (consola) |
+| 7207 | Estatal - Cámara Fría | Reparación Cámara Fría Simple (Reconstrucción Eléctrica, Cambio de Paleta, Resistencia drenaje, Completamiento de refrigerante) |
+| 7208 | Estatal - Cámara Fría | Reparación Cámara Fría Media (Cambio de Filtro, Fan, Tarjeta, Turbina, Capilares, Soldadura del Sistema, cambio de arma Flex, válvulas) |
+| 7209 | Estatal - Cámara Fría | Reparación Cámara Fría Compleja (Cambio de Rodamiento, Reconstrucción de pizarra, Condensador y Evaporador) |
+| 7327 | Estatal - Cámara Fría | Cambio de válvula de expansión termostática (cámara fría) |
+| 7217 | Estatal - Clima Centralizado | Reparación Ligera Manejadoras de Aire hasta 10 toneladas de refrigeración |
+| 7218 | Estatal - Clima Centralizado | Reparación Ligera Manejadoras de Aire más de 10 toneladas de refrigeración |
+| 7228 | Estatal - Clima Centralizado | Reparación Media Manejadoras de Aire hasta 10 toneladas de refrigeración |
+| 7229 | Estatal - Clima Centralizado | Reparación Media Manejadoras de Aire más de 10 toneladas de refrigeración |
+| 7242 | Estatal - Clima Centralizado | Reparación Mayor Manejadoras de Aire hasta 10 toneladas de refrigeración |
+| 7243 | Estatal - Clima Centralizado | Reparación Mayor Manejadoras de Aire más de 10 toneladas de refrigeración |
+| 8510 | Estatal - Bebederos | Mantenimiento 2 a Equipos Eléctricos. Bebedero de agua |
+| 8564 | Estatal - Refrigeradores | Mantenimiento 2 a Equipos Eléctricos. Refrigerador |
+| 8512 | Estatal - Caja de Agua | Mantenimiento 2 a Equipos Eléctricos. Caja de agua |
+| 8530 | Estatal - Freezer | Mantenimiento 2 a Equipos Eléctricos. Freezer |
+| 0100 | Estatal - Otras Tarifas | Colocación de conductos o conductores adosados a superficies (Canales, tuberías, bandejas, cables, etcétera) hasta 10 metros |
+| 0105 | Estatal - Otras Tarifas | Perforación de orificio en paredes o cubiertas de edificaciones (pases para conductos o conductores) 10 milímetros por 10 milímetros |
+| 0900 | Estatal - Otras Tarifas | Corta distancia (hasta 30 kilómetros) |
+| 0901 | Estatal - Otras Tarifas | Larga distancia (más de 30 kilómetros) por cada kilómetro |
+| 7210 | Estatal - Otras Tarifas | Reparación de 7,1 a 10 Tonelada (Cambio de Compresor) |
+| 7211 | Estatal - Otras Tarifas | Reparación de 10,1 a 15 Tonelada (Cambio de Compresor) |
+| 7212 | Estatal - Otras Tarifas | Reparación de 15,1 a 30 Tonelada (Cambio de Compresor) |
+| 7213 | Estatal - Otras Tarifas | Reparación más 30 Tonelada (Cambio de Compresor) |
+| 7320 | Estatal - Otras Tarifas | Reconstrucción eléctrica |
+| 7321 | Estatal - Otras Tarifas | Reparación eléctrica |
+| 7323 | Estatal - Otras Tarifas | Cambio de filtro secador, cuerpo de válvula solenoide |
+| 7205 | Estatal - Otras Tarifas | Adaptación de (partes y piezas mecánicas o eléctricas o electrónicas) |
+| 7206 | Estatal - Otras Tarifas | Reconstrucción Eléctrica, Cambio de Paleta, Completamiento de refrigerante |
+| 7325 | Estatal - Otras Tarifas | Cambio de Capilares |
+| 7328 | Estatal - Otras Tarifas | Reparación de araña de distribución |
+| 7331 | Estatal - Otras Tarifas | Cambio de paleta de la unidad condensadora |
+| 7341 | Estatal - Otras Tarifas | Reparación de piezas Recuperadas |
+| 7342 | Estatal - Otras Tarifas | Adaptación en reparación del Compresor |
+| 7343 | Estatal - Otras Tarifas | Adaptación en reparación del Condensador |
+| 7344 | Estatal - Otras Tarifas | Adaptación en reparación del Evaporador |
+| 7347 | Estatal - Otras Tarifas | Reparación hasta 2 Tonelada (Cambio de Compresor) |
+| 7348 | Estatal - Otras Tarifas | Reparación de 2,1 a 7 Tonelada (Cambio de Compresor) |
+| 7273 | Estatal - Clima Vehicular | Reparación Media en el Condensador Vehículo hasta 5 Asientos |
+| 7274 | Estatal - Clima Vehicular | Reparación Media en el Condensador Vehículo de 6 hasta 14 Asientos |
+| 7275 | Estatal - Clima Vehicular | Reparación Media en el Condensador Vehículo mayor de 14 Asientos |
+| 7276 | Estatal - Clima Vehicular | Reparación Mayor en el Condensador Vehículo hasta 5 Asientos |
+| 7277 | Estatal - Clima Vehicular | Reparación Mayor en el Condensador Vehículo de 6 hasta 14 Asientos |
+| 7278 | Estatal - Clima Vehicular | Reparación Mayor en el Condensador Vehículo mayor de 14 Asientos |
+| 7280 | Estatal - Clima Vehicular | Reparación Del Evaporador Vehículo hasta 5 Asientos |
+| 7281 | Estatal - Clima Vehicular | Reparación Del Evaporador Vehículo de 6 hasta 14 Asientos |
+| 7282 | Estatal - Clima Vehicular | Reparación Del Evaporador Vehículo mayor de 14 Asientos |
+| 7299 | Estatal - Clima Vehicular | Reparación Menor del Condensador en cualquier Vehículo |
+| 7300 | Estatal - Clima Vehicular | Reparación Media en el Condensador de cualquier Vehículo |
+| 7301 | Estatal - Clima Vehicular | Reparación Mayor en el Condensador de cualquier Vehículo |
+| 7302 | Estatal - Clima Vehicular | Reparación Menor en el Evaporador para cualquier vehículo |
+| 7303 | Estatal - Clima Vehicular | Reparación Media en el Evaporador para cualquier vehículo |
+| 7304 | Estatal - Clima Vehicular | Reparación Mayor en el Evaporador para cualquier vehículo |
+| 0905 | Población | Atención en el local del cliente |
+| 0200 | Población | Levantamiento técnico-comercial |
+| 7192 | Población | Reparación sencilla de aire ventana |
+| 7193 | Población | Reparación Compleja de aire ventana |
+| 7200 | Población | Reparación Compleja de Split Cassette |
+
+## Nombres modificados
 
 | Código | Categoría | Antes | Después |
 |---|---|---|---|

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Convierte la base del taller de clima (formato antiguo, 200 filas) al modelo unificado
 (src/data/tarifario_copextel.json), expandiendo abreviaturas. Los precios se copian sin tocar.
-Uso: convertir_taller_clima.py <entrada.json> <salida.json> <informe.md>"""
+Uso: convertir_taller_clima.py <entrada.json> <salida_modelo.json> <salida_importable.json> <informe.md>
+Salida 1: modelo unificado (Estatal/Interno y Población como categorías principales; las modalidades son los
+grupos del taller). Salida 2: lista en formato antiguo, para los botones Importar/Reemplazar actuales."""
 import json, re, sys, unicodedata
 from collections import OrderedDict
 
-ent, sal, inf = sys.argv[1:4]
+ent, sal, imp, inf = sys.argv[1:5]
 fila = json.load(open(ent, encoding='utf-8'))
 modelo = json.load(open('src/data/tarifario_copextel.json', encoding='utf-8'))
 S = {s['codigo']: (c, s) for c in modelo['categorias'] for s in c['servicios']}
@@ -76,7 +78,8 @@ def codigo(x):
     c = x['codigoServicio']
     return c.split('-')[1] if c.count('-') >= 2 else c
 
-cats = OrderedDict(); cambios = []; precio_ok = 0
+cats = OrderedDict([('estatal', []), ('poblacion', [])]); modalidades = OrderedDict(); cambios = []; precio_ok = 0
+importable = []; sin_proc = []
 for x in fila:
     cod = codigo(x)
     cm, sm = S[cod]
@@ -88,23 +91,42 @@ for x in fila:
     nombre = expande(x['nombreServicio'])
     if nombre != re.sub(r'\s+', ' ', x['nombreServicio']).strip():
         cambios.append((cod, cat, x['nombreServicio'], nombre))
-    cname = 'Población' if pob else re.sub(r'^Estatal - ', '', cat)
-    cats.setdefault(cname, []).append({
+    mod = None if pob else re.sub(r'^Estatal - ', '', cat)
+    if mod: modalidades.setdefault(mod, 0); modalidades[mod] += 1
+    serv = {
         'codigo': cod, 'codigo_completo': x['codigoServicio'], 'descripcion': nombre,
         'unidad_medida': x['unidad'] or sm['unidad_medida'],
-        'tarifas': {clave: esperado}, 'tipo_tarifa': 'poblacion' if pob else 'estatal_interno',
-        'modalidad': sm['modalidad'], 'tipo_servicio': sm['tipo_servicio'],
+        'tarifas': {clave: esperado},
+        'modalidad': mod,
+        'modalidad_oficial': sm['modalidad'], 'tipo_servicio': sm['tipo_servicio'],
+        'familia': cm['nombre_categoria'],
         'tiempo_estimado_minutos': x['tiempoEstimado'], 'cantidad_tecnicos': x['cantidadTecnicos'],
         'id_propietario': x['idPropietario'], 'detalle_factura': x['detalleFactura'] or None,
+        'poblacion_coincidencia': sm.get('poblacion_coincidencia') if pob else None,
         'procedimiento': sm['procedimiento'],
-    })
+    }
+    if serv['procedimiento'] is None: sin_proc.append((cod, cat, nombre))
+    cats['poblacion' if pob else 'estatal'].append(serv)
+    fila_imp = dict(x); fila_imp['nombreServicio'] = nombre
+    if fila_imp.get('detalleFactura'): fila_imp['detalleFactura'] = nombre
+    importable.append(fila_imp)
 out = {'version': modelo['version'], 'taller': 'Taller de Clima',
-       'fuente': 'gbottel-tarifario-taller-clima.json (formato antiguo) + tarifario_copextel.json',
-       'categorias': [{'id_categoria': i + 1, 'nombre_categoria': k, 'servicios': v}
-                      for i, (k, v) in enumerate(cats.items())]}
+       'fuentes': ['gbottel-tarifario-taller-clima.json (base del taller)', 'tarifario_copextel.json (procedimientos oficiales, libro 70 Clima-Agua y otros)'],
+       'categorias': [
+           {'id_categoria': 'estatal', 'nombre_categoria': 'Estatal', 'aplica_a': ['Estatal', 'Interno'], 'tarifa': 'estatal_interno',
+            'modalidades': list(modalidades), 'servicios': cats['estatal']},
+           {'id_categoria': 'poblacion', 'nombre_categoria': 'Población', 'aplica_a': ['Población'], 'tarifa': 'poblacion',
+            'modalidades': [], 'servicios': cats['poblacion']}]}
 json.dump(out, open(sal, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+json.dump(importable, open(imp, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+ncon = len(fila) - len(sin_proc)
 with open(inf, 'w', encoding='utf-8') as f:
-    f.write(f'# Conversión taller de clima\n\n- Filas: {len(fila)} · precios verificados idénticos: {precio_ok}\n')
-    f.write(f'- Nombres modificados: {len(cambios)}\n\n| Código | Categoría | Antes | Después |\n|---|---|---|---|\n')
+    f.write(f'# Conversión taller de clima\n\n- Filas: {len(fila)} · precios verificados idénticos al tarifario: {precio_ok}\n')
+    f.write(f'- Categorías principales: Estatal ({len(cats["estatal"])}, sirve también a Interno) y Población ({len(cats["poblacion"])}).\n')
+    f.write('- Modalidades (solo Estatal/Interno): ' + ', '.join(f'{k} ({v})' for k, v in modalidades.items()) + '\n')
+    f.write(f'- Con procedimiento oficial: {ncon} · sin procedimiento: {len(sin_proc)}. Ningún libro de procedimientos trae bloque para estos códigos ni por nombre; no se inventan ni se heredan.\n')
+    f.write(f'- Nombres modificados (abreviaturas y erratas): {len(cambios)}\n\n## Servicios sin procedimiento en los libros oficiales\n\n| Código | Categoría | Servicio |\n|---|---|---|\n')
+    for c in sin_proc: f.write(f'| {c[0]} | {c[1]} | {c[2]} |\n')
+    f.write('\n## Nombres modificados\n\n| Código | Categoría | Antes | Después |\n|---|---|---|---|\n')
     for c in cambios: f.write(f'| {c[0]} | {c[1]} | {c[2]} | {c[3]} |\n')
-print(len(fila), precio_ok, len(cambios))
+print(len(fila), precio_ok, len(cambios), ncon, len(sin_proc))

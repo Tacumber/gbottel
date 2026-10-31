@@ -120,3 +120,11 @@ Se construyó el tarifario unificado de la app a partir del Anexo 1 (docx oficia
 - Respaldo completo **v5** (acepta v1–v5; un respaldo v5 no se abre en una app anterior, que lo rechaza por versión) y traspaso JSON conservan el pago.
 - Prueba T31 + ajustes T01/T09/T10 (v8, respaldo v5). 31/31.
 - Pendiente/ideas: lectura automática del SMS (requiere módulo nativo y permisos); QR dinámico con folio/importe (requiere confirmar con el proveedor 98841).
+
+## Tarifario del taller de clima en el modelo actual
+
+- `src/data/tarifario_taller_clima.json`: categorías principales **Estatal** (aplica a Estatal e Interno, 173 servicios) y **Población** (27, fuera de las modalidades). Modalidades = los 11 grupos del taller (Aire de Ventana, Split, Roof Top y Consolas, Cámara Fría, Clima Centralizado, Bebederos, Refrigeradores, Caja de Agua, Freezer, Otras Tarifas, Clima Vehicular). `modalidad_oficial` conserva «Modalidad N» del tarifario oficial.
+- Importes idénticos al tarifario unificado (verificado en la conversión y en T32). Procedimientos oficiales por código: 119 de 200; los otros 81 no existen en ningún libro de procedimientos (ni por código ni por nombre) y no se inventan ni se heredan. Lista en `docs/INFORME-TALLER-CLIMA.md`.
+- Nombres con abreviaturas expandidas (127 modificados, lista en el informe).
+- `src/data/tarifario_taller_clima_importable.json`: la misma base en el formato antiguo (lista plana) para los botones Importar/Reemplazar actuales. **La app todavía no lee el modelo nuevo ni muestra las modalidades del taller como subcategorías**: eso requiere cambios en Tarifario/importador pendientes de autorización.
+- T32: valida estructura, importes, procedimientos y abreviaturas, y simula «Reemplazar» 1858 → 200 con todas las llamadas de la pantalla (categorías, listado, búsqueda, nombre oficial, procedimiento, Población, crear orden): sin errores en la capa de datos. 32/32.
