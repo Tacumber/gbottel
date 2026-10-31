@@ -72,3 +72,6 @@ Gemini (QA/revisión) tras la revisión del usuario de la matriz.
 
 ### Actualización (21/10 noche): plantilla oficial PDF/XLSX
 Hecha con el modelo oficial (`docs/modelo-oficial-orden-servicio.png`). Ver matriz. QA pendiente: imprimir un PDF real en el móvil y compararlo con el papel; abrir el XLSX en Excel.
+
+## Actualización 2026-10-31 — Pago por transferencia (Población)
+Ver sección en docs/AUDITORIA-ISSUE7-20261021.md. Esquema v8, respaldo v5, `src/utils/pagoTransferencia.ts`, `src/components/qr-pago.tsx`, `src/data/qrPagoTransfermovil.ts`. Sin dependencias nuevas. Tests 31/31. Lint: 3 errores previos en _layout/tarifario/tecnicos (no tocados). No probado en dispositivo.

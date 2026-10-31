@@ -59,6 +59,10 @@ const COLUMNAS_ORDEN = new Set<string>([
   'clienteFirmaCI',
   'clienteFirmaFecha',
   'clienteFirmado',
+  'pagoTelefono',
+  'pagoNroTransaccion',
+  'pagoRealizado',
+  'pagoFecha',
 ]);
 
 /**

@@ -75,6 +75,11 @@ export interface Orden {
   clienteFirmaCI: string | null;
   clienteFirmaFecha: string | null;
   clienteFirmado: number;
+  /** v8: pago por transferencia (informativo, cliente Población). */
+  pagoTelefono: string | null;
+  pagoNroTransaccion: string | null;
+  pagoRealizado: number;
+  pagoFecha: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }

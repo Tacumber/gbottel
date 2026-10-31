@@ -158,9 +158,9 @@ const prueba = (nombre, fn) => pruebas.push({ nombre, fn });
 // ------------------------------------------------------------------
 // Pruebas
 // ------------------------------------------------------------------
-prueba('T01 base nueva: v7, sin rangos → no se puede crear orden y no queda nada a medias', async () => {
+prueba('T01 base nueva: v8, sin rangos → no se puede crear orden y no queda nada a medias', async () => {
   await reiniciarBase();
-  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '7');
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '8');
   const a = await tecnico('Ana');
   await rechaza(ordenes.guardarOrdenCompleta(null, payload()), 'SIN_PRINCIPAL');
   await rechaza(ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a })), 'SIN_FOLIOS');
@@ -323,7 +323,7 @@ prueba('T09 migración desde una base v5 real: folios intactos, libro e históri
   assert.deepEqual((await q('SELECT numero, origen FROM folios_emitidos ORDER BY numero')).map((r) => r.numero), ['000001', '000002', '000007']);
   const h = await q('SELECT historico, desde, hasta, siguiente, tecnicoId FROM folio_rangos');
   assert.deepEqual(h, [{ historico: 1, desde: 1, hasta: 7, siguiente: 8, tecnicoId: null }]);
-  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '7');
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '8');
   const a = await tecnico('Ana');
   await rechaza(folios.asignarRango(a, 5, 10), 'RANGO_SOLAPADO');
   await folios.asignarRango(a, 8, 10);
@@ -350,10 +350,10 @@ async function escenarioRespaldo() {
   return Object.values(estado.compartidos)[0];
 }
 
-prueba('T10 respaldo v4: ida y vuelta conserva folios; fusiona bloques con el mayor siguiente; el libro local no se pierde', async () => {
+prueba('T10 respaldo v5: ida y vuelta conserva folios; fusiona bloques con el mayor siguiente; el libro local no se pierde', async () => {
   const contenido = await escenarioRespaldo();
   const j = JSON.parse(contenido);
-  assert.equal(j.version, 4);
+  assert.equal(j.version, 5);
   assert.ok(Array.isArray(j.tablas.folio_rangos) && Array.isArray(j.tablas.folios_emitidos));
   // Después del respaldo, este dispositivo emite 2 folios más y un bloque nuevo
   const a = (await q1(`SELECT id FROM tecnicos WHERE nombre='Ana'`)).id;
@@ -552,7 +552,7 @@ prueba('T19 equipos de la orden viajan en respaldo v4 y traspaso; respaldo v3 de
   assert.equal((await q('SELECT * FROM orden_equipos WHERE ordenId=?', id)).length, 2);
   await respaldo.exportarRespaldoCompleto();
   const j = JSON.parse(Object.values(estado.compartidos).pop());
-  assert.equal(j.version, 4);
+  assert.equal(j.version, 5);
   assert.equal(j.tablas.orden_equipos.length, 2);
   // ida y vuelta
   const prep = await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(j));
@@ -914,6 +914,93 @@ prueba('T30 Tarifario de Población: 82 prestaciones, importes exactos del archi
   // la Población conserva su propio nombre cuando difiere del oficial
   assert.equal(todas.find((i) => i.codigoServicio === '8338').nombreServicio, 'Reparación sencilla de Freezer');
   assert.deepEqual(pob.validarTarifaPoblacion([{ codigo: 'A', nombre: 'x', unidad: 'UNO', precioCUP: -1 }, { codigo: 'A', nombre: '', unidad: 'UNO', precioCUP: 1 }]).length, 3);
+});
+
+prueba('T31 pago por transferencia (informativo): migración v8, guardado, PDF/XLSX, respaldo v5, traspaso y respaldo antiguo sin pago', async () => {
+  const pago = require(path.join(SRC, 'utils/pagoTransferencia.ts'));
+  const qr = require(path.join(SRC, 'data/qrPagoTransfermovil.ts'));
+  // concepto: folio con 6 dígitos; sin folio → null
+  assert.equal(pago.conceptoPago('000123'), 'O.S 000123 T.CLIMA');
+  assert.equal(pago.conceptoPago(45), 'O.S 000045 T.CLIMA');
+  assert.equal(pago.conceptoPago(null), null);
+  assert.equal(pago.conceptoPago('  '), null);
+  assert.equal(pago.resumenPago({}), '');
+  assert.equal(pago.hayDatosDePago({ pagoRealizado: 0, pagoTelefono: '', pagoNroTransaccion: null }), false);
+  // QR incrustado: cuadrado, solo 0/1, mismo contenido que el QR oficial
+  assert.equal(qr.QR_PAGO_MODULOS.length, qr.QR_PAGO_TAMANO);
+  assert.ok(qr.QR_PAGO_MODULOS.every((f) => f.length === qr.QR_PAGO_TAMANO && /^[01]+$/.test(f)));
+  assert.equal(JSON.parse(qr.QR_PAGO_CONTENIDO).numero_proveedor, '98841');
+  assert.equal(JSON.parse(qr.QR_PAGO_CONTENIDO).importe, '0');
+  // normalizar: recorta, vacío → null, la fecha solo con el check
+  assert.deepEqual(pago.normalizarPago({ pagoTelefono: ' 5 5551234 ', pagoNroTransaccion: ' ', pagoRealizado: false, pagoFecha: '2026-10-31T10:00:00Z' }),
+    { pagoTelefono: '5 5551234', pagoNroTransaccion: null, pagoRealizado: 0, pagoFecha: null });
+
+  // columnas v8 con valores por defecto
+  await reiniciarBase();
+  const cols = (await q(`PRAGMA table_info(ordenes)`)).map((c) => c.name);
+  for (const c of ['pagoTelefono', 'pagoNroTransaccion', 'pagoRealizado', 'pagoFecha']) assert.ok(cols.includes(c), c);
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 20);
+  const sinPago = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, datos: { clienteNombre: 'Sin pago', clienteTipo: 'Población', fechaReporte: '2026-10-01', estado: 'pendiente' } }));
+  const r0 = await q1('SELECT pagoTelefono, pagoNroTransaccion, pagoRealizado, pagoFecha FROM ordenes WHERE id=?', sinPago);
+  assert.deepEqual({ ...r0 }, { pagoTelefono: null, pagoNroTransaccion: null, pagoRealizado: 0, pagoFecha: null });
+
+  // guardar y volver a leer
+  const datosPago = { pagoTelefono: '55512345', pagoNroTransaccion: 'TM-98765 <x> & y', pagoRealizado: 1, pagoFecha: '2026-10-31T14:00:00.000Z' };
+  const conPago = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, datos: { clienteNombre: 'Con pago', clienteTipo: 'Población', fechaReporte: '2026-10-02', estado: 'pendiente', ...datosPago } }));
+  const leida = await ordenes.obtenerOrden(conPago);
+  for (const [k, v] of Object.entries(datosPago)) assert.equal(leida[k], v, k);
+  // editar: quitar el check → se puede guardar sin fecha
+  await ordenes.guardarOrdenCompleta(conPago, payload({ tecnicoPrincipalId: a, datos: { pagoRealizado: 0, pagoFecha: null } }));
+  assert.equal((await ordenes.obtenerOrden(conPago)).pagoRealizado, 0);
+  await ordenes.guardarOrdenCompleta(conPago, payload({ tecnicoPrincipalId: a, datos: datosPago }));
+
+  // PDF: la línea de pago aparece solo en la orden que la tiene, con el texto escapado
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesPDF(lista);
+  const html = estado.ultimoHtml;
+  assert.equal((html.match(/Pago por transferencia realizado/g) || []).length, 1);
+  assert.ok(html.includes('Nro de transacción: TM-98765 &lt;x&gt; &amp; y'));
+  assert.ok(html.includes('Teléfono del cliente: 55512345'));
+  assert.ok(!html.includes('Pago por transferencia pendiente'));
+
+  // XLSX: la línea de pago está en la hoja de la orden con pago (texto en el XML)
+  await respaldo.exportarOrdenesXLSX(lista);
+  const bytes = Object.entries(estado.compartidos).filter(([n]) => n.endsWith('.xlsx')).pop()[1];
+  assert.ok(Buffer.from(bytes).includes('Nro de transacción: TM-98765'));
+
+  // respaldo completo v5: ida y vuelta conserva el pago
+  estado.compartidos = {};
+  await respaldo.exportarRespaldoCompleto();
+  const archivo = Object.values(estado.compartidos)[0];
+  const j = JSON.parse(archivo);
+  assert.equal(j.version, 5);
+  assert.ok(j.tablas.ordenes.every((o) => 'pagoRealizado' in o && 'pagoNroTransaccion' in o));
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(archivo));
+  const tras = await q('SELECT clienteNombre, pagoTelefono, pagoNroTransaccion, pagoRealizado, pagoFecha FROM ordenes ORDER BY id');
+  assert.deepEqual({ ...tras[1] }, { clienteNombre: 'Con pago', ...datosPago });
+  assert.equal(tras[0].pagoRealizado, 0);
+
+  // respaldo v4 (de una versión sin pago): se importa y las órdenes quedan sin pago
+  const v4 = JSON.parse(archivo);
+  v4.version = 4;
+  for (const o of v4.tablas.ordenes) for (const c of ['pagoTelefono', 'pagoNroTransaccion', 'pagoRealizado', 'pagoFecha']) delete o[c];
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(v4)));
+  assert.ok((await q('SELECT pagoRealizado, pagoNroTransaccion FROM ordenes')).every((r) => r.pagoRealizado === 0 && r.pagoNroTransaccion === null));
+
+  // traspaso JSON entre dispositivos: el pago viaja con la orden
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(archivo));
+  const lista2 = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesJSON(lista2);
+  const tj = JSON.parse(Object.entries(estado.compartidos).filter(([n]) => n.includes('traspaso')).pop()[1]);
+  await reiniciarBase();
+  const b = await tecnico('Ana');
+  await folios.asignarRango(b, 100, 110);
+  const prep = await respaldo.prepararTraspasoDesdeTexto(JSON.stringify(tj));
+  assert.equal(prep.omitidas.length, 0);
+  await respaldo.aplicarTraspaso(prep);
+  const viajo = await q1(`SELECT pagoTelefono, pagoNroTransaccion, pagoRealizado FROM ordenes WHERE clienteNombre='Con pago'`);
+  assert.deepEqual({ ...viajo }, { pagoTelefono: '55512345', pagoNroTransaccion: 'TM-98765 <x> & y', pagoRealizado: 1 });
 });
 
 prueba('T27 JSON de traspaso: validación de versión, tipos, cantidades, importes y totales; conflictos antes de aplicar; atómico', async () => {

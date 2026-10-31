@@ -15,11 +15,12 @@ import { fechaHoyISO, formatearFecha } from '@/utils/fechas';
 import { importeComoTexto, normalizarImporte } from '@/utils/moneda';
 import { formularioOrden, generarXLSX, htmlDocumento, nombreHoja } from '@/utils/ordenExport';
 
+// v5 = v4 + pago por transferencia en las órdenes (pagoTelefono, pagoNroTransaccion, pagoRealizado, pagoFecha).
 // v4 = v3 del tablero anterior (orden_equipos) + folio_rangos y folios_emitidos.
-// Se aceptan v1–v3: sin folios (sus órdenes pasan al libro al restaurar) y, antes
+// Se aceptan v1–v4 (sin pago → queda sin pago) y, de ellas, v1–v3: sin folios (sus órdenes pasan al libro al restaurar) y, antes
 // de v3, sin equipos ni técnicos firmantes (se restauran como listas vacías).
-const VERSION_RESPALDO = 4;
-const VERSIONES_RESPALDO_ACEPTADAS = [1, 2, 3, 4];
+const VERSION_RESPALDO = 5;
+const VERSIONES_RESPALDO_ACEPTADAS = [1, 2, 3, 4, 5];
 
 interface RespaldoCompleto {
   version: number;
@@ -485,6 +486,10 @@ const COLUMNAS_POR_TABLA: Record<string, Set<string>> = {
     'clienteFirmaCI',
     'clienteFirmaFecha',
     'clienteFirmado',
+    'pagoTelefono',
+    'pagoNroTransaccion',
+    'pagoRealizado',
+    'pagoFecha',
     'creadoEn',
     'actualizadoEn',
   ]),

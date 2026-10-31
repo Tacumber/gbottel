@@ -17,7 +17,8 @@
  */
 
 // v6: orden_equipos (PC). v7: folios por rangos, libro de folios y técnico principal.
-export const SCHEMA_VERSION = 7;
+// v8: pago por transferencia (informativo, solo cliente Población).
+export const SCHEMA_VERSION = 8;
 
 // Migración de columnas nuevas para bases que ya tenían `ordenes` creada
 // antes de que existiera la sección 9 del formulario (Firmas y
@@ -46,6 +47,12 @@ export const MIGRACIONES_COLUMNAS: string[] = [
   // dos órdenes. Las órdenes anteriores a la v6 quedan con NULL.
   `ALTER TABLE ordenes ADD COLUMN tecnicoPrincipalId INTEGER REFERENCES tecnicos(id) ON DELETE SET NULL`,
   `ALTER TABLE ordenes ADD COLUMN claveGuardado TEXT`,
+  // v8: pago por transferencia (Transfermóvil). Informativo: lo escribe el técnico a
+  // mano al llegarle el SMS. pagoRealizado = 0/1; pagoFecha = cuándo se marcó el check.
+  `ALTER TABLE ordenes ADD COLUMN pagoTelefono TEXT`,
+  `ALTER TABLE ordenes ADD COLUMN pagoNroTransaccion TEXT`,
+  `ALTER TABLE ordenes ADD COLUMN pagoRealizado INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE ordenes ADD COLUMN pagoFecha TEXT`,
 ];
 // v2: se agregan 4 columnas a `servicios` que aparecieron en el xlsx real
 // (Tecnostar_CM_030325.xlsx) y no estaban en el esquema original de la Fase 1.1:

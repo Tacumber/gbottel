@@ -14,6 +14,7 @@
 import type { OrdenCompleta, TotalesOrden } from '../types/ordenes.types';
 import { formatearFecha } from './fechas';
 import { formatearImporte, normalizarImporte } from './moneda';
+import { resumenPago } from './pagoTransferencia';
 
 export interface CeldaImporte {
   importe: number;
@@ -160,6 +161,10 @@ export function formularioOrden(o: OrdenCompleta, t: TotalesOrden): FilaForm[] {
   for (let i = o.servicios.length; i < MIN_FILAS_SERVICIOS; i++) f.push(fila([V('', 3), V('', 6), V('', 1), V('', 1), V('', 1)]));
   f.push(fila([{ span: 10, texto: `Valores Totales de los Servicios Prestados${sufijoCliente}`, estilo: 'total' }, { span: 1, importe: cup(t.serviciosCUP), estilo: 'totalImporte' }, { span: 1, importe: usd(t.serviciosUSD), estilo: 'totalImporte' }]));
   f.push(fila([{ span: 10, texto: `Totales Generales a Pagar${sufijoCliente}`, estilo: 'total' }, { span: 1, importe: cup(t.totalCUP), estilo: 'totalImporte' }, { span: 1, importe: usd(t.totalUSD), estilo: 'totalImporte' }]));
+
+  // Pago por transferencia: solo aparece si el técnico anotó algo (el formato oficial no cambia sin pago).
+  const lineaPago = resumenPago(o);
+  if (lineaPago) f.push(fila([L(lineaPago, COLUMNAS)]));
 
   // Conformidad del trabajo
   const principal = o.tecnicos.find((x) => x.tecnicoId != null && x.tecnicoId === o.tecnicoPrincipalId) ?? o.tecnicos[0];

@@ -58,6 +58,8 @@ import {
 import type { Servicio } from "@/types/tarifario.types";
 import type { Tecnico } from "@/types/tecnicos.types";
 import { formatearImporte } from "@/utils/moneda";
+import { conceptoPago, normalizarPago } from "@/utils/pagoTransferencia";
+import { QRPago } from "@/components/qr-pago";
 import {
   calcularTiempoAutomatico,
   cantidadInicial,
@@ -201,6 +203,11 @@ function formularioVacio() {
     clienteFirmaCI: "",
     clienteFirmaFecha: "",
     clienteFirmado: false,
+
+    pagoTelefono: "",
+    pagoNroTransaccion: "",
+    pagoRealizado: false,
+    pagoFecha: "",
   };
 }
 
@@ -256,6 +263,7 @@ export default function OrdenNuevaScreen() {
   // Folio editable (solo órdenes nuevas): lo propuesto por el rango del principal y lo escrito.
   const [folioPropuesto, setFolioPropuesto] = useState<number | null>(null);
   const [folioTexto, setFolioTexto] = useState("");
+  const [qrPagoAbierto, setQrPagoAbierto] = useState(false);
 
   const campo = <K extends keyof FormularioOrden>(
     clave: K,
@@ -449,6 +457,10 @@ export default function OrdenNuevaScreen() {
             clienteFirmaCI: orden.clienteFirmaCI ?? "",
             clienteFirmaFecha: orden.clienteFirmaFecha ?? "",
             clienteFirmado: Boolean(orden.clienteFirmado),
+            pagoTelefono: orden.pagoTelefono ?? "",
+            pagoNroTransaccion: orden.pagoNroTransaccion ?? "",
+            pagoRealizado: Boolean(orden.pagoRealizado),
+            pagoFecha: orden.pagoFecha ?? "",
           };
           instantaneaInicialRef.current = instantaneaFormulario(cargado);
           setForm(cargado);
@@ -878,6 +890,8 @@ export default function OrdenNuevaScreen() {
         clienteFirmaCI: form.clienteFirmaCI || null,
         clienteFirmaFecha: form.clienteFirmaFecha || null,
         clienteFirmado: form.clienteFirmado ? 1 : 0,
+
+        ...normalizarPago(form),
       };
 
       const materialesParaGuardar: NuevoOrdenMaterial[] = form.materiales.map(
@@ -1587,7 +1601,70 @@ export default function OrdenNuevaScreen() {
                 </ThemedText>
               </View>
             </View>
+            {form.clienteTipo === "Población" ? (
+              <View style={styles.campo}>
+                <Pressable
+                  onPress={() => setQrPagoAbierto(true)}
+                  style={[styles.botonPago, { borderColor: theme.primary }]}
+                  accessibilityRole="button"
+                >
+                  <ThemedText type="smallBold" style={{ color: theme.primary, textAlign: "center" }}>
+                    Pagar por transferencia (pago en línea)
+                  </ThemedText>
+                </Pressable>
+                <Campo
+                  etiqueta="Teléfono del cliente (del SMS)"
+                  valor={form.pagoTelefono}
+                  onCambia={(v) => campo("pagoTelefono", v)}
+                  teclado="numeric"
+                />
+                <Campo
+                  etiqueta="Nro de transacción (del SMS)"
+                  valor={form.pagoNroTransaccion}
+                  onCambia={(v) => campo("pagoNroTransaccion", v)}
+                />
+                <CasillaFirmado
+                  etiqueta="Pago realizado"
+                  activo={form.pagoRealizado}
+                  onPress={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      pagoRealizado: !prev.pagoRealizado,
+                      pagoFecha: prev.pagoRealizado ? "" : new Date().toISOString(),
+                    }))
+                  }
+                />
+              </View>
+            ) : null}
           </Seccion>
+          <Modal
+            visible={qrPagoAbierto}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setQrPagoAbierto(false)}
+          >
+            <View style={styles.modalBackdrop}>
+              <ThemedView type="surface" style={[styles.modalCard, { alignItems: "center" }]}>
+                <ThemedText type="smallBold">Pago en línea (Transfermóvil)</ThemedText>
+                <QRPago tamano={260} />
+                <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: "center" }}>
+                  Descripción que debe escribir el cliente:
+                </ThemedText>
+                <ThemedText type="title" style={{ fontSize: 22, textAlign: "center" }}>
+                  {conceptoPago(
+                    idOrden != null
+                      ? form.folio
+                      : principalId != null && folioPropuesto != null
+                        ? folioTexto.trim() || formatearFolio(folioPropuesto)
+                        : null,
+                  ) ?? "El folio se asigna al guardar la orden"}
+                </ThemedText>
+                <Pressable onPress={() => setQrPagoAbierto(false)} style={styles.modalBtn}>
+                  <ThemedText style={{ color: theme.primary, fontWeight: "700" }}>Cerrar</ThemedText>
+                </Pressable>
+              </ThemedView>
+            </View>
+          </Modal>
           <Seccion titulo="9. Firmas y Conformidad" id="firmas" oculta={seccionesOcultas.includes("firmas")} onAlternar={alternarSeccion}>
             <ThemedText
               type="small"
@@ -2145,6 +2222,7 @@ const styles = StyleSheet.create({
   errorCarga: { padding: 24, gap: 14 },
   errorTexto: { textAlign: "center" },
   modalBtn: { paddingVertical: 12 },
+  botonPago: { borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, alignItems: "center", justifyContent: "center" },
   tecnicosLista: { maxHeight: 280 },
   tecnicoOpcion: {
     paddingVertical: 11,
