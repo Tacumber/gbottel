@@ -88,7 +88,7 @@ Ejemplo: 120 minutos y tres técnicos:
 - Pedro: 40 minutos, automático.
 - Juan: 40 minutos, automático.
 
-Si la división deja un resto, no se pierden minutos. Usa una regla determinista y documentada. Ejemplo: 100 minutos entre tres personas: 34, 33 y 33. El resultado debe sumar exactamente 100.
+Los tiempos individuales admiten dos decimales de minuto. No asignes el resto de redondeo a una persona automáticamente. Ejemplo obligatorio: 100 minutos entre tres técnicos produce 33,33 minutos para cada uno (suma visible 99,99); el 0,01 restante se conserva como diferencia técnica de redondeo de la orden, claramente visible, sin adjudicarlo arbitrariamente. Si el jefe de brigada edita manualmente los tres tiempos, puede fijar 34,00 + 33,00 + 33,00 = 100,00. Cuando el reparto sea exacto (por ejemplo 120/3), los tiempos deben sumar exactamente el total. Documenta y prueba la diferencia máxima de redondeo acumulada; nunca ocultes ni dupliques tiempo.
 
 ### 3.3 Edición manual y redistribución
 
@@ -135,12 +135,12 @@ Si el total disminuye y los valores manuales superan el nuevo total, no recortes
 ### 3.5 Casos límite y controles
 
 - Si todos están en manual, no redistribuyas. Muestra diferencia pendiente y exige ajuste explícito cuando la suma no coincida con el total.
-- No permitas minutos negativos, valores no enteros si la unidad de negocio es el minuto, ni valores no finitos.
+- Permite fracciones de minuto con exactamente dos decimales (por ejemplo 33,33). Rechaza negativos, valores no finitos y más de dos decimales ingresados; normaliza la entrada de forma explícita y sin pérdida silenciosa.
 - Si no hay participantes, no distribuyas.
 - Al añadir un técnico, conserva los manuales y redistribuye solo entre los automáticos, incluyendo al nuevo técnico según la regla de incorporación definida.
 - Al quitar un técnico, conserva los tiempos manuales de los restantes y redistribuye entre los automáticos. Antes de eliminar un participante con tiempo manual, informa qué ocurrirá con su tiempo; no lo reasignes sin confirmación.
 - Si los minutos manuales exceden el total, muestra error claro y no guardes.
-- La suma de minutos atribuidos debe coincidir exactamente con el total cuando la distribución está confirmada.
+- La suma de tiempos atribuidos debe coincidir con el total cuando sea matemáticamente exacto. Si el reparto igualitario produce una diferencia de hasta 0,01 minutos por redondeo a dos decimales, conserva esa diferencia como saldo de redondeo visible y no la asignes a un técnico automáticamente. Si el jefe modifica manualmente los valores, exige que la suma coincida exactamente con el total antes de confirmar.
 - Actualiza todo dentro de una transacción SQLite para evitar estados parciales.
 - Usa identificadores estables de técnico, nunca nombres como clave contable.
 - Conserva el historial de modificaciones: orden, técnico, valor anterior, valor nuevo, modalidad anterior/nueva, usuario responsable, fecha/hora y motivo opcional.
@@ -214,6 +214,22 @@ Estos elementos ya existían en la versión revisada y **no deben desaparecer** 
 - Mantén formatos monetarios uniformes.
 
 No sacrifiques legibilidad ni hagas que el tablero dependa de una conexión de red.
+
+### 5.4 Diseño móvil obligatorio (Android, tamaño real de teléfono)
+
+La referencia visual aprobada por el usuario es una guía de estilo, no una página web que deba copiarse literalmente. Rediseña el tablero como pantalla nativa de teléfono en orientación vertical:
+
+- Usa el ancho real disponible del dispositivo, respetando Safe Area, barras del sistema y navegación inferior; no diseñes para escritorio ni para una página web de 1024 px.
+- Una sola columna principal con desplazamiento vertical natural. No comprimas toda la información para que quepa en una captura.
+- Las tres tarjetas Finalizadas/Facturadas/Pendientes deben adaptarse a un ancho móvil: preferiblemente una fila de tarjetas compactas si el ancho y legibilidad lo permiten; de lo contrario, una cuadrícula 2+1 o tarjetas apiladas. Nunca reducir texto a tamaños ilegibles.
+- Técnicos registrados, plan mensual por técnico y facturación por mes deben conservarse como indicadores visibles, reorganizados en tarjetas compactas y/o secciones plegables.
+- El Top de servicios debe ser legible en móvil: gráfico circular de tamaño contenido y lista de servicios/cantidades debajo o en una distribución que no fuerce columnas estrechas.
+- Últimas 10 órdenes: mostrar folio, estado, CUP y USD sin columnas recortadas; usar filas compactas o tarjetas/lista de dos niveles.
+- Plan mensual por técnico: filas verticales o tarjetas con plan, ejecutado y porcentaje; no forzar una tabla horizontal de escritorio.
+- Facturación mensual: gráfico adaptable al ancho, selector CUP/USD y año accesibles con controles táctiles.
+- Mantener jerarquía visual, contraste, tipografía legible, áreas táctiles adecuadas y consistencia con el diseño nativo de GBOTtel.
+- Probar al menos con un ancho típico de Android pequeño y uno grande; documentar dimensiones/DPI o simulador usados. La pantalla debe poder recorrerse sin scroll horizontal.
+- No introducir datos ficticios en la aplicación. Los números de la maqueta visual son ilustrativos; la app debe mostrar datos reales de SQLite.
 
 ## 6. Reportes de gestión
 
