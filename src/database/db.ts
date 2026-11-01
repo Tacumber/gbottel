@@ -163,15 +163,18 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
   await migrarTecnicosAEsquemaActual(db);
   console.warn('[GBOTtel] db: tecnicos:migrated');
 
+  const migracionesFallidas: string[] = [];
   for (const sentencia of MIGRACIONES_COLUMNAS) {
     try {
       await db.execAsync(sentencia);
     } catch (error) {
       // "duplicate column name" es esperable si la columna ya existe de
-      // una versión anterior de la app — cualquier otro error sí se
-      // reporta, no se traga en silencio.
+      // una versión anterior de la app. Cualquier otro error se registra y
+      // IMPIDE subir schemaVersion: así la migración se reintenta en el
+      // próximo arranque y la base nunca se declara «actualizada» sin estarlo.
       if (!/duplicate column name/i.test(String(error))) {
         console.warn('Migración de columna falló:', sentencia, error);
+        migracionesFallidas.push(`${sentencia} → ${String(error)}`);
       }
     }
   }
@@ -201,6 +204,16 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     console.warn('FTS5 no disponible en esta plataforma, se sigue sin búsqueda de texto completo:', error);
   }
   console.warn('[GBOTtel] db: fts:done');
+  if (migracionesFallidas.length) {
+    await db.runAsync(
+      `INSERT INTO configuracion (clave, valor) VALUES ('migracionPendiente', ?)
+       ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor`,
+      migracionesFallidas.join('\n')
+    );
+    console.warn(`[GBOTtel] db: migración incompleta (${migracionesFallidas.length} sentencias); schemaVersion NO se actualiza`);
+    return db;
+  }
+  await db.runAsync(`DELETE FROM configuracion WHERE clave = 'migracionPendiente'`);
   await db.runAsync(
     `INSERT INTO configuracion (clave, valor) VALUES ('schemaVersion', ?)
      ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor`,

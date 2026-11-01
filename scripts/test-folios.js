@@ -1337,6 +1337,35 @@ prueba('T28 datos antiguos con cantidad ≤ 0: SQL y calcularTotales coinciden (
   assert.equal(t.totalCUP, 100 * 3 + 10 * 2);
 });
 
+prueba('T35 Migración: un fallo real de columna no sube schemaVersion y se reintenta', async () => {
+  await reiniciarBase();
+  const db = await dbMod.getDatabase();
+  const original = db.execAsync.bind(db);
+  let inyectado = false;
+  db.execAsync = async (sql) => {
+    if (!inyectado && /^ALTER TABLE orden_tecnicos ADD COLUMN cargo/i.test(String(sql).trim())) {
+      inyectado = true; throw new Error('disk I/O error simulado');
+    }
+    return original(sql);
+  };
+  await db.runAsync(`UPDATE configuracion SET valor='5' WHERE clave='schemaVersion'`);
+  await dbMod.initDatabase();
+  db.execAsync = original;
+  assert.ok(inyectado, 'el fallo se inyectó');
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '5', 'no se declara actualizada');
+  assert.match((await q1(`SELECT valor FROM configuracion WHERE clave='migracionPendiente'`)).valor, /orden_tecnicos/);
+  // reintento sin fallo: sube versión y limpia el aviso
+  await dbMod.initDatabase();
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '9');
+  assert.equal(await q1(`SELECT valor FROM configuracion WHERE clave='migracionPendiente'`), null);
+});
+
+prueba('T36 Script prebuild peligroso ya no se ejecuta automáticamente', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(SRC, '..', 'package.json'), 'utf8'));
+  assert.equal(pkg.scripts.prebuild, undefined);
+  assert.ok(pkg.scripts['prebuild:limpio']);
+});
+
 // ------------------------------------------------------------------
 (async () => {
   let fallos = 0;

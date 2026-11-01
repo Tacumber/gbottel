@@ -44,7 +44,7 @@
     "lint": "expo lint",
     "type-check": "tsc --noEmit",
     "doctor": "expo-doctor",
-    "prebuild": "expo prebuild --clean",
+    "prebuild:limpio": "expo prebuild --clean",
     "build:android": "eas build --platform android",
     "build:ios": "eas build --platform ios",
     "check:syntax": "node ./scripts/check-syntax.js",
