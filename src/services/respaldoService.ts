@@ -6,18 +6,23 @@ import { getDatabase } from '../database/db';
 import { SCHEMA_VERSION } from '../database/schema';
 import type { OrdenDashboard } from './analyticsService';
 import { ErrorFolios, FOLIO_MAXIMO, enSerieFolios, numeroDeFolio, registrarFolioExterno } from './foliosService';
-import { insertarOrdenNueva, obtenerOrden, reemplazarHijosDeOrden } from './ordenesService';
+import { calcularTotales, insertarOrdenNueva, obtenerOrden, reemplazarHijosDeOrden } from './ordenesService';
 import type { ServicioParaGuardar } from './ordenesService';
-import type { NuevaOrden, NuevoOrdenEquipo, NuevoOrdenMaterial, NuevoOrdenTecnico } from '../types/ordenes.types';
-import type { NuevoServicio, Servicio } from '../types/tarifario.types';
-import { importarServiciosDesdeJSON, listarServicios } from './tarifarioService';
+import type { NuevaOrden, NuevoOrdenEquipo, NuevoOrdenMaterial, NuevoOrdenTecnico, OrdenCompleta, TotalesOrden } from '../types/ordenes.types';
+import type { Servicio } from '../types/tarifario.types';
+import { contarServicios, importarServiciosDesdeJSON, listarServicios, reemplazarServicios } from './tarifarioService';
+import { interpretarArchivoTarifario, type ArchivoTarifario } from './tarifarioArchivo';
 import { fechaHoyISO, formatearFecha } from '@/utils/fechas';
+import { importeComoTexto, normalizarImporte } from '@/utils/moneda';
+import { formularioOrden, generarXLSX, htmlDocumento, nombreHoja } from '@/utils/ordenExport';
 
+// v6 = v5 + procedimientos_manuales (texto libre por servicio).
+// v5 = v4 + pago por transferencia en las órdenes (pagoTelefono, pagoNroTransaccion, pagoRealizado, pagoFecha).
 // v4 = v3 del tablero anterior (orden_equipos) + folio_rangos y folios_emitidos.
-// Se aceptan v1–v3: sin folios (sus órdenes pasan al libro al restaurar) y, antes
+// Se aceptan v1–v4 (sin pago → queda sin pago) y, de ellas, v1–v3: sin folios (sus órdenes pasan al libro al restaurar) y, antes
 // de v3, sin equipos ni técnicos firmantes (se restauran como listas vacías).
-const VERSION_RESPALDO = 4;
-const VERSIONES_RESPALDO_ACEPTADAS = [1, 2, 3, 4];
+const VERSION_RESPALDO = 6;
+const VERSIONES_RESPALDO_ACEPTADAS = [1, 2, 3, 4, 5, 6];
 
 interface RespaldoCompleto {
   version: number;
@@ -33,6 +38,8 @@ interface RespaldoCompleto {
     orden_tecnicos: unknown[];
     folio_rangos?: unknown[];
     folios_emitidos?: unknown[];
+    /** v6. Ausente en respaldos anteriores: en ese caso se conservan los locales. */
+    procedimientos_manuales?: unknown[];
   };
 }
 
@@ -71,7 +78,7 @@ async function elegirYLeerArchivo(mimeTypes: string[]): Promise<string | null> {
 
 export async function exportarRespaldoCompleto(): Promise<void> {
   const db = await getDatabase();
-  const [servicios, tecnicos, configuracion, ordenes, orden_equipos, orden_materiales, orden_servicios, orden_tecnicos, folio_rangos, folios_emitidos] =
+  const [servicios, tecnicos, configuracion, ordenes, orden_equipos, orden_materiales, orden_servicios, orden_tecnicos, folio_rangos, folios_emitidos, procedimientos_manuales] =
     await Promise.all([
       db.getAllAsync(`SELECT * FROM servicios`),
       db.getAllAsync(`SELECT * FROM tecnicos`),
@@ -86,12 +93,13 @@ export async function exportarRespaldoCompleto(): Promise<void> {
          FROM folio_rangos r LEFT JOIN tecnicos t ON t.id = r.tecnicoId ORDER BY r.desde`
       ),
       db.getAllAsync(`SELECT numero, origen, emitidoEn FROM folios_emitidos ORDER BY numero`),
+      db.getAllAsync(`SELECT clave, texto, creadoEn, actualizadoEn FROM procedimientos_manuales ORDER BY clave`),
     ]);
 
   const respaldo: RespaldoCompleto = {
     version: VERSION_RESPALDO,
     exportadoEn: new Date().toISOString(),
-    tablas: { servicios, tecnicos, configuracion, ordenes, orden_equipos, orden_materiales, orden_servicios, orden_tecnicos, folio_rangos, folios_emitidos },
+    tablas: { servicios, tecnicos, configuracion, ordenes, orden_equipos, orden_materiales, orden_servicios, orden_tecnicos, folio_rangos, folios_emitidos, procedimientos_manuales },
   };
 
   await compartirTexto(JSON.stringify(respaldo, null, 2), nombreArchivoConFecha('gbottel-respaldo', 'json'));
@@ -142,7 +150,7 @@ export interface PreparacionRespaldo {
 }
 
 const TABLAS_RESPALDO = ['servicios', 'tecnicos', 'configuracion', 'ordenes', 'orden_materiales', 'orden_servicios'] as const;
-const TABLAS_OPCIONALES = ['orden_equipos', 'orden_tecnicos'] as const;
+const TABLAS_OPCIONALES = ['orden_equipos', 'orden_tecnicos', 'procedimientos_manuales'] as const;
 
 function esObjeto(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -173,6 +181,15 @@ export function validarRespaldo(datos: unknown): RespaldoValidado {
   }
   tablas.orden_equipos = tablas.orden_equipos ?? [];
   tablas.orden_tecnicos = tablas.orden_tecnicos ?? [];
+  if (Array.isArray(tablas.procedimientos_manuales)) {
+    const clavesProc = new Set<string>();
+    for (const f of tablas.procedimientos_manuales as Record<string, unknown>[]) {
+      if (typeof f.clave !== 'string' || !f.clave.trim()) return falla('un procedimiento manual no tiene clave.');
+      if (typeof f.texto !== 'string' || !f.texto.trim()) return falla(`el procedimiento manual "${f.clave}" no tiene texto.`);
+      if (clavesProc.has(f.clave)) return falla(`procedimiento manual repetido (${f.clave}).`);
+      clavesProc.add(f.clave);
+    }
+  }
 
   const ordenes = tablas.ordenes as Record<string, unknown>[];
   const idsOrden = new Set<number>();
@@ -353,6 +370,8 @@ export async function aplicarRespaldo(prep: PreparacionRespaldo): Promise<void> 
       await txn.runAsync(`DELETE FROM tecnicos`);
       await txn.runAsync(`DELETE FROM servicios`);
       await txn.runAsync(`DELETE FROM configuracion`);
+      // Respaldos anteriores a la v6 no traen procedimientos manuales: se conservan los locales.
+      if (datos.tablas.procedimientos_manuales !== undefined) await txn.runAsync(`DELETE FROM procedimientos_manuales`);
 
       await insertarFilas(txn, 'servicios', datos.tablas.servicios);
       await insertarFilas(txn, 'tecnicos', datos.tablas.tecnicos);
@@ -362,6 +381,7 @@ export async function aplicarRespaldo(prep: PreparacionRespaldo): Promise<void> 
       await insertarFilas(txn, 'orden_materiales', datos.tablas.orden_materiales);
       await insertarFilas(txn, 'orden_servicios', datos.tablas.orden_servicios);
       await insertarFilas(txn, 'orden_tecnicos', datos.tablas.orden_tecnicos);
+      await insertarFilas(txn, 'procedimientos_manuales', datos.tablas.procedimientos_manuales ?? []);
 
       // Bloques: coincidentes → el siguiente mayor; nuevos → se agregan.
       for (const c of fusion.coincidentes) {
@@ -441,6 +461,7 @@ const COLUMNAS_POR_TABLA: Record<string, Set<string>> = {
     'creadoEn',
   ]),
   configuracion: new Set(['clave', 'valor']),
+  procedimientos_manuales: new Set(['clave', 'texto', 'creadoEn', 'actualizadoEn']),
   ordenes: new Set([
     'id',
     'numeroOrden',
@@ -483,6 +504,10 @@ const COLUMNAS_POR_TABLA: Record<string, Set<string>> = {
     'clienteFirmaCI',
     'clienteFirmaFecha',
     'clienteFirmado',
+    'pagoTelefono',
+    'pagoNroTransaccion',
+    'pagoRealizado',
+    'pagoFecha',
     'creadoEn',
     'actualizadoEn',
   ]),
@@ -525,64 +550,67 @@ async function insertarFilas(db: Awaited<ReturnType<typeof getDatabase>>, tabla:
 // ============================================================
 
 export async function exportarTarifarioJSON(): Promise<void> {
-  const servicios = await listarServicios({ incluirInactivos: true, limite: 10000 });
+  const servicios = await listarServicios({ incluirInactivos: true, incluirPoblacion: true, limite: 10000 });
   await compartirTexto(JSON.stringify(servicios, null, 2), nombreArchivoConFecha('gbottel-tarifario', 'json'));
 }
 
-export async function importarTarifarioJSON(): Promise<{
-  importado: boolean;
-  resultado?: { importados: number; duplicados: number; errores: string[] };
-}> {
-  const contenido = await elegirYLeerArchivo(['application/json']);
-  if (contenido === null) return { importado: false };
-
-  const datos = JSON.parse(contenido);
-  if (!Array.isArray(datos)) {
-    throw new Error('El archivo debe contener una lista de servicios en formato JSON.');
-  }
-
-  const resultado = await importarServiciosDesdeJSON(datos as NuevoServicio[]);
-  return { importado: true, resultado };
+export interface ResultadoImportarTarifario {
+  importados: number;
+  duplicados: number;
+  errores: string[];
+  /** Filas de Población que no se cargan (Población tiene su propio tarifario). */
+  poblacionOmitidos: number;
 }
 
 /**
- * Reemplaza SOLO el tarifario (tabla `servicios`) por lo que venga en el
- * archivo — a diferencia de importarTarifarioJSON(), que solo agrega filas
- * nuevas y deja los códigos repetidos de lado sin tocar los existentes.
- * Pensado para el caso real de un taller específico (ej. clima): dejar en
- * el dispositivo solo las tarifas que le corresponden a ese técnico, no las
- * 1858 del catálogo completo más las que traiga el archivo importado.
- *
- * NO toca técnicos, órdenes ni configuración — para reemplazar todo eso
- * junto está importarRespaldoCompleto(). Las órdenes ya cerradas no se
- * rompen: orden_servicios.servicioId tiene ON DELETE SET NULL (ver
- * schema.ts), así que conservan su propio código y descripción aunque el
- * servicio original del tarifario ya no exista.
- *
- * El borrado y la importación son dos transacciones separadas (mismo patrón
- * que resetearBaseDeDatos() + importarServiciosDesdeJSON() en Ajustes) en
- * vez de una sola anidada, porque expo-sqlite no está confirmado que
- * soporte transacciones anidadas de forma segura.
+ * Agrega servicios nuevos desde un archivo (lista antigua o modelo nuevo). Se valida TODO el archivo
+ * antes de insertar; los códigos que ya existen se cuentan como duplicados y no se tocan.
  */
-export async function reemplazarTarifarioJSON(): Promise<{
-  reemplazado: boolean;
-  resultado?: { importados: number; duplicados: number; errores: string[] };
-}> {
+export async function importarTarifarioDesdeTexto(contenido: string): Promise<ResultadoImportarTarifario> {
+  const archivo = interpretarArchivoTarifario(contenido);
+  const r = await importarServiciosDesdeJSON(archivo.servicios);
+  return { ...r, poblacionOmitidos: archivo.poblacionOmitidos };
+}
+
+export async function importarTarifarioJSON(): Promise<{ importado: boolean; resultado?: ResultadoImportarTarifario }> {
   const contenido = await elegirYLeerArchivo(['application/json']);
-  if (contenido === null) return { reemplazado: false };
+  if (contenido === null) return { importado: false };
+  return { importado: true, resultado: await importarTarifarioDesdeTexto(contenido) };
+}
 
-  const datos = JSON.parse(contenido);
-  if (!Array.isArray(datos)) {
-    throw new Error('El archivo debe contener una lista de servicios en formato JSON.');
-  }
+/** Archivo ya validado + cuántos servicios hay ahora: lo que la pantalla enseña antes de confirmar. */
+export interface PreparacionReemplazoTarifario {
+  archivo: ArchivoTarifario;
+  actuales: number;
+}
 
-  const db = await getDatabase();
-  await db.withTransactionAsync(async () => {
-    await db.runAsync(`DELETE FROM servicios`);
-  });
+export async function prepararReemplazoTarifarioDesdeTexto(contenido: string): Promise<PreparacionReemplazoTarifario> {
+  const archivo = interpretarArchivoTarifario(contenido); // lanza ErrorTarifario sin tocar la base
+  return { archivo, actuales: await contarServicios(true) };
+}
 
-  const resultado = await importarServiciosDesdeJSON(datos as NuevoServicio[]);
-  return { reemplazado: true, resultado };
+/** Elige el archivo y lo valida. No borra nada. null = cancelado. */
+export async function prepararReemplazoTarifario(): Promise<PreparacionReemplazoTarifario | null> {
+  const contenido = await elegirYLeerArchivo(['application/json']);
+  if (contenido === null) return null;
+  return prepararReemplazoTarifarioDesdeTexto(contenido);
+}
+
+/**
+ * Reemplaza SOLO el tarifario (tabla `servicios`) por lo del archivo ya validado, en UNA transacción:
+ * si algo falla, el catálogo anterior queda intacto. No toca técnicos, órdenes, configuración ni
+ * procedimientos manuales (van por código, no por id).
+ */
+export async function aplicarReemplazoTarifario(prep: PreparacionReemplazoTarifario): Promise<ResultadoImportarTarifario> {
+  const { importados } = await reemplazarServicios(prep.archivo.servicios);
+  return { importados, duplicados: 0, errores: [], poblacionOmitidos: prep.archivo.poblacionOmitidos };
+}
+
+/** Versión directa (elige, valida y aplica sin confirmación intermedia). La pantalla usa prepararReemplazoTarifario + aplicarReemplazoTarifario. */
+export async function reemplazarTarifarioJSON(): Promise<{ reemplazado: boolean; resultado?: ResultadoImportarTarifario }> {
+  const prep = await prepararReemplazoTarifario();
+  if (!prep) return { reemplazado: false };
+  return { reemplazado: true, resultado: await aplicarReemplazoTarifario(prep) };
 }
 
 export type { Servicio };
@@ -615,10 +643,6 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente: 'Pendiente', finalizada: 'Finalizada', facturada: 'Facturada',
 };
 
-function moneda(n: number, codigo: 'CUP' | 'USD'): string {
-  return new Intl.NumberFormat('es-CU', { style: 'currency', currency: codigo, maximumFractionDigits: 2 }).format(n || 0);
-}
-
 function protegerCSV(valor: string): string {
   return /^[=+\-@]/.test(valor) ? `'${valor}` : valor;
 }
@@ -626,10 +650,6 @@ function protegerCSV(valor: string): string {
 function escaparCSV(valor: string): string {
   const seguro = protegerCSV(valor);
   return /[",\n]/.test(seguro) ? `"${seguro.replace(/"/g, '""')}"` : seguro;
-}
-
-function escaparHTML(valor: string): string {
-  return valor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /**
@@ -643,43 +663,55 @@ export async function exportarOrdenesCSV(ordenes: OrdenDashboard[]): Promise<voi
   const filas = ordenes.map((o) => [
     o.folio, o.cliente, formatearFecha(o.fecha),
     ETIQUETA_ESTADO[o.estado] ?? o.estado,
-    String(o.totalCUP ?? 0), String(o.totalUSD ?? 0),
+    importeComoTexto(o.totalCUP), importeComoTexto(o.totalUSD),
   ]);
   const csv = '\uFEFF' + [encabezados, ...filas].map((fila) => fila.map(escaparCSV).join(',')).join('\r\n');
   await compartirTexto(csv, nombreArchivoConFecha('gbottel-ordenes', 'csv'));
 }
 
+/** Lee de SQLite cada orden COMPLETA (nunca del estado de pantalla) con sus totales persistidos. */
+async function leerOrdenesCompletas(ordenes: OrdenDashboard[]): Promise<{ orden: OrdenCompleta; totales: TotalesOrden }[]> {
+  const salida: { orden: OrdenCompleta; totales: TotalesOrden }[] = [];
+  for (const resumen of ordenes) {
+    const orden = await obtenerOrden(resumen.id);
+    if (!orden) continue;
+    salida.push({ orden, totales: calcularTotales(orden.materiales, orden.servicios) });
+  }
+  if (!salida.length) throw new Error('Las órdenes seleccionadas ya no existen.');
+  return salida;
+}
+
+async function compartirBytes(bytes: Uint8Array, nombreArchivo: string, mimeType: string): Promise<void> {
+  const archivo = new File(Paths.cache, nombreArchivo);
+  if (archivo.exists) archivo.delete();
+  archivo.create();
+  archivo.write(bytes);
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(archivo.uri, { mimeType });
+  } else {
+    throw new Error('Este dispositivo no tiene disponible la función de compartir archivos.');
+  }
+}
+
+/** Libro XLSX real: una hoja por orden, con la orden completa (todas las secciones). */
+export async function exportarOrdenesXLSX(ordenes: OrdenDashboard[]): Promise<void> {
+  const completas = await leerOrdenesCompletas(ordenes);
+  const usados = new Set<string>();
+  const hojas = completas.map(({ orden, totales }) => ({
+    nombre: nombreHoja(orden.numeroOrden, usados),
+    filas: formularioOrden(orden, totales),
+  }));
+  await compartirBytes(
+    generarXLSX(hojas),
+    nombreArchivoConFecha('gbottel-ordenes', 'xlsx'),
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+}
+
+/** PDF imprimible: una página por orden, siempre completa. */
 export async function exportarOrdenesPDF(ordenes: OrdenDashboard[]): Promise<void> {
-  const filas = ordenes
-    .map(
-      (o) => `<tr>
-        <td>${escaparHTML(o.folio)}</td>
-        <td>${escaparHTML(o.cliente)}</td>
-        <td>${escaparHTML(formatearFecha(o.fecha))}</td>
-        <td>${escaparHTML(ETIQUETA_ESTADO[o.estado] ?? o.estado)}</td>
-        <td style="text-align:right">${escaparHTML(moneda(o.totalCUP, 'CUP'))}</td>
-        <td style="text-align:right">${escaparHTML(moneda(o.totalUSD, 'USD'))}</td>
-      </tr>`
-    )
-    .join('');
-  const html = `<html><head><meta charset="utf-8" />
-    <style>
-      body { font-family: Helvetica, Arial, sans-serif; padding: 20px; color: #1a1a1a; }
-      h1 { font-size: 16px; margin-bottom: 2px; }
-      .sub { font-size: 11px; color: #666; margin-bottom: 14px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border: 1px solid #ddd; padding: 5px 7px; font-size: 10px; text-align: left; }
-      th { background: #f2f2f2; }
-    </style></head>
-    <body>
-      <h1>GBOTtel — Órdenes de Servicio</h1>
-      <div class="sub">Generado el ${formatearFecha(fechaHoyISO())} · ${ordenes.length} orden${ordenes.length === 1 ? '' : 'es'}</div>
-      <table>
-        <thead><tr><th>Folio</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th>CUP</th><th>USD</th></tr></thead>
-        <tbody>${filas}</tbody>
-      </table>
-    </body></html>`;
-  const { uri } = await Print.printToFileAsync({ html });
+  const completas = await leerOrdenesCompletas(ordenes);
+  const { uri } = await Print.printToFileAsync({ html: htmlDocumento(completas) });
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
   } else {
@@ -738,10 +770,51 @@ export async function exportarOrdenesJSON(ordenes: OrdenDashboard[]): Promise<vo
       servicios: completa.servicios.map(({ id, ordenId, ...s }) => s),
       tecnicos: completa.tecnicos.map(({ id, ordenId, ...t }) => t),
       equipos: completa.equipos.map(({ id, ordenId, ...e }) => e),
+      // Totales persistidos: al importar se comprueba que las líneas los reproducen exactamente.
+      totales: (({ totalCUP, totalUSD }) => ({ totalCUP, totalUSD }))(calcularTotales(completa.materiales, completa.servicios)),
     });
   }
   const payload = { version: 2, exportadoEn: new Date().toISOString(), ordenes: completas };
   await compartirTexto(JSON.stringify(payload, null, 2), nombreArchivoConFecha('gbottel-ordenes-traspaso', 'json'));
+}
+
+function numeroFinito(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+/**
+ * Valida tipos, cantidades, importes y totales de UNA orden de un archivo de traspaso.
+ * Devuelve el motivo del rechazo, o null si es aceptable. No modifica nada.
+ */
+export function motivoOrdenInvalida(o: Record<string, unknown>): string | null {
+  for (const [lista, nombre] of [['servicios', 'servicio'], ['materiales', 'material']] as const) {
+    const filas = o[lista];
+    if (filas !== undefined && !Array.isArray(filas)) return `La lista de ${lista} no es válida.`;
+    for (const fila of (filas ?? []) as unknown[]) {
+      if (!esObjeto(fila)) return `Hay un ${nombre} que no es un objeto.`;
+      if (!numeroFinito(fila.cantidad) || fila.cantidad <= 0) return `Un ${nombre} tiene una cantidad no válida (debe ser un número mayor que cero).`;
+      for (const campo of ['importeCUP', 'importeUSD'] as const) {
+        if (!numeroFinito(fila[campo]) || fila[campo] < 0) return `Un ${nombre} tiene un importe ${campo} no válido.`;
+      }
+    }
+  }
+  const equipos = o.equipos;
+  if (equipos !== undefined && !Array.isArray(equipos)) return 'La lista de equipos no es válida.';
+  if (o.modalidadMultiple === 1 && (!Array.isArray(equipos) || equipos.length < 2)) {
+    return 'Orden de modalidad múltiple con menos de dos equipos.';
+  }
+  if (o.tecnicos !== undefined && !Array.isArray(o.tecnicos)) return 'La lista de técnicos no es válida.';
+  if (o.estado !== undefined && !['pendiente', 'finalizada', 'facturada'].includes(String(o.estado))) return 'Estado de orden desconocido.';
+  if (esObjeto(o.totales)) {
+    const mat = (o.materiales ?? []) as { cantidad: number; importeCUP: number; importeUSD: number }[];
+    const ser = (o.servicios ?? []) as { cantidad: number; importeCUP: number; importeUSD: number }[];
+    const suma = (campo: 'importeCUP' | 'importeUSD') =>
+      normalizarImporte([...mat, ...ser].reduce((acc, x) => acc + x[campo] * x.cantidad, 0));
+    if (normalizarImporte(Number(o.totales.totalCUP)) !== suma('importeCUP') || normalizarImporte(Number(o.totales.totalUSD)) !== suma('importeUSD')) {
+      return 'Los importes de las líneas no coinciden con el total declarado en el archivo.';
+    }
+  }
+  return null;
 }
 
 function descripcionOrden(o: Record<string, unknown>): { folio: string; cliente: string } {
@@ -761,6 +834,10 @@ export async function prepararTraspasoDesdeTexto(contenido: string): Promise<Pre
   }
   if (!esObjeto(datos) || !Array.isArray(datos.ordenes)) {
     throw new ErrorFolios('TRASPASO_INVALIDO', 'El archivo no tiene el formato esperado de traspaso de órdenes.');
+  }
+  // v1 (sin folio) se acepta para poder explicar orden por orden por qué se omite; otras versiones, no.
+  if (datos.version !== 1 && datos.version !== 2) {
+    throw new ErrorFolios('TRASPASO_INVALIDO', `Versión de traspaso no compatible (${String(datos.version)}). Se acepta la versión 2.`);
   }
 
   const db = await getDatabase();
@@ -793,6 +870,11 @@ async function clasificarTraspaso(db: Awaited<ReturnType<typeof getDatabase>>, o
     const folio = typeof bruta.folio === 'string' ? bruta.folio : '';
     if (!folio) {
       omitir('Archivo antiguo sin folio permanente: vuelve a exportarla desde esta versión de GBOTtel.');
+      continue;
+    }
+    const invalida = motivoOrdenInvalida(bruta);
+    if (invalida) {
+      omitir(invalida);
       continue;
     }
     if (vistos.has(folio)) {
@@ -848,7 +930,7 @@ export async function aplicarTraspaso(prep: PreparacionTraspaso): Promise<Result
 
       const ordenadas = [...vigente.aImportar].sort((a, b) => String(a.fechaReporte ?? '').localeCompare(String(b.fechaReporte ?? '')));
       for (const o of ordenadas) {
-        const { folio, folioOrigen, tecnicoNombre, principalNombre, equipos, materiales, servicios, tecnicos, ...datosOrden } = o as Record<string, unknown> & {
+        const { folio, folioOrigen, tecnicoNombre, principalNombre, equipos, materiales, servicios, tecnicos, totales: _totales, ...datosOrden } = o as Record<string, unknown> & {
           folio: string;
           folioOrigen?: string;
           tecnicoNombre?: string | null;

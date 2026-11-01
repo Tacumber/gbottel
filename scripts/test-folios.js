@@ -89,7 +89,7 @@ const dobles = {
       }
     },
   },
-  'expo-print': {},
+  'expo-print': { printToFileAsync: async ({ html }) => { estado.ultimoHtml = html; return { uri: 'mem://orden.pdf' }; } },
   'expo-sharing': { isAvailableAsync: async () => true, shareAsync: async () => {} },
 };
 
@@ -112,6 +112,11 @@ const ordenes = require(path.join(SRC, 'services/ordenesService.ts'));
 const respaldo = require(path.join(SRC, 'services/respaldoService.ts'));
 const tecnicosSvc = require(path.join(SRC, 'services/tecnicosService.ts'));
 const analitica = require(path.join(SRC, 'services/analyticsService.ts'));
+const preferencias = require(path.join(SRC, 'services/preferenciasService.ts'));
+const moneda = require(path.join(SRC, 'utils/moneda.ts'));
+const formOrden = require(path.join(SRC, 'utils/ordenForm.ts'));
+const exportador = require(path.join(SRC, 'utils/ordenExport.ts'));
+const procedimientos = require(path.join(SRC, 'services/procedimientosService.ts'));
 
 // ------------------------------------------------------------------
 // Utilidades
@@ -153,9 +158,9 @@ const prueba = (nombre, fn) => pruebas.push({ nombre, fn });
 // ------------------------------------------------------------------
 // Pruebas
 // ------------------------------------------------------------------
-prueba('T01 base nueva: v7, sin rangos → no se puede crear orden y no queda nada a medias', async () => {
+prueba('T01 base nueva: v9, sin rangos → no se puede crear orden y no queda nada a medias', async () => {
   await reiniciarBase();
-  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '7');
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '9');
   const a = await tecnico('Ana');
   await rechaza(ordenes.guardarOrdenCompleta(null, payload()), 'SIN_PRINCIPAL');
   await rechaza(ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a })), 'SIN_FOLIOS');
@@ -318,7 +323,7 @@ prueba('T09 migración desde una base v5 real: folios intactos, libro e históri
   assert.deepEqual((await q('SELECT numero, origen FROM folios_emitidos ORDER BY numero')).map((r) => r.numero), ['000001', '000002', '000007']);
   const h = await q('SELECT historico, desde, hasta, siguiente, tecnicoId FROM folio_rangos');
   assert.deepEqual(h, [{ historico: 1, desde: 1, hasta: 7, siguiente: 8, tecnicoId: null }]);
-  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '7');
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '9');
   const a = await tecnico('Ana');
   await rechaza(folios.asignarRango(a, 5, 10), 'RANGO_SOLAPADO');
   await folios.asignarRango(a, 8, 10);
@@ -345,10 +350,10 @@ async function escenarioRespaldo() {
   return Object.values(estado.compartidos)[0];
 }
 
-prueba('T10 respaldo v4: ida y vuelta conserva folios; fusiona bloques con el mayor siguiente; el libro local no se pierde', async () => {
+prueba('T10 respaldo v6: ida y vuelta conserva folios; fusiona bloques con el mayor siguiente; el libro local no se pierde', async () => {
   const contenido = await escenarioRespaldo();
   const j = JSON.parse(contenido);
-  assert.equal(j.version, 4);
+  assert.equal(j.version, 6);
   assert.ok(Array.isArray(j.tablas.folio_rangos) && Array.isArray(j.tablas.folios_emitidos));
   // Después del respaldo, este dispositivo emite 2 folios más y un bloque nuevo
   const a = (await q1(`SELECT id FROM tecnicos WHERE nombre='Ana'`)).id;
@@ -512,10 +517,11 @@ prueba('T14 traspaso: choque con bloque ajeno / histórico, archivo viejo sin fo
 
   // atomicidad: una orden con datos que rompen a mitad → no entra ninguna
   const malo = JSON.parse(archivo);
-  malo.ordenes[1].estado = 'no_existe';
+  malo.ordenes[1].clienteNombre = 'FALLA';
   await reiniciarBase(); await tecnico('Beto');
+  await (await dbMod.getDatabase()).execAsync(`CREATE TRIGGER t_falla BEFORE INSERT ON ordenes WHEN NEW.clienteNombre = 'FALLA' BEGIN SELECT RAISE(ABORT, 'FALLA_A_MITAD'); END`);
   const p3 = await respaldo.prepararTraspasoDesdeTexto(JSON.stringify(malo));
-  await rechaza(respaldo.aplicarTraspaso(p3), 'CHECK');
+  await rechaza(respaldo.aplicarTraspaso(p3), 'FALLA_A_MITAD');
   assert.equal((await q1('SELECT COUNT(*) n FROM ordenes')).n, 0);
   assert.equal((await q1('SELECT COUNT(*) n FROM folios_emitidos')).n, 0);
 });
@@ -546,7 +552,7 @@ prueba('T19 equipos de la orden viajan en respaldo v4 y traspaso; respaldo v3 de
   assert.equal((await q('SELECT * FROM orden_equipos WHERE ordenId=?', id)).length, 2);
   await respaldo.exportarRespaldoCompleto();
   const j = JSON.parse(Object.values(estado.compartidos).pop());
-  assert.equal(j.version, 4);
+  assert.equal(j.version, 6);
   assert.equal(j.tablas.orden_equipos.length, 2);
   // ida y vuelta
   const prep = await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(j));
@@ -611,6 +617,724 @@ prueba('T18 la fecha de INICIO define el trabajo en filtros y reportes (con resp
   assert.deepEqual(marzo.map((o) => o.cliente).sort(), ['ConInicio', 'SoloReporte']);
   const enero = await analitica.obtenerOrdenesFiltradas({ desde: '2026-01-01', hasta: '2026-01-31', limite: 50 });
   assert.equal(enero.length, 0);
+});
+
+
+prueba('T20 importes exactos: SQLite = calcularTotales = contador/últimas 10 = texto mostrado; sin redondeo ni «mil»', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 50);
+  const id = await ordenes.guardarOrdenCompleta(null, payload({
+    tecnicoPrincipalId: a,
+    datos: { clienteNombre: 'Grande', fechaReporte: '2026-10-05', fechaInicio: '2026-10-05', estado: 'finalizada' },
+    materiales: [{ descripcion: 'm', cantidad: 2.5, importeCUP: 10.1, importeUSD: 0 }],
+    servicios: [{ servicioId: null, codigo: 'S', descripcion: 's', cantidad: 3, importeCUP: 1234567.89, importeUSD: 0.125 }],
+  }));
+  const o = await ordenes.obtenerOrden(id);
+  const t = ordenes.calcularTotales(o.materiales, o.servicios);
+  const sql = await q1(`SELECT (SELECT COALESCE(SUM(importeCUP*cantidad),0) FROM orden_servicios WHERE ordenId=?) + (SELECT COALESCE(SUM(importeCUP*cantidad),0) FROM orden_materiales WHERE ordenId=?) AS cup`, id, id);
+  const ultimas = await analitica.obtenerUltimasOrdenes(10);
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  const esperado = 1234567.89 * 3 + 10.1 * 2.5; // 3 703 728,92
+  for (const valor of [t.totalCUP, sql.cup, ultimas[0].totalCUP, lista[0].totalCUP]) {
+    assert.equal(moneda.normalizarImporte(valor), moneda.normalizarImporte(esperado));
+  }
+  // el mismo texto en todas las pantallas (todas usan formatearImporte)
+  const textos = new Set([t.totalCUP, ultimas[0].totalCUP, lista[0].totalCUP].map((v) => moneda.formatearImporte(v, 'CUP')));
+  assert.equal(textos.size, 1);
+  const texto = [...textos][0];
+  assert.ok(!/mil/i.test(texto), texto);
+  assert.ok(/3[\s .,]?703[\s .,]?728[.,]92/.test(texto), `texto inesperado: ${texto}`);
+  // sin pérdida de decimales ni redondeo a enteros
+  assert.ok(/12345\.67/.test(moneda.importeComoTexto(12345.67)));
+  assert.equal(moneda.importeComoTexto(0.1 * 3), '0.3');
+  assert.ok(/12[\s .,]?345[.,]67/.test(moneda.formatearImporte(12345.67, 'CUP')));
+  assert.ok(/0[.,]125/.test(moneda.formatearImporte(0.125, 'USD')));
+  assert.ok(/1[.,]00/.test(moneda.formatearImporte(1, 'CUP')));
+});
+
+prueba('T21 cantidad en modalidad múltiple: autollenado inicial, edición libre (mayor o menor que equipos) y no se pisa', async () => {
+  const f = formOrden;
+  assert.equal(f.cantidadInicial(true, 2), '2');
+  assert.equal(f.cantidadInicial(false, 2), '1');
+  let lineas = [{ cantidad: '2' }, { cantidad: '2' }];
+  lineas[0] = { cantidad: '4', cantidadManual: true };   // 4 cargas para 2 equipos
+  lineas[1] = { cantidad: '16', cantidadManual: true };  // 16 perforaciones
+  const sync = f.sincronizarCantidades([...lineas, { cantidad: '2' }], 3, true);
+  assert.deepEqual(sync.map((l) => l.cantidad), ['4', '16', '3']);   // solo la no editada sigue a los equipos
+  assert.deepEqual(f.sincronizarCantidades([{ cantidad: '5' }], 3, false).map((l) => l.cantidad), ['5']);
+  // importe una sola vez: precio unitario × cantidad final
+  const total = ordenes.calcularTotales([], [{ cantidad: 16, importeCUP: 12.5, importeUSD: 0 }]);
+  assert.equal(total.serviciosCUP, 200);
+});
+
+prueba('T22 tiempo: suma de servicios con duración, ignora los sin duración y respeta la edición manual', async () => {
+  const f = formOrden;
+  const lineas = [
+    { cantidad: '2', tiempoEstimado: 30 },
+    { cantidad: '1', tiempoEstimado: null },
+    { cantidad: '3', tiempoEstimado: 0 },
+    { cantidad: '1,5', tiempoEstimado: 20 },
+  ];
+  assert.equal(f.calcularTiempoAutomatico(lineas), 90);
+  assert.equal(f.calcularTiempoAutomatico([]), 0);
+  assert.equal(f.calcularTiempoAutomatico([{ cantidad: '4' }]), 0);
+  assert.deepEqual(f.resolverTiempo({ texto: '', manual: false }, 90), { texto: '90', manual: false });
+  assert.deepEqual(f.resolverTiempo({ texto: '', manual: false }, 0), { texto: '', manual: false });
+  // el técnico escribe 45: el automático (que cambia después) NO lo sobrescribe
+  assert.deepEqual(f.resolverTiempo({ texto: '45', manual: true }, 90), { texto: '45', manual: true });
+  assert.deepEqual(f.resolverTiempo({ texto: '45', manual: true }, 200), { texto: '45', manual: true });
+});
+
+prueba('T23 secciones: preferencia independiente por técnico, entrada inválida ignorada, no toca órdenes', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana'); const b = await tecnico('Beto');
+  await folios.asignarRango(a, 1, 5);
+  const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a }));
+  const antes = JSON.stringify(await ordenes.obtenerOrden(id));
+  await preferencias.guardarSeccionesOcultas(a, ['materiales', 'firmas']);
+  await preferencias.guardarSeccionesOcultas(b, ['cliente']);
+  assert.deepEqual(await preferencias.obtenerSeccionesOcultas(a), ['materiales', 'firmas']);
+  assert.deepEqual(await preferencias.obtenerSeccionesOcultas(b), ['cliente']);
+  assert.deepEqual(await preferencias.obtenerSeccionesOcultas(null), []);
+  assert.deepEqual(formOrden.parsearSeccionesOcultas('["totales","inventada",3]'), ['totales']);
+  assert.deepEqual(formOrden.parsearSeccionesOcultas('no es json'), []);
+  assert.equal(JSON.stringify(await ordenes.obtenerOrden(id)), antes); // ocultar no modifica la orden
+  // las preferencias viajan en el respaldo (tabla configuracion)
+  await respaldo.exportarRespaldoCompleto();
+  const j = JSON.parse(Object.values(estado.compartidos).pop());
+  assert.ok(j.tablas.configuracion.some((c) => c.clave === `seccionesOcultas:${a}`));
+});
+
+prueba('T24 folio editable: propuesto, manual dentro del bloque, continuar o conservar secuencia, rechazos', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana'); const b = await tecnico('Beto');
+  await folios.asignarRango(a, 1, 10);
+  await folios.asignarRango(b, 11, 20);
+  assert.equal(await folios.proximoFolioDisponible(a), 1);
+  const g = (extra) => ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, ...extra }));
+  // fuera del bloque de Ana (es de Beto) y fuera de todo rango
+  await rechaza(g({ folioManual: 12 }), 'RANGO_INVALIDO');
+  await rechaza(g({ folioManual: 99 }), 'RANGO_INVALIDO');
+  await rechaza(g({ folioManual: 0 }), 'RANGO_INVALIDO');
+  assert.equal((await q1('SELECT COUNT(*) n FROM ordenes')).n, 0);
+  assert.equal((await q1('SELECT COUNT(*) n FROM folios_emitidos')).n, 0);
+  // igual al propuesto = emisión normal
+  const o1 = await g({ folioManual: 1 });
+  assert.equal((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', o1)).numeroOrden, '000001');
+  assert.equal((await q1('SELECT siguiente FROM folio_rangos WHERE tecnicoId=?', a)).siguiente, 2);
+  // 5 CONTINUANDO: el siguiente pasa a 6
+  const o2 = await g({ folioManual: 5, continuarSecuencia: true });
+  assert.equal((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', o2)).numeroOrden, '000005');
+  assert.equal((await q1('SELECT siguiente FROM folio_rangos WHERE tecnicoId=?', a)).siguiente, 6);
+  assert.equal(await folios.proximoFolioDisponible(a), 6);
+  // 8 SIN continuar: se usa el 8 pero la secuencia sigue en 6
+  const o3 = await g({ folioManual: 8, continuarSecuencia: false });
+  assert.equal((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', o3)).numeroOrden, '000008');
+  assert.equal((await q1('SELECT siguiente FROM folio_rangos WHERE tecnicoId=?', a)).siguiente, 6);
+  // duplicado (ya emitido) y reutilización tras borrar la orden
+  await rechaza(g({ folioManual: 8 }), 'FOLIO_EMITIDO');
+  await (await dbMod.getDatabase()).runAsync('DELETE FROM ordenes WHERE id=?', o3);
+  await rechaza(g({ folioManual: 8 }), 'FOLIO_EMITIDO');
+  // la secuencia automática salta los ya emitidos: 6, 7, (8 emitido) 9
+  const seq = [];
+  for (let i = 0; i < 3; i++) seq.push((await q1('SELECT numeroOrden FROM ordenes WHERE id=?', await g({}))).numeroOrden);
+  assert.deepEqual(seq, ['000006', '000007', '000009']);
+  // sin guardado parcial en los rechazos y libro coherente
+  assert.equal((await q1('SELECT COUNT(*) n FROM folios_emitidos')).n, 6);
+});
+
+
+async function crearDosOrdenesParaExportar() {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 20);
+  const eq = [{ marca: 'M1', modelo: 'X', nroSerie: 'S1' }, { marca: 'M2', modelo: 'Y', nroSerie: 'S2' }];
+  const id1 = await ordenes.guardarOrdenCompleta(null, payload({
+    tecnicoPrincipalId: a, equipos: eq,
+    datos: { clienteNombre: 'Cliente <Uno> & Cía', clienteTipo: 'Institucional', fechaReporte: '2026-10-05', fechaInicio: '2026-10-05', estado: 'finalizada', modalidadMultiple: 1, observaciones: 'Línea 1\nLínea 2 =SUM(A1)' },
+    materiales: [{ descripcion: 'Cable', cantidad: 2.5, importeCUP: 10.1, importeUSD: 0.333 }],
+    servicios: [{ servicioId: null, codigo: 'S1', descripcion: 'Perforaciones', cantidad: 16, importeCUP: 12345.67, importeUSD: 0 }],
+  }));
+  const id2 = await ordenes.guardarOrdenCompleta(null, payload({
+    tecnicoPrincipalId: a,
+    datos: { clienteNombre: 'Cliente Dos', fechaReporte: '2026-10-06', estado: 'pendiente' },
+    servicios: [{ servicioId: null, codigo: 'S2', descripcion: 'Otro', cantidad: 3, importeCUP: 1234567.89, importeUSD: 0.125 }],
+  }));
+  return [id1, id2];
+}
+
+prueba('T25 XLSX real: ZIP válido (CRC), una hoja por orden, importes numéricos idénticos a SQLite; lo abre openpyxl', async () => {
+  const ids = await crearDosOrdenesParaExportar();
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesXLSX(lista);
+  const bytes = Object.entries(estado.compartidos).filter(([n]) => n.endsWith('.xlsx')).pop()[1];
+  assert.ok(bytes instanceof Uint8Array);
+  assert.equal(bytes[0], 0x50); assert.equal(bytes[1], 0x4b); // «PK»
+  // verificación independiente de CRC con zlib
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const zlib = require('zlib');
+  let pos = 0, n = 0;
+  while (dv.getUint32(pos, true) === 0x04034b50) {
+    const crc = dv.getUint32(pos + 14, true), tam = dv.getUint32(pos + 18, true), nl = dv.getUint16(pos + 26, true);
+    const datos = bytes.subarray(pos + 30 + nl, pos + 30 + nl + tam);
+    assert.equal(zlib.crc32(datos) >>> 0, crc);
+    pos += 30 + nl + tam; n++;
+  }
+  assert.ok(n >= 7);
+  // lectura con un lector XLSX real
+  const tmp = path.join(TMP, 'salida.xlsx');
+  fs.writeFileSync(tmp, bytes);
+  const py = require('child_process').spawnSync('python3', ['-I', '-c', `
+import sys, json, openpyxl
+wb = openpyxl.load_workbook(sys.argv[1])
+out = {}
+for ws in wb.worksheets:
+    d = {'merges': len(ws.merged_cells.ranges)}
+    for row in ws.iter_rows(values_only=True):
+        vals = [v for v in row if v is not None]
+        if not vals: continue
+        if 'Folio de la Orden' in vals:
+            i = vals.index('Folio de la Orden'); d['Folio'] = vals[i + 1] if len(vals) > i + 1 else None
+        if isinstance(vals[0], str) and vals[0].startswith('Totales Generales a Pagar'): d['Total a pagar CUP'], d['Total a pagar USD'] = vals[1], vals[2]
+        if isinstance(vals[0], str) and vals[0].startswith('ORDEN DE SERVICIO'): d['titulo'] = True
+        if isinstance(vals[0], str) and vals[0].startswith('Listado de los Materiales'): d['materiales'] = True
+        if isinstance(vals[0], str) and vals[0].startswith('Listado de los Servicios'): d['servicios'] = True
+        if vals[0] == 'Conformidad del Trabajo': d['conformidad'] = True
+    out[ws.title] = d
+print(json.dumps(out))`, tmp], { encoding: 'utf-8' });
+  assert.equal(py.status, 0, py.stderr);
+  const hojas = JSON.parse(py.stdout);
+  assert.equal(Object.keys(hojas).length, 2);
+  for (const id of ids) {
+    const o = await ordenes.obtenerOrden(id);
+    const t = ordenes.calcularTotales(o.materiales, o.servicios);
+    const h = hojas[o.numeroOrden];
+    assert.ok(h, `falta la hoja ${o.numeroOrden}`);
+    assert.equal(h['Folio'], o.numeroOrden);
+    assert.ok(h.titulo && h.materiales && h.servicios && h.conformidad && h.merges > 10, 'disposición del modelo oficial');
+    assert.equal(h['Total a pagar CUP'], moneda.normalizarImporte(t.totalCUP));
+    assert.equal(h['Total a pagar USD'], moneda.normalizarImporte(t.totalUSD));
+  }
+  assert.equal(hojas['000001']['Total a pagar CUP'], moneda.normalizarImporte(12345.67 * 16 + 10.1 * 2.5));
+});
+
+prueba('T26 PDF por orden: todas las secciones y totales idénticos a los de pantalla, con caracteres especiales escapados', async () => {
+  await crearDosOrdenesParaExportar();
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesPDF(lista);
+  const html = estado.ultimoHtml;
+  for (const t of ['ORDEN DE SERVICIO', 'Folio de la Orden', 'Información del Cliente', 'Información del Servicio', 'Información del Equipo', 'Tiempo de Trabajo (Minutos)', 'Observaciones del Trabajo Realizado', 'Listado de los Materiales Utilizados', 'Listado de los Servicios Prestados', 'Totales Generales a Pagar', 'Conformidad del Trabajo', 'Control del Folio', 'Técnico Responsable']) {
+    assert.equal((html.match(new RegExp(t.replace(/[().]/g, '\\$&'), 'g')) || []).length, 2, `«${t}» debe aparecer en las 2 órdenes`);
+  }
+  assert.ok(html.includes('Cliente &lt;Uno&gt; &amp; Cía'));
+  assert.ok(!html.includes('<Uno>'));
+  const o1 = await ordenes.obtenerOrden(lista.find((x) => x.folio === '000001').id);
+  const t1 = ordenes.calcularTotales(o1.materiales, o1.servicios);
+  assert.ok(html.includes(moneda.formatearImporte(t1.totalCUP, 'CUP')));
+  assert.equal((html.match(/page-break-after/g) || []).length >= 1, true);
+});
+
+prueba('T29 Tarifario unificado: 1858 servicios del Anexo 1 con las mismas tarifas del catálogo; procedimiento por servicio, sin herencia', async () => {
+  assert.equal(procedimientos.claveCodigo('25-2035-TER'), '2035');
+  assert.equal(procedimientos.claveCodigo('2035'), '2035');
+  const p = procedimientos.obtenerProcedimiento('25-2035-TER');
+  assert.ok(p, 'el servicio 2035 debe tener procedimiento');
+  assert.equal(p.categoriaId, '20');
+  assert.equal(p.tecnicos, 3);
+  assert.equal(p.tiempoMinutos, 81);
+  assert.equal(p.actividades.length, 5);
+  assert.equal(p.actividades.reduce((a, x) => a + x.minutos, 0), 81);
+  assert.ok(p.actividades[4].actividad.startsWith('Llenado'));
+  assert.ok(p.insumos.some((i) => i.producto.startsWith('Papel Carta')));
+  assert.equal(procedimientos.obtenerProcedimiento('XX-9999-YYY'), null);
+  assert.equal(procedimientos.formatearMinutos(90), '90 min (1 h 30 min)');
+  assert.equal(procedimientos.formatearMinutos(45), '45 min');
+  assert.equal(procedimientos.formatearMinutos(120), '120 min (2 h)');
+  assert.equal(procedimientos.formatearMinutos(null), '—');
+  assert.equal(procedimientos.cantidadServiciosTarifarioEstatal(), 1858);
+  // integridad contra el catálogo real: mismos servicios y EXACTAMENTE las mismas tarifas
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf-8'));
+  const modelo = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_copextel.json'), 'utf-8'));
+  const porCodigo = new Map();
+  for (const c of modelo.categorias) for (const sv of c.servicios) { assert.ok(!porCodigo.has(sv.codigo), 'código repetido'); porCodigo.set(sv.codigo, sv); }
+  assert.equal(porCodigo.size, 1863, '1858 del Anexo 1 + 5 solo de Población');
+  let conProc = 0, sinProc = null, nombresOficiales = 0;
+  for (const x of seed) {
+    const m = porCodigo.get(x.codigoServicio.split('-')[1]);
+    assert.ok(m, `falta ${x.codigoServicio}`);
+    assert.equal(m.codigo_completo, x.codigoServicio);
+    assert.equal(m.tarifas.estatal_interno, x.precioBase, `tarifa distinta en ${x.codigoServicio}`);
+    assert.equal(procedimientos.nombreOficial(x.codigoServicio), m.descripcion);
+    if (m.descripcion !== x.nombreServicio) nombresOficiales++;
+    if (m.procedimiento) {
+      conProc++;
+      const pr = m.procedimiento;
+      assert.ok(pr.actividades.length > 0 && pr.actividades.every((a) => typeof a.actividad === 'string' && (a.minutos === null || a.minutos >= 0)), `actividades inválidas en ${m.codigo}`);
+      assert.ok(Number.isFinite(pr.tiempo_minutos) && pr.tiempo_minutos > 0, `tiempo inválido en ${m.codigo}`);
+    } else sinProc = sinProc || x.codigoServicio;
+  }
+  assert.ok(nombresOficiales >= 50, 'el Anexo 1 corrige nombres del catálogo');
+  assert.equal(conProc, procedimientos.cantidadServiciosConProcedimiento());
+  assert.ok(conProc > 1300, `solo ${conProc} servicios con procedimiento`);
+  assert.ok(sinProc, 'debe haber servicios sin procedimiento');
+  assert.equal(procedimientos.obtenerProcedimiento(sinProc), null, 'sin procedimiento no hereda nada');
+  // los 5 solo de Población no existen en el catálogo ni tienen tarifa Estatal / Interno
+  for (const c of ['0905', '1039', '1040', '1041', '1042']) {
+    const m = porCodigo.get(c);
+    assert.ok(m && m.codigo_completo === null && m.tarifas.estatal_interno === null && m.tarifas.poblacion > 0 && m.procedimiento === null, `${c} solo de Población`);
+  }
+});
+
+prueba('T30 Tarifario de Población: 82 prestaciones, importes exactos del archivo, búsqueda sin acentos, procedimiento por equivalencia, sin enlace a la tabla servicios', async () => {
+  const pob = require(path.join(SRC, 'services/tarifarioPoblacionService.ts'));
+  assert.deepEqual(pob.validarTarifaPoblacion(), []);
+  assert.equal(pob.PRESTACIONES_POBLACION.length, 82);
+  assert.equal(pob.PRESTACIONES_POBLACION.reduce((a, x) => a + x.precioCUP, 0), 162580);
+  const todas = pob.listarTarifaPoblacion();
+  assert.equal(todas.length, 82);
+  assert.ok(todas.every((i) => i.id < 0 && i.tarifa === 'poblacion' && i.categoria === 'Población'));
+  assert.equal(new Set(todas.map((i) => i.id)).size, 82);
+  assert.equal(todas[0].codigoServicio, '0905', 'orden del tarifario original');
+  const mto = todas.find((i) => i.codigoServicio === '1011');
+  assert.equal(mto.precioBase, 1407);
+  assert.equal(pob.listarTarifaPoblacion('revision diagnostico').every((i) => /revisi[oó]n/i.test(i.nombreServicio)), true);
+  assert.ok(pob.listarTarifaPoblacion('REVISION').length >= 2);
+  assert.equal(pob.listarTarifaPoblacion('zzzz-no-existe').length, 0);
+  assert.equal(pob.listarTarifaPoblacion('0905')[0].precioBase, 500);
+  // procedimiento por equivalencia: solo vínculo, los precios de Población no cambian
+  const enlazadas = todas.filter((i) => i.procedimientoDe);
+  assert.equal(enlazadas.length, 73);
+  assert.ok(enlazadas.every((i) => procedimientos.obtenerProcedimiento(i.procedimientoDe)));
+  const cuenta = (t) => todas.filter((i) => i.coincidencia === t).length;
+  assert.deepEqual([cuenta('nombre_igual'), cuenta('nombre_similar'), cuenta('confirmado')], [62, 9, 6]);
+  const sinEnlace = todas.filter((i) => !i.procedimientoDe).map((i) => i.codigoServicio).sort();
+  assert.deepEqual(sinEnlace, ['0200', '0905', '1039', '1040', '1041', '1042', '7192', '7193', '7200']);
+  for (const c of ['2036', '2628', '3017', '7046', '8338', '8418']) assert.equal(todas.find((i) => i.codigoServicio === c).procedimientoDe, c);
+  // la Población conserva su propio nombre cuando difiere del oficial
+  assert.equal(todas.find((i) => i.codigoServicio === '8338').nombreServicio, 'Reparación sencilla de Freezer');
+  assert.deepEqual(pob.validarTarifaPoblacion([{ codigo: 'A', nombre: 'x', unidad: 'UNO', precioCUP: -1 }, { codigo: 'A', nombre: '', unidad: 'UNO', precioCUP: 1 }]).length, 3);
+});
+
+prueba('T31 pago por transferencia (informativo): migración v8, guardado, PDF/XLSX, respaldo v5, traspaso y respaldo antiguo sin pago', async () => {
+  const pago = require(path.join(SRC, 'utils/pagoTransferencia.ts'));
+  const qr = require(path.join(SRC, 'data/qrPagoTransfermovil.ts'));
+  // concepto: folio con 6 dígitos; sin folio → null
+  assert.equal(pago.conceptoPago('000123'), 'O.S 000123 T.CLIMA');
+  assert.equal(pago.conceptoPago(45), 'O.S 000045 T.CLIMA');
+  assert.equal(pago.conceptoPago(null), null);
+  assert.equal(pago.conceptoPago('  '), null);
+  assert.equal(pago.resumenPago({}), '');
+  assert.equal(pago.hayDatosDePago({ pagoRealizado: 0, pagoTelefono: '', pagoNroTransaccion: null }), false);
+  // QR incrustado: cuadrado, solo 0/1, mismo contenido que el QR oficial
+  assert.equal(qr.QR_PAGO_MODULOS.length, qr.QR_PAGO_TAMANO);
+  assert.ok(qr.QR_PAGO_MODULOS.every((f) => f.length === qr.QR_PAGO_TAMANO && /^[01]+$/.test(f)));
+  assert.equal(JSON.parse(qr.QR_PAGO_CONTENIDO).numero_proveedor, '98841');
+  assert.equal(JSON.parse(qr.QR_PAGO_CONTENIDO).importe, '0');
+  // normalizar: recorta, vacío → null, la fecha solo con el check
+  assert.deepEqual(pago.normalizarPago({ pagoTelefono: ' 5 5551234 ', pagoNroTransaccion: ' ', pagoRealizado: false, pagoFecha: '2026-10-31T10:00:00Z' }),
+    { pagoTelefono: '5 5551234', pagoNroTransaccion: null, pagoRealizado: 0, pagoFecha: null });
+
+  // columnas v8 con valores por defecto
+  await reiniciarBase();
+  const cols = (await q(`PRAGMA table_info(ordenes)`)).map((c) => c.name);
+  for (const c of ['pagoTelefono', 'pagoNroTransaccion', 'pagoRealizado', 'pagoFecha']) assert.ok(cols.includes(c), c);
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 20);
+  const sinPago = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, datos: { clienteNombre: 'Sin pago', clienteTipo: 'Población', fechaReporte: '2026-10-01', estado: 'pendiente' } }));
+  const r0 = await q1('SELECT pagoTelefono, pagoNroTransaccion, pagoRealizado, pagoFecha FROM ordenes WHERE id=?', sinPago);
+  assert.deepEqual({ ...r0 }, { pagoTelefono: null, pagoNroTransaccion: null, pagoRealizado: 0, pagoFecha: null });
+
+  // guardar y volver a leer
+  const datosPago = { pagoTelefono: '55512345', pagoNroTransaccion: 'TM-98765 <x> & y', pagoRealizado: 1, pagoFecha: '2026-10-31T14:00:00.000Z' };
+  const conPago = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, datos: { clienteNombre: 'Con pago', clienteTipo: 'Población', fechaReporte: '2026-10-02', estado: 'pendiente', ...datosPago } }));
+  const leida = await ordenes.obtenerOrden(conPago);
+  for (const [k, v] of Object.entries(datosPago)) assert.equal(leida[k], v, k);
+  // editar: quitar el check → se puede guardar sin fecha
+  await ordenes.guardarOrdenCompleta(conPago, payload({ tecnicoPrincipalId: a, datos: { pagoRealizado: 0, pagoFecha: null } }));
+  assert.equal((await ordenes.obtenerOrden(conPago)).pagoRealizado, 0);
+  await ordenes.guardarOrdenCompleta(conPago, payload({ tecnicoPrincipalId: a, datos: datosPago }));
+
+  // PDF: la línea de pago aparece solo en la orden que la tiene, con el texto escapado
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesPDF(lista);
+  const html = estado.ultimoHtml;
+  assert.equal((html.match(/Pago por transferencia realizado/g) || []).length, 1);
+  assert.ok(html.includes('Nro de transacción: TM-98765 &lt;x&gt; &amp; y'));
+  assert.ok(html.includes('Teléfono del cliente: 55512345'));
+  assert.ok(!html.includes('Pago por transferencia pendiente'));
+
+  // XLSX: la línea de pago está en la hoja de la orden con pago (texto en el XML)
+  await respaldo.exportarOrdenesXLSX(lista);
+  const bytes = Object.entries(estado.compartidos).filter(([n]) => n.endsWith('.xlsx')).pop()[1];
+  assert.ok(Buffer.from(bytes).includes('Nro de transacción: TM-98765'));
+
+  // respaldo completo v5: ida y vuelta conserva el pago
+  estado.compartidos = {};
+  await respaldo.exportarRespaldoCompleto();
+  const archivo = Object.values(estado.compartidos)[0];
+  const j = JSON.parse(archivo);
+  assert.equal(j.version, 6);
+  assert.ok(j.tablas.ordenes.every((o) => 'pagoRealizado' in o && 'pagoNroTransaccion' in o));
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(archivo));
+  const tras = await q('SELECT clienteNombre, pagoTelefono, pagoNroTransaccion, pagoRealizado, pagoFecha FROM ordenes ORDER BY id');
+  assert.deepEqual({ ...tras[1] }, { clienteNombre: 'Con pago', ...datosPago });
+  assert.equal(tras[0].pagoRealizado, 0);
+
+  // respaldo v4 (de una versión sin pago): se importa y las órdenes quedan sin pago
+  const v4 = JSON.parse(archivo);
+  v4.version = 4;
+  for (const o of v4.tablas.ordenes) for (const c of ['pagoTelefono', 'pagoNroTransaccion', 'pagoRealizado', 'pagoFecha']) delete o[c];
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(v4)));
+  assert.ok((await q('SELECT pagoRealizado, pagoNroTransaccion FROM ordenes')).every((r) => r.pagoRealizado === 0 && r.pagoNroTransaccion === null));
+
+  // traspaso JSON entre dispositivos: el pago viaja con la orden
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(archivo));
+  const lista2 = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesJSON(lista2);
+  const tj = JSON.parse(Object.entries(estado.compartidos).filter(([n]) => n.includes('traspaso')).pop()[1]);
+  await reiniciarBase();
+  const b = await tecnico('Ana');
+  await folios.asignarRango(b, 100, 110);
+  const prep = await respaldo.prepararTraspasoDesdeTexto(JSON.stringify(tj));
+  assert.equal(prep.omitidas.length, 0);
+  await respaldo.aplicarTraspaso(prep);
+  const viajo = await q1(`SELECT pagoTelefono, pagoNroTransaccion, pagoRealizado FROM ordenes WHERE clienteNombre='Con pago'`);
+  assert.deepEqual({ ...viajo }, { pagoTelefono: '55512345', pagoNroTransaccion: 'TM-98765 <x> & y', pagoRealizado: 1 });
+});
+
+prueba('T32 tarifario del taller de clima: modelo actual (Estatal/Interno y Población como categorías principales), procedimientos, y flujo Reemplazar sobre el catálogo de 1858 sin errores', async () => {
+  const taller = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima.json'), 'utf8'));
+  const modelo = JSON.parse(fs.readFileSync(path.join(SRC, 'data/tarifario_copextel.json'), 'utf8'));
+  const porCodigo = new Map(modelo.categorias.flatMap((c) => c.servicios).map((s) => [s.codigo, s]));
+  // estructura: dos categorías principales; Población fuera de las modalidades
+  assert.deepEqual(taller.categorias.map((c) => c.id_categoria), ['estatal', 'poblacion']);
+  const [est, pob] = taller.categorias;
+  assert.deepEqual(est.aplica_a, ['Estatal', 'Interno']);
+  assert.equal(est.servicios.length, 173); assert.equal(pob.servicios.length, 27);
+  assert.deepEqual(pob.modalidades, []);
+  assert.ok(!est.modalidades.includes('Población'));
+  assert.equal(est.modalidades.length, 11);
+  assert.ok(est.servicios.every((s) => est.modalidades.includes(s.modalidad)));
+  assert.ok(pob.servicios.every((s) => s.modalidad === null));
+  // sin duplicados dentro de cada categoría; cada código existe en el tarifario oficial
+  for (const c of [est, pob]) assert.equal(new Set(c.servicios.map((s) => s.codigo)).size, c.servicios.length);
+  // importes idénticos al tarifario oficial (nunca redondeados) y procedimiento = el oficial del mismo código
+  for (const [c, clave] of [[est, 'estatal_interno'], [pob, 'poblacion']]) {
+    for (const s of c.servicios) {
+      const o = porCodigo.get(s.codigo);
+      assert.ok(o, s.codigo);
+      assert.deepEqual(Object.keys(s.tarifas), [clave]);
+      assert.strictEqual(s.tarifas[clave], o.tarifas[clave], `${s.codigo} ${clave}`);
+      assert.deepEqual(s.procedimiento, o.procedimiento, `procedimiento ${s.codigo}`);
+    }
+  }
+  const conProc = [...est.servicios, ...pob.servicios].filter((s) => s.procedimiento);
+  assert.equal(conProc.length, 119);
+  assert.ok(conProc.every((s) => s.procedimiento.actividades.length > 0));
+  // sin abreviaturas
+  const nombres = [...est.servicios, ...pob.servicios].map((s) => s.descripcion);
+  assert.ok(nombres.every((n) => !/(?<![\p{L}])(Mtto|Rep|tr|TR|Tr|HP|Hp|Km|Mts|AV|A\/V|A\/A|c\/|h\/|etc)(?![\p{L}])\.?/u.test(n)), 'quedan abreviaturas');
+  assert.ok(nombres.every((n) => n === n.trim() && !/\s{2,}/.test(n)));
+
+  // flujo real: catálogo de 1858 → «Reemplazar» con el archivo importable de clima → pantalla Tarifario
+  await reiniciarBase();
+  const tarifSvc = require(path.join(SRC, 'services/tarifarioService.ts'));
+  const pobSvc = require(path.join(SRC, 'services/tarifarioPoblacionService.ts'));
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf8'));
+  await tarifSvc.importarServiciosDesdeJSON(seed);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858);
+  const importable = fs.readFileSync(process.env.GBOT_CLIMA_IMPORTABLE || path.join(SRC, 'data/tarifario_taller_clima_importable.json'), 'utf8');
+  estado.archivoElegido = importable;
+  const r = await respaldo.reemplazarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(r.reemplazado, true);
+  assert.equal(r.resultado.importados, 173); assert.equal(r.resultado.poblacionOmitidos, 27); assert.equal(r.resultado.duplicados, 0); assert.deepEqual(r.resultado.errores, []);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 173);
+  // lo que hace la pantalla tras reemplazar: categorías, listado, búsqueda, nombre oficial, procedimiento, Población
+  const cats = await tarifSvc.obtenerCategorias();
+  assert.equal(cats.length, 11);
+  const lista = (await tarifSvc.listarServicios({ limite: 300 })).map(pobSvc.aItemCatalogo);
+  assert.equal(lista.length, 173);
+  assert.ok(lista.every((s) => typeof s.nombreServicio === 'string' && s.clave));
+  for (const t of ['split', 'aire de ventana', 'camara fria', 'vehiculo', 'Mantenimiento']) {
+    const hit = await tarifSvc.buscarServicios(t, { limite: 300 });
+    assert.ok(hit.length > 0, t);
+    hit.map(pobSvc.aItemCatalogo);
+  }
+  for (const s of lista) procedimientos.obtenerProcedimiento(s.codigoServicio);   // no debe lanzar con ningún código del taller
+  assert.ok(procedimientos.obtenerProcedimiento('25-7011-TER'));
+  assert.equal(pobSvc.listarTarifaPoblacion('').length, 82);
+  // el cierre posterior no rompe nada: el servicio de órdenes sigue operando con el catálogo de clima
+  const a = await tecnico('Ana'); await folios.asignarRango(a, 1, 5);
+  const sv = (await tarifSvc.listarServicios({ limite: 1 }))[0];
+  const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, servicios: [{ servicioId: sv.id, codigo: sv.codigoServicio, descripcion: sv.nombreServicio, cantidad: 1, importeCUP: sv.precioBase, importeUSD: 0 }] }));
+  assert.ok(id > 0);
+});
+
+prueba('T33 archivo de tarifario: acepta lista y modelo, valida TODO antes de tocar la base, reemplazo atómico, Población fuera de Estatal/Interno, aviso por pocas filas', async () => {
+  const arch = require(path.join(SRC, 'services/tarifarioArchivo.ts'));
+  const tsvc = require(path.join(SRC, 'services/tarifarioService.ts'));
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf8'));
+  const modeloClima = fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima.json'), 'utf8');
+  const listaClima = fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima_importable.json'), 'utf8');
+  const completo = fs.readFileSync(path.join(SRC, 'data/tarifario_copextel.json'), 'utf8');
+
+  // 1) lectura de los tres formatos
+  const m = arch.interpretarArchivoTarifario(modeloClima);
+  assert.equal(m.formato, 'modelo'); assert.equal(m.servicios.length, 173); assert.equal(m.poblacionOmitidos, 27);
+  assert.equal(m.subcategorias.length, 11); assert.ok(!m.subcategorias.includes('Población'));
+  assert.ok(m.pocasFilas);
+  const sp = m.servicios.find((x) => x.codigoServicio === '25-7011-TER');
+  assert.equal(sp.nombreServicio, 'Revisión y Diagnóstico de aire de ventana'); assert.equal(sp.categoria, 'Aire de Ventana');
+  assert.strictEqual(sp.precioBase, 1116.9); assert.equal(sp.tiempoEstimado, 165); assert.equal(sp.cantidadTecnicos, 2); assert.equal(sp.insumosCUP, 0.5);
+  const l = arch.interpretarArchivoTarifario(listaClima);
+  assert.equal(l.formato, 'lista'); assert.equal(l.servicios.length, 173); assert.equal(l.poblacionOmitidos, 27);
+  assert.ok(l.subcategorias.every((c) => !/^Estatal/.test(c)), 'el prefijo «Estatal - » se quita');
+  assert.deepEqual(l.servicios.map((x) => [x.codigoServicio, x.precioBase, x.categoria]), m.servicios.map((x) => [x.codigoServicio, x.precioBase, x.categoria]));
+  const c = arch.interpretarArchivoTarifario(completo);   // el modelo unificado completo también se lee
+  assert.equal(c.servicios.length, 1858); assert.ok(!c.pocasFilas);
+  const porCod = new Map(seed.map((x) => [x.codigoServicio, x]));
+  assert.ok(c.servicios.every((x) => porCod.has(x.codigoServicio) && porCod.get(x.codigoServicio).precioBase === x.precioBase));
+  const sinTocar = arch.interpretarArchivoTarifario(JSON.stringify(seed));
+  assert.equal(sinTocar.servicios.length, 1858);
+
+  // 2) archivos inválidos: se rechazan enteros, con mensaje claro
+  const base = () => JSON.parse(listaClima);
+  const malos = [
+    ['no es JSON', '{{{', /JSON válido/],
+    ['objeto sin categorias', '{"a":1}', /formato de tarifario/],
+    ['lista vacía', '[]', /ningún servicio/],
+    ['fila no objeto', JSON.stringify([1, 2]), /no es un objeto/],
+    ['precio texto', JSON.stringify(base().map((x, i) => (i === 3 ? { ...x, precioBase: '12,5' } : x))), /el precio no es un número/],
+    ['precio negativo', JSON.stringify(base().map((x, i) => (i === 0 ? { ...x, precioBase: -1 } : x))), /negativo/],
+    ['sin código', JSON.stringify(base().map((x, i) => (i === 0 ? { ...x, codigoServicio: '' } : x))), /falta el código/],
+    ['código repetido', JSON.stringify(base().map((x, i) => (i === 1 ? { ...x, codigoServicio: base()[0].codigoServicio } : x))), /código repetido/],
+    ['técnicos 0', JSON.stringify(base().map((x, i) => (i === 0 ? { ...x, cantidadTecnicos: 0 } : x))), /técnicos/],
+    ['modelo sin tarifas', JSON.stringify({ categorias: [{ id_categoria: 'estatal', servicios: [{ codigo: '1', descripcion: 'x' }] }] }), /no trae tarifas/],
+    ['modelo precio NaN', JSON.stringify({ categorias: [{ id_categoria: 'estatal', nombre_categoria: 'E', servicios: [{ codigo: '1', descripcion: 'x', tarifas: { estatal_interno: 'a' } }] }] }), /el precio no es un número/],
+  ];
+  for (const [nombre, txt, rx] of malos) {
+    assert.throws(() => arch.interpretarArchivoTarifario(txt), (e) => e.name === 'ErrorTarifario' && rx.test(e.message), nombre);
+  }
+  assert.throws(() => arch.interpretarArchivoTarifario(JSON.stringify({ categorias: [{ id_categoria: 'poblacion', tarifa: 'poblacion', servicios: [{ codigo: '1', descripcion: 'x', tarifas: { poblacion: 5 } }] }] })), /solo trae servicios de Población/);
+
+  // 3) Reemplazar con un archivo inválido NO borra nada
+  await reiniciarBase();
+  await tsvc.importarServiciosDesdeJSON(seed);
+  estado.archivoElegido = malos[4][1];
+  await assert.rejects(respaldo.prepararReemplazoTarifario(), /el precio no es un número/);
+  estado.archivoElegido = malos[4][1];
+  await assert.rejects(respaldo.reemplazarTarifarioJSON(), /el precio no es un número/);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858);
+  estado.archivoElegido = null;
+  assert.equal((await respaldo.prepararReemplazoTarifario()), null);               // cancelar el selector
+  assert.deepEqual(await respaldo.reemplazarTarifarioJSON(), { reemplazado: false });
+
+  // 4) preparar no borra; avisa de pocas filas y cuántos hay ahora
+  estado.archivoElegido = modeloClima;
+  const prep = await respaldo.prepararReemplazoTarifario();
+  assert.equal(prep.actuales, 1858); assert.equal(prep.archivo.servicios.length, 173); assert.equal(prep.archivo.pocasFilas, true);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858, 'preparar no toca la base');
+
+  // 5) atomicidad: un fallo a mitad del reemplazo deshace TODO (el catálogo anterior queda intacto)
+  const dbx = await dbMod.getDatabase();
+  await dbx.execAsync(`CREATE TRIGGER t_fallo_srv BEFORE INSERT ON servicios WHEN NEW.codigoServicio = '25-7345-TER' BEGIN SELECT RAISE(ABORT, 'FALLO_SERVICIOS'); END`);
+  await assert.rejects(respaldo.aplicarReemplazoTarifario(prep), /FALLO_SERVICIOS/);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858, 'rollback completo: no queda vacío ni a medias');
+  assert.equal((await q1(`SELECT COUNT(*) n FROM servicios WHERE categoria='Split'`)).n, 0);
+  await dbx.execAsync(`DROP TRIGGER t_fallo_srv`);
+
+  // 6) reemplazo bueno con el modelo nuevo
+  const r = await respaldo.aplicarReemplazoTarifario(prep);
+  assert.equal(r.importados, 173); assert.equal(r.poblacionOmitidos, 27);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 173);
+  const cats = await tsvc.obtenerCategorias();
+  assert.deepEqual(cats.map((x) => x.categoria).sort(), [...m.subcategorias].sort());
+  assert.equal(cats.reduce((a, x) => a + x.total, 0), 173);
+  assert.equal((await tsvc.listarServicios({ categoria: 'Split', limite: 100 })).length, 34);
+  assert.ok((await tsvc.buscarServicios('split', { limite: 300 })).length >= 34);
+  // las filas guardadas coinciden con el archivo (importes sin redondear)
+  const filas = await q('SELECT codigoServicio, precioBase, categoria, tiempoEstimado, cantidadTecnicos, insumosCUP FROM servicios ORDER BY id');
+  assert.deepEqual(filas.map((f) => [f.codigoServicio, f.precioBase, f.categoria]), m.servicios.map((x) => [x.codigoServicio, x.precioBase, x.categoria]));
+
+  // 7) Población nunca se mezcla con Estatal: filas «Población» heredadas de bases antiguas no salen en listados ni búsquedas
+  await dbx.runAsync(`INSERT INTO servicios (codigoServicio, nombreServicio, categoria, precioBase) VALUES ('7040', 'Instalación y montaje de Split de pared', 'Población', 999)`);
+  assert.equal((await tsvc.listarServicios({ limite: 500 })).length, 173);
+  assert.ok(!(await tsvc.buscarServicios('Instalación montaje Split pared', { limite: 300 })).some((x) => x.categoria === 'Población'));
+  assert.ok(!(await tsvc.obtenerCategorias()).some((x) => x.categoria === 'Población'));
+  assert.equal((await tsvc.listarServicios({ incluirPoblacion: true, limite: 500 })).length, 174);   // Exportar sí las incluye
+
+  // 8) Importar (solo agrega): lista y modelo; los existentes no se tocan
+  await dbx.runAsync(`DELETE FROM servicios WHERE categoria='Población'`);
+  estado.archivoElegido = listaClima;
+  const imp = await respaldo.importarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(imp.resultado.importados, 0); assert.equal(imp.resultado.duplicados, 173); assert.equal(imp.resultado.poblacionOmitidos, 27);
+  estado.archivoElegido = '[{"codigoServicio":"X-1","nombreServicio":"Nuevo","categoria":"Split","precioBase":10.5}]';
+  const imp2 = await respaldo.importarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(imp2.resultado.importados, 1);
+  estado.archivoElegido = '[{"codigoServicio":"X-2","nombreServicio":"Malo","categoria":"Split","precioBase":"x"}]';
+  await assert.rejects(respaldo.importarTarifarioJSON(), /el precio no es un número/);
+  estado.archivoElegido = null;
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 174);
+
+  // 9) las órdenes ya guardadas sobreviven al reemplazo con su propio código y descripción
+  await reiniciarBase();
+  await tsvc.importarServiciosDesdeJSON(seed);
+  const a = await tecnico('Ana'); await folios.asignarRango(a, 1, 5);
+  const sv = (await tsvc.listarServicios({ limite: 1 }))[0];
+  const oid = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, servicios: [{ servicioId: sv.id, codigo: sv.codigoServicio, descripcion: sv.nombreServicio, cantidad: 2, importeCUP: sv.precioBase, importeUSD: 0 }] }));
+  estado.archivoElegido = modeloClima;
+  await respaldo.reemplazarTarifarioJSON();
+  estado.archivoElegido = null;
+  const o = await ordenes.obtenerOrden(oid);
+  assert.equal(o.servicios[0].codigo, sv.codigoServicio); assert.equal(o.servicios[0].servicioId, null);
+  assert.strictEqual(ordenes.calcularTotales(o.materiales, o.servicios).serviciosCUP, sv.precioBase * 2);
+});
+
+prueba('T34 procedimientos manuales + subcategorías de Población: guardar/editar/eliminar, claves por tarifa, sobreviven a Reemplazar, respaldo v6 y respaldos anteriores', async () => {
+  const man = require(path.join(SRC, 'services/procedimientosManualesService.ts'));
+  const pobSvc = require(path.join(SRC, 'services/tarifarioPoblacionService.ts'));
+  const tsvc = require(path.join(SRC, 'services/tarifarioService.ts'));
+  // subcategorías de Población: las familias reparten las 82 prestaciones sin perder ni repetir ninguna
+  const fam = pobSvc.FAMILIAS_POBLACION;
+  assert.ok(fam.length >= 2);
+  assert.equal(fam.reduce((a, f) => a + f.total, 0), 82);
+  const vistos = new Set();
+  for (const f of fam) {
+    const items = pobSvc.listarTarifaPoblacion('', f.familia);
+    assert.equal(items.length, f.total, f.familia);
+    for (const i of items) { assert.ok(!vistos.has(i.codigoServicio)); vistos.add(i.codigoServicio); }
+  }
+  assert.equal(vistos.size, 82);
+  assert.equal(pobSvc.listarTarifaPoblacion('').length, 82);
+  const todas = pobSvc.listarTarifaPoblacion('');
+  const unaFam = pobSvc.listarTarifaPoblacion('', fam[0].familia);
+  for (const i of unaFam) assert.equal(todas.find((x) => x.codigoServicio === i.codigoServicio).id, i.id, 'el id no cambia al filtrar');
+  assert.equal(pobSvc.listarTarifaPoblacion('split', 'Gastronomía').length, 0);
+  assert.ok(pobSvc.listarTarifaPoblacion('split', 'Climatización y Agua').length > 0);
+
+  // claves: el mismo código en Estatal y Población son procedimientos distintos
+  assert.equal(man.claveProcedimiento('estatal', '25-7192-TER'), 'estatal:7192');
+  assert.equal(man.claveProcedimiento('poblacion', '7192'), 'poblacion:7192');
+  await reiniciarBase();
+  assert.equal(await man.obtenerProcedimientoManual('estatal:7192'), null);
+  await assert.rejects(man.guardarProcedimientoManual('estatal:7192', '   \n  '), /Escribe o pega/);
+  await assert.rejects(man.guardarProcedimientoManual('estatal:7192', 'x'.repeat(man.MAX_PROCEDIMIENTO_MANUAL + 1)), /demasiado largo/);
+  await man.guardarProcedimientoManual('estatal:7192', '  1. Revisar compresor\r\n2. Cambiar capacitor — «ñ» <b>&  \n');
+  await man.guardarProcedimientoManual('poblacion:7192', 'Solo para población');
+  const g = await man.obtenerProcedimientoManual('estatal:7192');
+  assert.equal(g.texto, '1. Revisar compresor\n2. Cambiar capacitor — «ñ» <b>&');
+  await man.guardarProcedimientoManual('estatal:7192', 'Texto editado');
+  assert.equal((await man.obtenerProcedimientoManual('estatal:7192')).texto, 'Texto editado');
+  assert.equal(await man.contarProcedimientosManuales(), 2);
+
+  // sobreviven a Reemplazar el tarifario (van por código, no por id)
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf8'));
+  await tsvc.importarServiciosDesdeJSON(seed);
+  estado.archivoElegido = fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima.json'), 'utf8');
+  await respaldo.reemplazarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(await man.contarProcedimientosManuales(), 2);
+
+  // respaldo v6 ida y vuelta
+  estado.compartidos = {};
+  await respaldo.exportarRespaldoCompleto();
+  const archivo = Object.values(estado.compartidos)[0];
+  const j = JSON.parse(archivo);
+  assert.equal(j.version, 6);
+  assert.deepEqual(j.tablas.procedimientos_manuales.map((x) => x.clave).sort(), ['estatal:7192', 'poblacion:7192']);
+  await man.eliminarProcedimientoManual('estatal:7192');
+  await man.eliminarProcedimientoManual('poblacion:7192');
+  assert.equal(await man.contarProcedimientosManuales(), 0);
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(archivo));
+  assert.equal((await man.obtenerProcedimientoManual('estatal:7192')).texto, 'Texto editado');
+  assert.equal((await man.obtenerProcedimientoManual('poblacion:7192')).texto, 'Solo para población');
+
+  // un respaldo anterior a la v6 (sin la tabla) NO borra los procedimientos locales
+  const v5 = JSON.parse(archivo); v5.version = 5; delete v5.tablas.procedimientos_manuales;
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(v5)));
+  assert.equal(await man.contarProcedimientosManuales(), 2);
+  // un respaldo v6 con la tabla vacía sí la deja vacía (es el estado del respaldo)
+  const vacio = JSON.parse(archivo); vacio.tablas.procedimientos_manuales = [];
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(vacio)));
+  assert.equal(await man.contarProcedimientosManuales(), 0);
+  // validación de filas inválidas / repetidas
+  const malo = JSON.parse(archivo); malo.tablas.procedimientos_manuales = [{ clave: 'a', texto: '' }];
+  await assert.rejects(respaldo.prepararRespaldoDesdeTexto(JSON.stringify(malo)), /no tiene texto/);
+  const rep = JSON.parse(archivo); rep.tablas.procedimientos_manuales = [{ clave: 'a', texto: 'x' }, { clave: 'a', texto: 'y' }];
+  await assert.rejects(respaldo.prepararRespaldoDesdeTexto(JSON.stringify(rep)), /repetido/);
+});
+
+prueba('T27 JSON de traspaso: validación de versión, tipos, cantidades, importes y totales; conflictos antes de aplicar; atómico', async () => {
+  const ids = await crearDosOrdenesParaExportar();
+  const lista = await analitica.obtenerOrdenesFiltradas({ limite: 50 });
+  await respaldo.exportarOrdenesJSON(lista);
+  const archivo = Object.entries(estado.compartidos).filter(([n]) => n.includes('traspaso')).pop()[1];
+  const j = JSON.parse(archivo);
+  assert.equal(j.version, 2);
+  assert.ok(j.ordenes.every((o) => o.totales && 'totalCUP' in o.totales));
+  assert.equal(j.ordenes.find((o) => o.folio === '000001').equipos.length, 2);
+
+  // dispositivo limpio con rango propio de Ana
+  const preparar = async (obj) => { await reiniciarBase(); const a = await tecnico('Ana'); await folios.asignarRango(a, 100, 110); return respaldo.prepararTraspasoDesdeTexto(JSON.stringify(obj)); };
+  const ok = await preparar(j);
+  assert.equal(ok.aImportar.length, 2); assert.equal(ok.omitidas.length, 0);
+
+  const clon = () => JSON.parse(JSON.stringify(j));
+  const uno = (x) => x.ordenes.find((o) => o.folio === '000001');
+  const casos = [
+    ['cantidad cero', (x) => { uno(x).servicios[0].cantidad = 0; }],
+    ['cantidad texto', (x) => { uno(x).servicios[0].cantidad = '3'; }],
+    ['importe negativo', (x) => { uno(x).materiales[0].importeCUP = -1; }],
+    ['importe no numérico', (x) => { uno(x).servicios[0].importeUSD = 'abc'; }],
+    ['total alterado', (x) => { uno(x).totales.totalCUP = 1; }],
+    ['múltiple sin equipos', (x) => { uno(x).equipos = []; }],
+    ['estado desconocido', (x) => { uno(x).estado = 'rara'; }],
+  ];
+  for (const [nombre, mut] of casos) {
+    const x = clon(); mut(x);
+    const prep = await preparar(x);
+    assert.equal(prep.omitidas.length, 1, `«${nombre}» debe omitirse`);
+    assert.equal(prep.aImportar.length, 1, `«${nombre}»: la otra orden sí se importa`);
+  }
+  const malaVersion = clon(); malaVersion.version = 7;
+  await rechaza(preparar(malaVersion), 'TRASPASO_INVALIDO');
+
+  // aplicar: los importes importados son idénticos a los exportados y no se tocó nada más
+  const prep = await preparar(j);
+  const res = await respaldo.aplicarTraspaso(prep);
+  assert.equal(res.importadas, 2);
+  for (const orig of j.ordenes) {
+    const fila = await q1('SELECT id FROM ordenes WHERE numeroOrden=?', orig.folio);
+    const o = await ordenes.obtenerOrden(fila.id);
+    const t = ordenes.calcularTotales(o.materiales, o.servicios);
+    assert.equal(moneda.normalizarImporte(t.totalCUP), moneda.normalizarImporte(orig.totales.totalCUP));
+    assert.equal(moneda.normalizarImporte(t.totalUSD), moneda.normalizarImporte(orig.totales.totalUSD));
+    assert.equal(o.equipos.length, orig.equipos.length);
+  }
+  // segunda importación: choque de folios → se omiten y se listan, sin duplicar
+  const otra = await respaldo.prepararTraspasoDesdeTexto(JSON.stringify(j));
+  assert.equal(otra.aImportar.length, 0); assert.equal(otra.omitidas.length, 2);
+  assert.equal((await q('SELECT * FROM ordenes')).length, 2);
+});
+
+
+prueba('T28 datos antiguos con cantidad ≤ 0: SQL y calcularTotales coinciden (la línea no suma)', async () => {
+  await reiniciarBase();
+  const a = await tecnico('Ana');
+  await folios.asignarRango(a, 1, 5);
+  const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a }));
+  const dbx = await dbMod.getDatabase();
+  await dbx.runAsync(`INSERT INTO orden_servicios (ordenId, codigo, descripcion, cantidad, importeCUP, importeUSD) VALUES (?, 'LEG', 'legado', 0, 500, 0)`, id);
+  await dbx.runAsync(`INSERT INTO orden_servicios (ordenId, codigo, descripcion, cantidad, importeCUP, importeUSD) VALUES (?, 'NEG', 'legado', -2, 700, 0)`, id);
+  const o = await ordenes.obtenerOrden(id);
+  const t = ordenes.calcularTotales(o.materiales, o.servicios);
+  const ult = await analitica.obtenerUltimasOrdenes(10);
+  assert.equal(moneda.normalizarImporte(ult[0].totalCUP), moneda.normalizarImporte(t.totalCUP));
+  assert.equal(t.totalCUP, 100 * 3 + 10 * 2);
 });
 
 // ------------------------------------------------------------------

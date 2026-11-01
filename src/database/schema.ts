@@ -17,7 +17,9 @@
  */
 
 // v6: orden_equipos (PC). v7: folios por rangos, libro de folios y técnico principal.
-export const SCHEMA_VERSION = 7;
+// v8: pago por transferencia (informativo, solo cliente Población).
+// v9: procedimientos manuales (texto libre) para servicios sin procedimiento oficial.
+export const SCHEMA_VERSION = 9;
 
 // Migración de columnas nuevas para bases que ya tenían `ordenes` creada
 // antes de que existiera la sección 9 del formulario (Firmas y
@@ -46,6 +48,12 @@ export const MIGRACIONES_COLUMNAS: string[] = [
   // dos órdenes. Las órdenes anteriores a la v6 quedan con NULL.
   `ALTER TABLE ordenes ADD COLUMN tecnicoPrincipalId INTEGER REFERENCES tecnicos(id) ON DELETE SET NULL`,
   `ALTER TABLE ordenes ADD COLUMN claveGuardado TEXT`,
+  // v8: pago por transferencia (Transfermóvil). Informativo: lo escribe el técnico a
+  // mano al llegarle el SMS. pagoRealizado = 0/1; pagoFecha = cuándo se marcó el check.
+  `ALTER TABLE ordenes ADD COLUMN pagoTelefono TEXT`,
+  `ALTER TABLE ordenes ADD COLUMN pagoNroTransaccion TEXT`,
+  `ALTER TABLE ordenes ADD COLUMN pagoRealizado INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE ordenes ADD COLUMN pagoFecha TEXT`,
 ];
 // v2: se agregan 4 columnas a `servicios` que aparecieron en el xlsx real
 // (Tecnostar_CM_030325.xlsx) y no estaban en el esquema original de la Fase 1.1:
@@ -243,6 +251,18 @@ CREATE INDEX IF NOT EXISTS idx_orden_equipos_orden ON orden_equipos(ordenId);
 CREATE TABLE IF NOT EXISTS configuracion (
   clave  TEXT PRIMARY KEY,
   valor  TEXT
+);
+
+-- ============================================================
+-- PROCEDIMIENTOS MANUALES (v9) — texto libre que el técnico añade a un servicio sin procedimiento
+-- oficial. La clave es «estatal:<código corto>» o «poblacion:<código corto>» (no depende del id de
+-- la tabla servicios, así sobrevive a un Reemplazar del tarifario).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS procedimientos_manuales (
+  clave        TEXT PRIMARY KEY,
+  texto        TEXT NOT NULL,
+  creadoEn     TEXT NOT NULL DEFAULT (datetime('now')),
+  actualizadoEn TEXT NOT NULL DEFAULT (datetime('now'))
 );
 `;
 

@@ -15,6 +15,13 @@ import type {
   OpcionesListado,
 } from '../types/tarifario.types';
 
+/**
+ * Las filas con categoría «Población» (de archivos antiguos) no son del tarifario Estatal / Interno:
+ * Población tiene su propio tarifario (pestaña Población). Se ocultan de listados y búsquedas para que
+ * una tarifa de Población nunca aparezca como si fuera Estatal.
+ */
+const SIN_POBLACION = "categoria <> 'Población'";
+
 export async function crearServicio(datos: NuevoServicio): Promise<number> {
   const db = await getDatabase();
 
@@ -57,6 +64,48 @@ export async function crearServicio(datos: NuevoServicio): Promise<number> {
  * UNIQUE de codigoServicio detecte duplicados, contándolos en vez de
  * frenar toda la importación por uno solo.
  */
+const SQL_INSERTAR_SERVICIO = `INSERT INTO servicios
+            (codigoServicio, nombreServicio, categoria, descripcionTecnica, detalleFactura, unidad, precioBase, precioTecnico, tiempoEstimado, cantidadTecnicos, idPropietario, insumosCUP)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+function valoresServicio(s: NuevoServicio): (string | number | null)[] {
+  return [
+    s.codigoServicio,
+    s.nombreServicio,
+    s.categoria,
+    s.descripcionTecnica,
+    s.detalleFactura ?? null,
+    s.unidad,
+    s.precioBase,
+    s.precioTecnico,
+    s.tiempoEstimado,
+    s.cantidadTecnicos ?? 1,
+    s.idPropietario ?? null,
+    s.insumosCUP ?? null,
+  ];
+}
+
+/**
+ * Reemplaza TODO el tarifario en UNA sola transacción: borrar + insertar. Si algo falla a mitad,
+ * se deshace todo y el catálogo anterior queda intacto (nunca queda vacío a medias). Los servicios
+ * deben venir ya validados (interpretarArchivoTarifario). No toca técnicos, órdenes ni configuración:
+ * las órdenes conservan su código y descripción (orden_servicios.servicioId pasa a NULL).
+ */
+export async function reemplazarServicios(servicios: NuevoServicio[]): Promise<{ importados: number }> {
+  const db = await getDatabase();
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    // La conexión exclusiva NO trae `foreign_keys` activado, así que el ON DELETE SET NULL de
+    // orden_servicios.servicioId no se ejecutaría solo: se aplica a mano antes de borrar. Las órdenes
+    // conservan su propio código y descripción.
+    await txn.runAsync(`UPDATE orden_servicios SET servicioId = NULL WHERE servicioId IS NOT NULL`);
+    await txn.runAsync(`DELETE FROM servicios`);
+    for (const s of servicios) {
+      await txn.runAsync(SQL_INSERTAR_SERVICIO, ...valoresServicio(s));
+    }
+  });
+  return { importados: servicios.length };
+}
+
 export async function importarServiciosDesdeJSON(
   servicios: NuevoServicio[]
 ): Promise<{ importados: number; duplicados: number; errores: string[] }> {
@@ -131,9 +180,13 @@ export async function obtenerServicioPorCodigo(codigo: string): Promise<Servicio
 }
 
 export async function listarServicios(opciones: OpcionesListado = {}): Promise<Servicio[]> {
-  const { incluirInactivos = false, categoria, limite = 100, offset = 0 } = opciones;
+  const { incluirInactivos = false, incluirPoblacion = false, categoria, limite = 100, offset = 0 } = opciones;
   const db = await getDatabase();
-  const condiciones = [incluirInactivos ? null : 'activo = 1', categoria ? 'categoria = ?' : null].filter(
+  const condiciones = [
+    incluirInactivos ? null : 'activo = 1',
+    incluirPoblacion ? null : SIN_POBLACION,
+    categoria ? 'categoria = ?' : null,
+  ].filter(
     (c): c is string => c !== null
   );
   const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
@@ -257,9 +310,13 @@ export async function buscarServicios(
   const consulta = construirConsultaFTS(texto);
   if (!consulta) return listarServicios(opciones);
 
-  const { incluirInactivos = false, categoria, limite = 100, offset = 0 } = opciones;
+  const { incluirInactivos = false, incluirPoblacion = false, categoria, limite = 100, offset = 0 } = opciones;
   const db = await getDatabase();
-  const condicionesExtra = [incluirInactivos ? null : 's.activo = 1', categoria ? 's.categoria = ?' : null].filter(
+  const condicionesExtra = [
+    incluirInactivos ? null : 's.activo = 1',
+    incluirPoblacion ? null : `s.${SIN_POBLACION}`,
+    categoria ? 's.categoria = ?' : null,
+  ].filter(
     (c): c is string => c !== null
   );
   const condicion = condicionesExtra.length ? `AND ${condicionesExtra.join(' AND ')}` : '';
@@ -284,10 +341,11 @@ export async function buscarServicios(
 }
 
 async function buscarServiciosConLike(texto: string, opciones: OpcionesListado): Promise<Servicio[]> {
-  const { incluirInactivos = false, categoria, limite = 100, offset = 0 } = opciones;
+  const { incluirInactivos = false, incluirPoblacion = false, categoria, limite = 100, offset = 0 } = opciones;
   const db = await getDatabase();
   const condiciones = [
     incluirInactivos ? null : 'activo = 1',
+    incluirPoblacion ? null : SIN_POBLACION,
     categoria ? 'categoria = ?' : null,
     '(nombreServicio LIKE ? OR descripcionTecnica LIKE ? OR codigoServicio LIKE ?)',
   ].filter((c): c is string => c !== null);
@@ -304,7 +362,7 @@ async function buscarServiciosConLike(texto: string, opciones: OpcionesListado):
 export async function obtenerCategorias(): Promise<{ categoria: string; total: number }[]> {
   const db = await getDatabase();
   return db.getAllAsync<{ categoria: string; total: number }>(
-    `SELECT categoria, COUNT(*) as total FROM servicios WHERE activo = 1 GROUP BY categoria ORDER BY categoria ASC`
+    `SELECT categoria, COUNT(*) as total FROM servicios WHERE activo = 1 AND ${SIN_POBLACION} GROUP BY categoria ORDER BY categoria ASC`
   );
 }
 
