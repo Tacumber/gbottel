@@ -18,7 +18,8 @@
 
 // v6: orden_equipos (PC). v7: folios por rangos, libro de folios y técnico principal.
 // v8: pago por transferencia (informativo, solo cliente Población).
-export const SCHEMA_VERSION = 8;
+// v9: procedimientos manuales (texto libre) para servicios sin procedimiento oficial.
+export const SCHEMA_VERSION = 9;
 
 // Migración de columnas nuevas para bases que ya tenían `ordenes` creada
 // antes de que existiera la sección 9 del formulario (Firmas y
@@ -250,6 +251,18 @@ CREATE INDEX IF NOT EXISTS idx_orden_equipos_orden ON orden_equipos(ordenId);
 CREATE TABLE IF NOT EXISTS configuracion (
   clave  TEXT PRIMARY KEY,
   valor  TEXT
+);
+
+-- ============================================================
+-- PROCEDIMIENTOS MANUALES (v9) — texto libre que el técnico añade a un servicio sin procedimiento
+-- oficial. La clave es «estatal:<código corto>» o «poblacion:<código corto>» (no depende del id de
+-- la tabla servicios, así sobrevive a un Reemplazar del tarifario).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS procedimientos_manuales (
+  clave        TEXT PRIMARY KEY,
+  texto        TEXT NOT NULL,
+  creadoEn     TEXT NOT NULL DEFAULT (datetime('now')),
+  actualizadoEn TEXT NOT NULL DEFAULT (datetime('now'))
 );
 `;
 

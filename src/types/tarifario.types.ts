@@ -43,6 +43,8 @@ export type ActualizacionServicio = Partial<NuevoServicio>;
 export interface OpcionesListado {
   /** Por defecto false: no muestra servicios dados de baja. */
   incluirInactivos?: boolean;
+  /** Por defecto false: las filas con categoría «Población» no se mezclan con Estatal / Interno. */
+  incluirPoblacion?: boolean;
   /** Filtra por categoría exacta (ej. "Modalidad 1"). Sin definir = todas. */
   categoria?: string;
   limite?: number;

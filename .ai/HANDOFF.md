@@ -75,3 +75,6 @@ Hecha con el modelo oficial (`docs/modelo-oficial-orden-servicio.png`). Ver matr
 
 ## Actualización 2026-10-31 — Pago por transferencia (Población)
 Ver sección en docs/AUDITORIA-ISSUE7-20261021.md. Esquema v8, respaldo v5, `src/utils/pagoTransferencia.ts`, `src/components/qr-pago.tsx`, `src/data/qrPagoTransfermovil.ts`. Sin dependencias nuevas. Tests 31/31. Lint: 3 errores previos en _layout/tarifario/tecnicos (no tocados). No probado en dispositivo.
+
+## Actualización 2026-11-01 — Tarifario (subcategorías, importador de modelo, reemplazo atómico, procedimiento manual)
+Ver sección en docs/AUDITORIA-ISSUE7-20261021.md. Esquema v9, respaldo v6. Nuevos: src/services/tarifarioArchivo.ts, procedimientosManualesService.ts. Tests 34/34. No probado en dispositivo.

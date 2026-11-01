@@ -158,9 +158,9 @@ const prueba = (nombre, fn) => pruebas.push({ nombre, fn });
 // ------------------------------------------------------------------
 // Pruebas
 // ------------------------------------------------------------------
-prueba('T01 base nueva: v8, sin rangos → no se puede crear orden y no queda nada a medias', async () => {
+prueba('T01 base nueva: v9, sin rangos → no se puede crear orden y no queda nada a medias', async () => {
   await reiniciarBase();
-  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '8');
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '9');
   const a = await tecnico('Ana');
   await rechaza(ordenes.guardarOrdenCompleta(null, payload()), 'SIN_PRINCIPAL');
   await rechaza(ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a })), 'SIN_FOLIOS');
@@ -323,7 +323,7 @@ prueba('T09 migración desde una base v5 real: folios intactos, libro e históri
   assert.deepEqual((await q('SELECT numero, origen FROM folios_emitidos ORDER BY numero')).map((r) => r.numero), ['000001', '000002', '000007']);
   const h = await q('SELECT historico, desde, hasta, siguiente, tecnicoId FROM folio_rangos');
   assert.deepEqual(h, [{ historico: 1, desde: 1, hasta: 7, siguiente: 8, tecnicoId: null }]);
-  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '8');
+  assert.equal((await q1(`SELECT valor FROM configuracion WHERE clave='schemaVersion'`)).valor, '9');
   const a = await tecnico('Ana');
   await rechaza(folios.asignarRango(a, 5, 10), 'RANGO_SOLAPADO');
   await folios.asignarRango(a, 8, 10);
@@ -350,10 +350,10 @@ async function escenarioRespaldo() {
   return Object.values(estado.compartidos)[0];
 }
 
-prueba('T10 respaldo v5: ida y vuelta conserva folios; fusiona bloques con el mayor siguiente; el libro local no se pierde', async () => {
+prueba('T10 respaldo v6: ida y vuelta conserva folios; fusiona bloques con el mayor siguiente; el libro local no se pierde', async () => {
   const contenido = await escenarioRespaldo();
   const j = JSON.parse(contenido);
-  assert.equal(j.version, 5);
+  assert.equal(j.version, 6);
   assert.ok(Array.isArray(j.tablas.folio_rangos) && Array.isArray(j.tablas.folios_emitidos));
   // Después del respaldo, este dispositivo emite 2 folios más y un bloque nuevo
   const a = (await q1(`SELECT id FROM tecnicos WHERE nombre='Ana'`)).id;
@@ -552,7 +552,7 @@ prueba('T19 equipos de la orden viajan en respaldo v4 y traspaso; respaldo v3 de
   assert.equal((await q('SELECT * FROM orden_equipos WHERE ordenId=?', id)).length, 2);
   await respaldo.exportarRespaldoCompleto();
   const j = JSON.parse(Object.values(estado.compartidos).pop());
-  assert.equal(j.version, 5);
+  assert.equal(j.version, 6);
   assert.equal(j.tablas.orden_equipos.length, 2);
   // ida y vuelta
   const prep = await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(j));
@@ -974,7 +974,7 @@ prueba('T31 pago por transferencia (informativo): migración v8, guardado, PDF/X
   await respaldo.exportarRespaldoCompleto();
   const archivo = Object.values(estado.compartidos)[0];
   const j = JSON.parse(archivo);
-  assert.equal(j.version, 5);
+  assert.equal(j.version, 6);
   assert.ok(j.tablas.ordenes.every((o) => 'pagoRealizado' in o && 'pagoNroTransaccion' in o));
   await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(archivo));
   const tras = await q('SELECT clienteNombre, pagoTelefono, pagoNroTransaccion, pagoRealizado, pagoFecha FROM ordenes ORDER BY id');
@@ -1049,13 +1049,13 @@ prueba('T32 tarifario del taller de clima: modelo actual (Estatal/Interno y Pobl
   const r = await respaldo.reemplazarTarifarioJSON();
   estado.archivoElegido = null;
   assert.equal(r.reemplazado, true);
-  assert.equal(r.resultado.importados, 200); assert.equal(r.resultado.duplicados, 0); assert.deepEqual(r.resultado.errores, []);
-  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 200);
+  assert.equal(r.resultado.importados, 173); assert.equal(r.resultado.poblacionOmitidos, 27); assert.equal(r.resultado.duplicados, 0); assert.deepEqual(r.resultado.errores, []);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 173);
   // lo que hace la pantalla tras reemplazar: categorías, listado, búsqueda, nombre oficial, procedimiento, Población
   const cats = await tarifSvc.obtenerCategorias();
-  assert.equal(cats.length, 12);
+  assert.equal(cats.length, 11);
   const lista = (await tarifSvc.listarServicios({ limite: 300 })).map(pobSvc.aItemCatalogo);
-  assert.equal(lista.length, 200);
+  assert.equal(lista.length, 173);
   assert.ok(lista.every((s) => typeof s.nombreServicio === 'string' && s.clave));
   for (const t of ['split', 'aire de ventana', 'camara fria', 'vehiculo', 'Mantenimiento']) {
     const hit = await tarifSvc.buscarServicios(t, { limite: 300 });
@@ -1070,6 +1070,202 @@ prueba('T32 tarifario del taller de clima: modelo actual (Estatal/Interno y Pobl
   const sv = (await tarifSvc.listarServicios({ limite: 1 }))[0];
   const id = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, servicios: [{ servicioId: sv.id, codigo: sv.codigoServicio, descripcion: sv.nombreServicio, cantidad: 1, importeCUP: sv.precioBase, importeUSD: 0 }] }));
   assert.ok(id > 0);
+});
+
+prueba('T33 archivo de tarifario: acepta lista y modelo, valida TODO antes de tocar la base, reemplazo atómico, Población fuera de Estatal/Interno, aviso por pocas filas', async () => {
+  const arch = require(path.join(SRC, 'services/tarifarioArchivo.ts'));
+  const tsvc = require(path.join(SRC, 'services/tarifarioService.ts'));
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf8'));
+  const modeloClima = fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima.json'), 'utf8');
+  const listaClima = fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima_importable.json'), 'utf8');
+  const completo = fs.readFileSync(path.join(SRC, 'data/tarifario_copextel.json'), 'utf8');
+
+  // 1) lectura de los tres formatos
+  const m = arch.interpretarArchivoTarifario(modeloClima);
+  assert.equal(m.formato, 'modelo'); assert.equal(m.servicios.length, 173); assert.equal(m.poblacionOmitidos, 27);
+  assert.equal(m.subcategorias.length, 11); assert.ok(!m.subcategorias.includes('Población'));
+  assert.ok(m.pocasFilas);
+  const sp = m.servicios.find((x) => x.codigoServicio === '25-7011-TER');
+  assert.equal(sp.nombreServicio, 'Revisión y Diagnóstico de aire de ventana'); assert.equal(sp.categoria, 'Aire de Ventana');
+  assert.strictEqual(sp.precioBase, 1116.9); assert.equal(sp.tiempoEstimado, 165); assert.equal(sp.cantidadTecnicos, 2); assert.equal(sp.insumosCUP, 0.5);
+  const l = arch.interpretarArchivoTarifario(listaClima);
+  assert.equal(l.formato, 'lista'); assert.equal(l.servicios.length, 173); assert.equal(l.poblacionOmitidos, 27);
+  assert.ok(l.subcategorias.every((c) => !/^Estatal/.test(c)), 'el prefijo «Estatal - » se quita');
+  assert.deepEqual(l.servicios.map((x) => [x.codigoServicio, x.precioBase, x.categoria]), m.servicios.map((x) => [x.codigoServicio, x.precioBase, x.categoria]));
+  const c = arch.interpretarArchivoTarifario(completo);   // el modelo unificado completo también se lee
+  assert.equal(c.servicios.length, 1858); assert.ok(!c.pocasFilas);
+  const porCod = new Map(seed.map((x) => [x.codigoServicio, x]));
+  assert.ok(c.servicios.every((x) => porCod.has(x.codigoServicio) && porCod.get(x.codigoServicio).precioBase === x.precioBase));
+  const sinTocar = arch.interpretarArchivoTarifario(JSON.stringify(seed));
+  assert.equal(sinTocar.servicios.length, 1858);
+
+  // 2) archivos inválidos: se rechazan enteros, con mensaje claro
+  const base = () => JSON.parse(listaClima);
+  const malos = [
+    ['no es JSON', '{{{', /JSON válido/],
+    ['objeto sin categorias', '{"a":1}', /formato de tarifario/],
+    ['lista vacía', '[]', /ningún servicio/],
+    ['fila no objeto', JSON.stringify([1, 2]), /no es un objeto/],
+    ['precio texto', JSON.stringify(base().map((x, i) => (i === 3 ? { ...x, precioBase: '12,5' } : x))), /el precio no es un número/],
+    ['precio negativo', JSON.stringify(base().map((x, i) => (i === 0 ? { ...x, precioBase: -1 } : x))), /negativo/],
+    ['sin código', JSON.stringify(base().map((x, i) => (i === 0 ? { ...x, codigoServicio: '' } : x))), /falta el código/],
+    ['código repetido', JSON.stringify(base().map((x, i) => (i === 1 ? { ...x, codigoServicio: base()[0].codigoServicio } : x))), /código repetido/],
+    ['técnicos 0', JSON.stringify(base().map((x, i) => (i === 0 ? { ...x, cantidadTecnicos: 0 } : x))), /técnicos/],
+    ['modelo sin tarifas', JSON.stringify({ categorias: [{ id_categoria: 'estatal', servicios: [{ codigo: '1', descripcion: 'x' }] }] }), /no trae tarifas/],
+    ['modelo precio NaN', JSON.stringify({ categorias: [{ id_categoria: 'estatal', nombre_categoria: 'E', servicios: [{ codigo: '1', descripcion: 'x', tarifas: { estatal_interno: 'a' } }] }] }), /el precio no es un número/],
+  ];
+  for (const [nombre, txt, rx] of malos) {
+    assert.throws(() => arch.interpretarArchivoTarifario(txt), (e) => e.name === 'ErrorTarifario' && rx.test(e.message), nombre);
+  }
+  assert.throws(() => arch.interpretarArchivoTarifario(JSON.stringify({ categorias: [{ id_categoria: 'poblacion', tarifa: 'poblacion', servicios: [{ codigo: '1', descripcion: 'x', tarifas: { poblacion: 5 } }] }] })), /solo trae servicios de Población/);
+
+  // 3) Reemplazar con un archivo inválido NO borra nada
+  await reiniciarBase();
+  await tsvc.importarServiciosDesdeJSON(seed);
+  estado.archivoElegido = malos[4][1];
+  await assert.rejects(respaldo.prepararReemplazoTarifario(), /el precio no es un número/);
+  estado.archivoElegido = malos[4][1];
+  await assert.rejects(respaldo.reemplazarTarifarioJSON(), /el precio no es un número/);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858);
+  estado.archivoElegido = null;
+  assert.equal((await respaldo.prepararReemplazoTarifario()), null);               // cancelar el selector
+  assert.deepEqual(await respaldo.reemplazarTarifarioJSON(), { reemplazado: false });
+
+  // 4) preparar no borra; avisa de pocas filas y cuántos hay ahora
+  estado.archivoElegido = modeloClima;
+  const prep = await respaldo.prepararReemplazoTarifario();
+  assert.equal(prep.actuales, 1858); assert.equal(prep.archivo.servicios.length, 173); assert.equal(prep.archivo.pocasFilas, true);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858, 'preparar no toca la base');
+
+  // 5) atomicidad: un fallo a mitad del reemplazo deshace TODO (el catálogo anterior queda intacto)
+  const dbx = await dbMod.getDatabase();
+  await dbx.execAsync(`CREATE TRIGGER t_fallo_srv BEFORE INSERT ON servicios WHEN NEW.codigoServicio = '25-7345-TER' BEGIN SELECT RAISE(ABORT, 'FALLO_SERVICIOS'); END`);
+  await assert.rejects(respaldo.aplicarReemplazoTarifario(prep), /FALLO_SERVICIOS/);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 1858, 'rollback completo: no queda vacío ni a medias');
+  assert.equal((await q1(`SELECT COUNT(*) n FROM servicios WHERE categoria='Split'`)).n, 0);
+  await dbx.execAsync(`DROP TRIGGER t_fallo_srv`);
+
+  // 6) reemplazo bueno con el modelo nuevo
+  const r = await respaldo.aplicarReemplazoTarifario(prep);
+  assert.equal(r.importados, 173); assert.equal(r.poblacionOmitidos, 27);
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 173);
+  const cats = await tsvc.obtenerCategorias();
+  assert.deepEqual(cats.map((x) => x.categoria).sort(), [...m.subcategorias].sort());
+  assert.equal(cats.reduce((a, x) => a + x.total, 0), 173);
+  assert.equal((await tsvc.listarServicios({ categoria: 'Split', limite: 100 })).length, 34);
+  assert.ok((await tsvc.buscarServicios('split', { limite: 300 })).length >= 34);
+  // las filas guardadas coinciden con el archivo (importes sin redondear)
+  const filas = await q('SELECT codigoServicio, precioBase, categoria, tiempoEstimado, cantidadTecnicos, insumosCUP FROM servicios ORDER BY id');
+  assert.deepEqual(filas.map((f) => [f.codigoServicio, f.precioBase, f.categoria]), m.servicios.map((x) => [x.codigoServicio, x.precioBase, x.categoria]));
+
+  // 7) Población nunca se mezcla con Estatal: filas «Población» heredadas de bases antiguas no salen en listados ni búsquedas
+  await dbx.runAsync(`INSERT INTO servicios (codigoServicio, nombreServicio, categoria, precioBase) VALUES ('7040', 'Instalación y montaje de Split de pared', 'Población', 999)`);
+  assert.equal((await tsvc.listarServicios({ limite: 500 })).length, 173);
+  assert.ok(!(await tsvc.buscarServicios('Instalación montaje Split pared', { limite: 300 })).some((x) => x.categoria === 'Población'));
+  assert.ok(!(await tsvc.obtenerCategorias()).some((x) => x.categoria === 'Población'));
+  assert.equal((await tsvc.listarServicios({ incluirPoblacion: true, limite: 500 })).length, 174);   // Exportar sí las incluye
+
+  // 8) Importar (solo agrega): lista y modelo; los existentes no se tocan
+  await dbx.runAsync(`DELETE FROM servicios WHERE categoria='Población'`);
+  estado.archivoElegido = listaClima;
+  const imp = await respaldo.importarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(imp.resultado.importados, 0); assert.equal(imp.resultado.duplicados, 173); assert.equal(imp.resultado.poblacionOmitidos, 27);
+  estado.archivoElegido = '[{"codigoServicio":"X-1","nombreServicio":"Nuevo","categoria":"Split","precioBase":10.5}]';
+  const imp2 = await respaldo.importarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(imp2.resultado.importados, 1);
+  estado.archivoElegido = '[{"codigoServicio":"X-2","nombreServicio":"Malo","categoria":"Split","precioBase":"x"}]';
+  await assert.rejects(respaldo.importarTarifarioJSON(), /el precio no es un número/);
+  estado.archivoElegido = null;
+  assert.equal((await q1('SELECT COUNT(*) n FROM servicios')).n, 174);
+
+  // 9) las órdenes ya guardadas sobreviven al reemplazo con su propio código y descripción
+  await reiniciarBase();
+  await tsvc.importarServiciosDesdeJSON(seed);
+  const a = await tecnico('Ana'); await folios.asignarRango(a, 1, 5);
+  const sv = (await tsvc.listarServicios({ limite: 1 }))[0];
+  const oid = await ordenes.guardarOrdenCompleta(null, payload({ tecnicoPrincipalId: a, servicios: [{ servicioId: sv.id, codigo: sv.codigoServicio, descripcion: sv.nombreServicio, cantidad: 2, importeCUP: sv.precioBase, importeUSD: 0 }] }));
+  estado.archivoElegido = modeloClima;
+  await respaldo.reemplazarTarifarioJSON();
+  estado.archivoElegido = null;
+  const o = await ordenes.obtenerOrden(oid);
+  assert.equal(o.servicios[0].codigo, sv.codigoServicio); assert.equal(o.servicios[0].servicioId, null);
+  assert.strictEqual(ordenes.calcularTotales(o.materiales, o.servicios).serviciosCUP, sv.precioBase * 2);
+});
+
+prueba('T34 procedimientos manuales + subcategorías de Población: guardar/editar/eliminar, claves por tarifa, sobreviven a Reemplazar, respaldo v6 y respaldos anteriores', async () => {
+  const man = require(path.join(SRC, 'services/procedimientosManualesService.ts'));
+  const pobSvc = require(path.join(SRC, 'services/tarifarioPoblacionService.ts'));
+  const tsvc = require(path.join(SRC, 'services/tarifarioService.ts'));
+  // subcategorías de Población: las familias reparten las 82 prestaciones sin perder ni repetir ninguna
+  const fam = pobSvc.FAMILIAS_POBLACION;
+  assert.ok(fam.length >= 2);
+  assert.equal(fam.reduce((a, f) => a + f.total, 0), 82);
+  const vistos = new Set();
+  for (const f of fam) {
+    const items = pobSvc.listarTarifaPoblacion('', f.familia);
+    assert.equal(items.length, f.total, f.familia);
+    for (const i of items) { assert.ok(!vistos.has(i.codigoServicio)); vistos.add(i.codigoServicio); }
+  }
+  assert.equal(vistos.size, 82);
+  assert.equal(pobSvc.listarTarifaPoblacion('').length, 82);
+  const todas = pobSvc.listarTarifaPoblacion('');
+  const unaFam = pobSvc.listarTarifaPoblacion('', fam[0].familia);
+  for (const i of unaFam) assert.equal(todas.find((x) => x.codigoServicio === i.codigoServicio).id, i.id, 'el id no cambia al filtrar');
+  assert.equal(pobSvc.listarTarifaPoblacion('split', 'Gastronomía').length, 0);
+  assert.ok(pobSvc.listarTarifaPoblacion('split', 'Climatización y Agua').length > 0);
+
+  // claves: el mismo código en Estatal y Población son procedimientos distintos
+  assert.equal(man.claveProcedimiento('estatal', '25-7192-TER'), 'estatal:7192');
+  assert.equal(man.claveProcedimiento('poblacion', '7192'), 'poblacion:7192');
+  await reiniciarBase();
+  assert.equal(await man.obtenerProcedimientoManual('estatal:7192'), null);
+  await assert.rejects(man.guardarProcedimientoManual('estatal:7192', '   \n  '), /Escribe o pega/);
+  await assert.rejects(man.guardarProcedimientoManual('estatal:7192', 'x'.repeat(man.MAX_PROCEDIMIENTO_MANUAL + 1)), /demasiado largo/);
+  await man.guardarProcedimientoManual('estatal:7192', '  1. Revisar compresor\r\n2. Cambiar capacitor — «ñ» <b>&  \n');
+  await man.guardarProcedimientoManual('poblacion:7192', 'Solo para población');
+  const g = await man.obtenerProcedimientoManual('estatal:7192');
+  assert.equal(g.texto, '1. Revisar compresor\n2. Cambiar capacitor — «ñ» <b>&');
+  await man.guardarProcedimientoManual('estatal:7192', 'Texto editado');
+  assert.equal((await man.obtenerProcedimientoManual('estatal:7192')).texto, 'Texto editado');
+  assert.equal(await man.contarProcedimientosManuales(), 2);
+
+  // sobreviven a Reemplazar el tarifario (van por código, no por id)
+  const seed = JSON.parse(fs.readFileSync(path.join(SRC, 'data/servicios_seed.json'), 'utf8'));
+  await tsvc.importarServiciosDesdeJSON(seed);
+  estado.archivoElegido = fs.readFileSync(path.join(SRC, 'data/tarifario_taller_clima.json'), 'utf8');
+  await respaldo.reemplazarTarifarioJSON();
+  estado.archivoElegido = null;
+  assert.equal(await man.contarProcedimientosManuales(), 2);
+
+  // respaldo v6 ida y vuelta
+  estado.compartidos = {};
+  await respaldo.exportarRespaldoCompleto();
+  const archivo = Object.values(estado.compartidos)[0];
+  const j = JSON.parse(archivo);
+  assert.equal(j.version, 6);
+  assert.deepEqual(j.tablas.procedimientos_manuales.map((x) => x.clave).sort(), ['estatal:7192', 'poblacion:7192']);
+  await man.eliminarProcedimientoManual('estatal:7192');
+  await man.eliminarProcedimientoManual('poblacion:7192');
+  assert.equal(await man.contarProcedimientosManuales(), 0);
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(archivo));
+  assert.equal((await man.obtenerProcedimientoManual('estatal:7192')).texto, 'Texto editado');
+  assert.equal((await man.obtenerProcedimientoManual('poblacion:7192')).texto, 'Solo para población');
+
+  // un respaldo anterior a la v6 (sin la tabla) NO borra los procedimientos locales
+  const v5 = JSON.parse(archivo); v5.version = 5; delete v5.tablas.procedimientos_manuales;
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(v5)));
+  assert.equal(await man.contarProcedimientosManuales(), 2);
+  // un respaldo v6 con la tabla vacía sí la deja vacía (es el estado del respaldo)
+  const vacio = JSON.parse(archivo); vacio.tablas.procedimientos_manuales = [];
+  await respaldo.aplicarRespaldo(await respaldo.prepararRespaldoDesdeTexto(JSON.stringify(vacio)));
+  assert.equal(await man.contarProcedimientosManuales(), 0);
+  // validación de filas inválidas / repetidas
+  const malo = JSON.parse(archivo); malo.tablas.procedimientos_manuales = [{ clave: 'a', texto: '' }];
+  await assert.rejects(respaldo.prepararRespaldoDesdeTexto(JSON.stringify(malo)), /no tiene texto/);
+  const rep = JSON.parse(archivo); rep.tablas.procedimientos_manuales = [{ clave: 'a', texto: 'x' }, { clave: 'a', texto: 'y' }];
+  await assert.rejects(respaldo.prepararRespaldoDesdeTexto(JSON.stringify(rep)), /repetido/);
 });
 
 prueba('T27 JSON de traspaso: validación de versión, tipos, cantidades, importes y totales; conflictos antes de aplicar; atómico', async () => {

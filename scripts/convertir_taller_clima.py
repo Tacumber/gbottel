@@ -101,7 +101,8 @@ for x in fila:
         'modalidad_oficial': sm['modalidad'], 'tipo_servicio': sm['tipo_servicio'],
         'familia': cm['nombre_categoria'],
         'tiempo_estimado_minutos': x['tiempoEstimado'], 'cantidad_tecnicos': x['cantidadTecnicos'],
-        'id_propietario': x['idPropietario'], 'detalle_factura': x['detalleFactura'] or None,
+        'id_propietario': x['idPropietario'], 'detalle_factura': nombre if x['detalleFactura'] else None,
+        'insumos_cup': x['insumosCUP'],
         'poblacion_coincidencia': sm.get('poblacion_coincidencia') if pob else None,
         'procedimiento': sm['procedimiento'],
     }

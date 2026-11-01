@@ -43,7 +43,8 @@
           "tiempo_estimado_minutos": 165,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Revisión y Diagnóstico de  aire de ventana",
+          "detalle_factura": "Revisión y Diagnóstico de aire de ventana",
+          "insumos_cup": 0.5,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -149,7 +150,8 @@
           "tiempo_estimado_minutos": 30,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Instalación y Montaje de  aire de ventana",
+          "detalle_factura": "Instalación y Montaje de aire de ventana",
+          "insumos_cup": 0.5,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -220,7 +222,8 @@
           "tiempo_estimado_minutos": 30,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Desmontaje de  aire de ventana",
+          "detalle_factura": "Desmontaje de aire de ventana",
+          "insumos_cup": 0.5,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -291,7 +294,8 @@
           "tiempo_estimado_minutos": 50,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Instalación y Montaje de protecciones electricas d",
+          "detalle_factura": "Instalación y Montaje de protecciones eléctricas de aire de ventana",
+          "insumos_cup": 0.5,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -368,6 +372,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en Marcha Aire ventana",
+          "insumos_cup": 0.5,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -444,6 +449,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Aire de Ventana 2",
+          "insumos_cup": 1.95,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -610,6 +616,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Aire de Ventana 1",
+          "insumos_cup": 0.26,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -719,6 +726,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación sencilla de aire ventana",
+          "insumos_cup": 0.58,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -738,6 +746,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Compleja de aire ventana",
+          "insumos_cup": 0.58,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -756,7 +765,8 @@
           "tiempo_estimado_minutos": 250,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Compleja de aire ventana(Cambio rodamie",
+          "detalle_factura": "Reparación Compleja de aire ventana (Cambio rodamiento del fan)",
+          "insumos_cup": 0.58,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -775,7 +785,8 @@
           "tiempo_estimado_minutos": 370,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación por recuperacion de piezas de aire vent",
+          "detalle_factura": "Reparación por recuperación de piezas de aire ventana",
+          "insumos_cup": 0.58,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -794,7 +805,8 @@
           "tiempo_estimado_minutos": 665,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Capital  de AV",
+          "detalle_factura": "Reparación Capital de aire de ventana",
+          "insumos_cup": 0.58,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -813,7 +825,8 @@
           "tiempo_estimado_minutos": 219,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Cambio de filtro.A/V",
+          "detalle_factura": "Cambio de filtro de aire de ventana",
+          "insumos_cup": 0.08,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -833,6 +846,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de Paleta o turbina de aire de ventana",
+          "insumos_cup": 0.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -851,7 +865,8 @@
           "tiempo_estimado_minutos": 173,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Eliminar salidero de AV",
+          "detalle_factura": "Eliminar salidero de aire de ventana",
+          "insumos_cup": 0.08,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -870,7 +885,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Adaptación en reparación del Sistema eléctrico del",
+          "detalle_factura": "Adaptación en reparación del Sistema eléctrico del aire acondicionado",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -889,7 +905,8 @@
           "tiempo_estimado_minutos": 220,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Revisión y Diagnóstico a equipos Split  y Consolas",
+          "detalle_factura": "Revisión y Diagnóstico a equipos Split y Consolas decorativas",
+          "insumos_cup": 2.18,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -1031,7 +1048,8 @@
           "tiempo_estimado_minutos": 72,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Instalacion y montaje de Split de pared",
+          "detalle_factura": "Instalación y montaje de Split de pared",
+          "insumos_cup": 1.56,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -1180,7 +1198,8 @@
           "tiempo_estimado_minutos": 390,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Instalacion y montaje de Split piso techo hasta 3 ",
+          "detalle_factura": "Instalación y montaje de Split piso techo hasta 3 toneladas de refrigeración",
+          "insumos_cup": 1.56,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -1339,7 +1358,8 @@
           "tiempo_estimado_minutos": 483,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Instalacion y montaje de split cassettes",
+          "detalle_factura": "Instalación y montaje de split cassettes",
+          "insumos_cup": 1.56,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -1518,7 +1538,8 @@
           "tiempo_estimado_minutos": 447,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Instalacion y montaje de split piso techo de 3.1 h",
+          "detalle_factura": "Instalación y montaje de split piso techo de 3,1 hasta 5 toneladas de refrigeración",
+          "insumos_cup": 1.56,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -1678,6 +1699,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Montaje Split hasta 2,5 Tonelada",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -1818,7 +1840,8 @@
           "tiempo_estimado_minutos": 505,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Split mas de 2,6 a 5  Tonelada",
+          "detalle_factura": "Montaje Split más de 2,6 a 5 Tonelada",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -1959,7 +1982,8 @@
           "tiempo_estimado_minutos": 625,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Split de Casette",
+          "detalle_factura": "Montaje Split de Cassette",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -2100,7 +2124,8 @@
           "tiempo_estimado_minutos": 150,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Desmontaje Split hasta 2.5tr",
+          "detalle_factura": "Desmontaje Split hasta 2,5 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -2241,7 +2266,8 @@
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Desmontaje Split Mayor 2.5tr",
+          "detalle_factura": "Desmontaje Split Mayor 2,5 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -2383,6 +2409,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Split de Cassette",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -2523,7 +2550,8 @@
           "tiempo_estimado_minutos": 295,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento 1 split hasta 2tr",
+          "detalle_factura": "Mantenimiento 1 split hasta 2 toneladas de refrigeración",
+          "insumos_cup": 2.47,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -2669,7 +2697,8 @@
           "tiempo_estimado_minutos": 400,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento 1 split mayor 2tr",
+          "detalle_factura": "Mantenimiento 1 split mayor 2 toneladas de refrigeración",
+          "insumos_cup": 2.47,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -2815,7 +2844,8 @@
           "tiempo_estimado_minutos": 470,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento 2 split hasta 2tr",
+          "detalle_factura": "Mantenimiento 2 split hasta 2 toneladas de refrigeración",
+          "insumos_cup": 2.47,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -2981,7 +3011,8 @@
           "tiempo_estimado_minutos": 600,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento 2 split mayor 2tr",
+          "detalle_factura": "Mantenimiento 2 split mayor 2 toneladas de refrigeración",
+          "insumos_cup": 2.47,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -3147,7 +3178,8 @@
           "tiempo_estimado_minutos": 600,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento  2 split Cassette",
+          "detalle_factura": "Mantenimiento 2 split Cassette",
+          "insumos_cup": 2.47,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -3314,6 +3346,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de split de pared y piso techo 1",
+          "insumos_cup": 0.26,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -3413,6 +3446,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de split de pared 2",
+          "insumos_cup": 1.05,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -3584,6 +3618,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de split piso techo 2",
+          "insumos_cup": 0.44,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -3755,6 +3790,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Split Cassette 2",
+          "insumos_cup": 1.16,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -3956,6 +3992,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Split Cassette 1",
+          "insumos_cup": 1.06,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -4082,6 +4119,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Sencilla Split",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4100,7 +4138,8 @@
           "tiempo_estimado_minutos": 215,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación  Compleja  de split",
+          "detalle_factura": "Reparación Compleja de split",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4119,7 +4158,8 @@
           "tiempo_estimado_minutos": 345,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación  Compleja  de split Cassette",
+          "detalle_factura": "Reparación Compleja de split Cassette",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4138,7 +4178,8 @@
           "tiempo_estimado_minutos": 335,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Compleja de split(Cambio rodamientos de",
+          "detalle_factura": "Reparación Compleja de split (Cambio rodamientos de los Fan)",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4157,7 +4198,8 @@
           "tiempo_estimado_minutos": 335,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Compleja de split(Cambio Fan de la unid",
+          "detalle_factura": "Reparación Compleja de split (Cambio Fan de la unidad Interior)",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4176,7 +4218,8 @@
           "tiempo_estimado_minutos": 620,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación por recuperacion de piezas de Split",
+          "detalle_factura": "Reparación por recuperación de piezas de Split",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4196,6 +4239,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación Capital de Split",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4215,6 +4259,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de turbina de split",
+          "insumos_cup": 0.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4233,7 +4278,8 @@
           "tiempo_estimado_minutos": 151,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Eliminar salidero en split ,consola decorativa y c",
+          "detalle_factura": "Eliminar salidero en split, consola decorativa y cassette",
+          "insumos_cup": 2.33,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4253,6 +4299,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en Marcha de Split",
+          "insumos_cup": 0.03,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -4320,7 +4367,8 @@
           "tiempo_estimado_minutos": 1245,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Instalación y puesta en marcha de split inverter tipo cassette hasta 2.5 TR c/ 2 unidades interiores",
+          "detalle_factura": "Instalación y puesta en marcha de split inverter tipo cassette hasta 2,5 toneladas de refrigeración con 2 unidades interiores",
+          "insumos_cup": 30.58,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -4599,7 +4647,8 @@
           "tiempo_estimado_minutos": 1340,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Instalación y puesta en marcha de split inverter tipo cassette > 2.5 h/ 5.0, c/ 2 unidades interiores",
+          "detalle_factura": "Instalación y puesta en marcha de split inverter tipo cassette mayor de 2,5 hasta 5,0 toneladas de refrigeración, con 2 unidades interiores",
+          "insumos_cup": 30.58,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -4878,7 +4927,8 @@
           "tiempo_estimado_minutos": 36,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Eliminar salidero en split ,consola decorativa y cassette.",
+          "detalle_factura": "Eliminar salidero en split, consola decorativa y cassette",
+          "insumos_cup": 10.8,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -4898,6 +4948,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en marcha de Consola y Roof Top",
+          "insumos_cup": 2.77,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -5025,7 +5076,8 @@
           "tiempo_estimado_minutos": 900,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Puesta Marcha Roof Top más de 30 tr",
+          "detalle_factura": "Puesta Marcha Roof Top más de 30 toneladas de refrigeración",
+          "insumos_cup": 1.27,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -5123,6 +5175,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Roof Top",
+          "insumos_cup": 1.91,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -5287,7 +5340,8 @@
           "tiempo_estimado_minutos": 725,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Consola y Roof top hasta 10tr",
+          "detalle_factura": "Montaje Consola y Roof top hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -5428,7 +5482,8 @@
           "tiempo_estimado_minutos": 1325,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Consola y Roof top Mayor 10tr",
+          "detalle_factura": "Montaje Consola y Roof top Mayor 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -5569,7 +5624,8 @@
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Puesta en Marcha RooF Top",
+          "detalle_factura": "Puesta en Marcha Roof Top",
+          "insumos_cup": 1.27,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -5781,7 +5837,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 1 Roof Top más de 30 tr",
+          "detalle_factura": "Mantenimiento 1 Roof Top más de 30 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -6002,7 +6059,8 @@
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 2 Roof Top más de 30 tr",
+          "detalle_factura": "Mantenimiento 2 Roof Top más de 30 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -6233,7 +6291,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento  Consola",
+          "detalle_factura": "Mantenimiento Consola",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -6464,7 +6523,8 @@
           "tiempo_estimado_minutos": 545,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "mantenimiento 1 a Consolas y Roof top hasta 10tr",
+          "detalle_factura": "Mantenimiento 1 a Consolas y Roof top hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -6630,7 +6690,8 @@
           "tiempo_estimado_minutos": 1025,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "mantenimiento 1 a Consolas y Roof top Mayor de 10t",
+          "detalle_factura": "Mantenimiento 1 a Consolas y Roof top Mayor de 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -6796,7 +6857,8 @@
           "tiempo_estimado_minutos": 995,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "mantenimiento 2 a Consolas y Roof top hasta 10tr",
+          "detalle_factura": "Mantenimiento 2 a Consolas y Roof top hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -6982,7 +7044,8 @@
           "tiempo_estimado_minutos": 1775,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "mantenimiento 2 a Consolas y Roof top Mayor 10tr",
+          "detalle_factura": "Mantenimiento 2 a Consolas y Roof top Mayor 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -7168,7 +7231,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento 2 Roof Top de hasta 30 TR",
+          "detalle_factura": "Mantenimiento 2 Roof Top de hasta 30 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -7400,6 +7464,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de consolas decorativas",
+          "insumos_cup": 0.44,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -7570,7 +7635,8 @@
           "tiempo_estimado_minutos": 241,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento de consola duct (10 - 30 Tr)",
+          "detalle_factura": "Mantenimiento de consola duct (10 - 30 toneladas de refrigeración)",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -7742,6 +7808,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Mantenimiento de Roof Top",
+          "insumos_cup": 1.24,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -7897,7 +7964,8 @@
           "tiempo_estimado_minutos": 260,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación  simple a Consola y Roof Top  hasta 10t",
+          "detalle_factura": "Reparación simple a Consola y Roof Top hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -7916,7 +7984,8 @@
           "tiempo_estimado_minutos": 500,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Compleja de Consola y Roof Top hasta 10",
+          "detalle_factura": "Reparación Compleja de Consola y Roof Top hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -7935,7 +8004,8 @@
           "tiempo_estimado_minutos": 500,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación  simple a Consola y Roof Top  Mayor 10t",
+          "detalle_factura": "Reparación simple a Consola y Roof Top Mayor 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -7954,7 +8024,8 @@
           "tiempo_estimado_minutos": 980,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Compleja de Consola y Roof Top Mayor 10",
+          "detalle_factura": "Reparación Compleja de Consola y Roof Top Mayor 10 toneladas de refrigeración",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -7974,6 +8045,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparacion de salidero (Consola o Roof top)",
+          "insumos_cup": 0.06,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -7992,7 +8064,8 @@
           "tiempo_estimado_minutos": 257,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Cambio de válvula de expansión termostática (conso",
+          "detalle_factura": "Cambio de válvula de expansión termostática (consola)",
+          "insumos_cup": 0.08,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -8012,6 +8085,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Revisión y Diagnóstico a Consolas y Roof top",
+          "insumos_cup": 1.71,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -8148,6 +8222,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Desmontaje Cámara Fría",
+          "insumos_cup": 1.91,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -8259,7 +8334,8 @@
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Fría de Mantenimiento 0.5 a 1 Hp",
+          "detalle_factura": "Montaje Cámara Fría de Mantenimiento 0,5 a 1 caballos de fuerza",
+          "insumos_cup": 3.34,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -8557,7 +8633,8 @@
           "tiempo_estimado_minutos": 719,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Fría de Mantenimiento 1.1 a 4 HP",
+          "detalle_factura": "Montaje Cámara Fría de Mantenimiento 1,1 a 4 caballos de fuerza",
+          "insumos_cup": 3.34,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -8855,7 +8932,8 @@
           "tiempo_estimado_minutos": 2159,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Fría de Mantenimiento 4.4 a 7.5 HP",
+          "detalle_factura": "Montaje Cámara Fría de Mantenimiento 4,4 a 7,5 caballos de fuerza",
+          "insumos_cup": 4.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -9165,7 +9243,8 @@
           "tiempo_estimado_minutos": 2160,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Fría de Congelación 0.5 a 4 HP",
+          "detalle_factura": "Montaje Cámara Fría de Congelación 0,5 a 4 caballos de fuerza",
+          "insumos_cup": 4.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -9495,7 +9574,8 @@
           "tiempo_estimado_minutos": 3239,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Fría de Congelación 4.1 a 7.5 HP",
+          "detalle_factura": "Montaje Cámara Fría de Congelación 4,1 a 7,5 caballos de fuerza",
+          "insumos_cup": 4.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -9826,6 +9906,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Puesta en Marcha Cámara Fría",
+          "insumos_cup": 1.27,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -10037,7 +10118,8 @@
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mantenimiento de Camara Fria",
+          "detalle_factura": "Mantenimiento de Cámara Fría",
+          "insumos_cup": 0.57,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -10163,7 +10245,8 @@
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Cámara Fría Simple",
+          "detalle_factura": "Reparación Cámara Fría Simple (Reconstrucción Eléctrica, Cambio de Paleta, Resistencia drenaje, Completamiento de refrigerante)",
+          "insumos_cup": 3.11,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -10182,7 +10265,8 @@
           "tiempo_estimado_minutos": 270,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Cámara Fría Media",
+          "detalle_factura": "Reparación Cámara Fría Media (Cambio de Filtro, Fan, Tarjeta, Turbina, Capilares, Soldadura del Sistema, cambio de arma Flex, válvulas)",
+          "insumos_cup": 3.11,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -10201,7 +10285,8 @@
           "tiempo_estimado_minutos": 450,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación Cámara Fría Compleja",
+          "detalle_factura": "Reparación Cámara Fría Compleja (Cambio de Rodamiento, Reconstrucción de pizarra, Condensador y Evaporador)",
+          "insumos_cup": 3.11,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -10220,7 +10305,8 @@
           "tiempo_estimado_minutos": 269,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Cambio de válvula de expansión termostática (cámar",
+          "detalle_factura": "Cambio de válvula de expansión termostática (cámara fría)",
+          "insumos_cup": 0.08,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -10239,7 +10325,8 @@
           "tiempo_estimado_minutos": 4480,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Modular 2x2x2.4 ",
+          "detalle_factura": "Montaje Cámara Modular 2x2x2,4",
+          "insumos_cup": 2.13,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -10462,7 +10549,8 @@
           "tiempo_estimado_minutos": 6400,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Modular 3x3x2.4 ",
+          "detalle_factura": "Montaje Cámara Modular 3x3x2,4",
+          "insumos_cup": 3.54,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -10685,7 +10773,8 @@
           "tiempo_estimado_minutos": 8490,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Cámara Modular 4x4x2.4 ",
+          "detalle_factura": "Montaje Cámara Modular 4x4x2,4",
+          "insumos_cup": 3.54,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -10908,7 +10997,8 @@
           "tiempo_estimado_minutos": 9525,
           "cantidad_tecnicos": 4,
           "id_propietario": 175,
-          "detalle_factura": "Panelizacion Camaras Frias Pequeña hasta 10  metros cubicos",
+          "detalle_factura": "Panelización Cámaras Frías Pequeña hasta 10 metros cúbicos",
+          "insumos_cup": 929.59,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -11197,7 +11287,8 @@
           "tiempo_estimado_minutos": 9985,
           "cantidad_tecnicos": 6,
           "id_propietario": 175,
-          "detalle_factura": "Panelizacion camaras frias de 11 a 21 metros cubicos",
+          "detalle_factura": "Panelización cámaras frías de 11 a 21 metros cúbicos",
+          "insumos_cup": 929.59,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -11486,7 +11577,8 @@
           "tiempo_estimado_minutos": 10095,
           "cantidad_tecnicos": 8,
           "id_propietario": 175,
-          "detalle_factura": "Panelizacion camras frias de 21 a 40  metros cubicos",
+          "detalle_factura": "Panelización cámaras frías de 21 a 40 metros cúbicos",
+          "insumos_cup": 929.59,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -11775,7 +11867,8 @@
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Puesta Marcha Manejadoras hasta 10 tr",
+          "detalle_factura": "Puesta Marcha Manejadoras hasta 10 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -11926,7 +12019,8 @@
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Puesta Marcha Manejadoras más 10 tr",
+          "detalle_factura": "Puesta Marcha Manejadoras más 10 toneladas de refrigeración",
+          "insumos_cup": 1.89,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -12059,7 +12153,8 @@
           "tiempo_estimado_minutos": 270,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 1 Manejadoras de Aire hasta 10 tr",
+          "detalle_factura": "Mantenimiento 1 Manejadoras de Aire hasta 10 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -12270,7 +12365,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 1 Manejadoras de Aire más de 10 tr",
+          "detalle_factura": "Mantenimiento 1 Manejadoras de Aire más de 10 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -12481,7 +12577,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 2 Manejadoras de Aire hasta 10 tr",
+          "detalle_factura": "Mantenimiento 2 Manejadoras de Aire hasta 10 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -12707,7 +12804,8 @@
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 2 Manejadoras de Aire más de 10 tr",
+          "detalle_factura": "Mantenimiento 2 Manejadoras de Aire más de 10 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -12933,7 +13031,8 @@
           "tiempo_estimado_minutos": 450,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 3 Manejadoras de Aire hasta 10 tr",
+          "detalle_factura": "Mantenimiento 3 Manejadoras de Aire hasta 10 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -13164,7 +13263,8 @@
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Mtto 3 Manejadoras de Aire más de 10 tr",
+          "detalle_factura": "Mantenimiento 3 Manejadoras de Aire más de 10 toneladas de refrigeración",
+          "insumos_cup": 2.48,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -13395,7 +13495,8 @@
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Ligera Manejadoras de Aire hasta 10 tr",
+          "detalle_factura": "Reparación Ligera Manejadoras de Aire hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -13414,7 +13515,8 @@
           "tiempo_estimado_minutos": 270,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Ligera Manejadoras de Aire más de 10 tr",
+          "detalle_factura": "Reparación Ligera Manejadoras de Aire más de 10 toneladas de refrigeración",
+          "insumos_cup": 3.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -13433,7 +13535,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Media Manejadoras de Aire hasta 10 tr",
+          "detalle_factura": "Reparación Media Manejadoras de Aire hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -13452,7 +13555,8 @@
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Media Manejadoras de Aire más de 10 tr",
+          "detalle_factura": "Reparación Media Manejadoras de Aire más de 10 toneladas de refrigeración",
+          "insumos_cup": 3.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -13471,7 +13575,8 @@
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Mayor Manejadoras de Aire hasta 10 tr",
+          "detalle_factura": "Reparación Mayor Manejadoras de Aire hasta 10 toneladas de refrigeración",
+          "insumos_cup": 3.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -13490,7 +13595,8 @@
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Mayor Manejadoras de Aire más de 10 tr",
+          "detalle_factura": "Reparación Mayor Manejadoras de Aire más de 10 toneladas de refrigeración",
+          "insumos_cup": 3.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -13509,7 +13615,8 @@
           "tiempo_estimado_minutos": 180,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Asistencia Técn.Diaria Equip.Clima Centralizado",
+          "detalle_factura": "Asistencia Técnica Diaria Equipos Clima Centralizado",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -13630,7 +13737,8 @@
           "tiempo_estimado_minutos": 60,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Montaje de Eq  Eléct. Bebedero de agua",
+          "detalle_factura": "Montaje de Equipos Eléctricos. Bebedero de agua",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -13691,7 +13799,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Rep Gral a Eq  Eléct: Bebedero de agua",
+          "detalle_factura": "Reparación General a Equipos Eléctricos: Bebedero de agua",
+          "insumos_cup": 0.96,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -13796,7 +13905,8 @@
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Rep Media a Equip Eléct: Bebedero de agua",
+          "detalle_factura": "Reparación Media a Equipos Eléctricos: Bebedero de agua",
+          "insumos_cup": 1.22,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -13901,7 +14011,8 @@
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Mtto 2 a Equip Eléct.Bebedero de agua",
+          "detalle_factura": "Mantenimiento 2 a Equipos Eléctricos. Bebedero de agua",
+          "insumos_cup": 0.94,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -13921,6 +14032,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Montaje de Equipos Eléctricos. Refrigerador",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -13982,6 +14094,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Montaje de Equipos Eléctricos. Refrigerador desarmado",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14042,7 +14155,8 @@
           "tiempo_estimado_minutos": 480,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Rep Gral a Eq  Eléct: Refrigerador",
+          "detalle_factura": "Reparación General a Equipos Eléctricos: Refrigerador",
+          "insumos_cup": 0.96,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14147,7 +14261,8 @@
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Rep Media a Equip Eléct: Refrigerador",
+          "detalle_factura": "Reparación Media a Equipos Eléctricos: Refrigerador",
+          "insumos_cup": 1.22,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14252,7 +14367,8 @@
           "tiempo_estimado_minutos": 300,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Mtto 2 a Equip Eléct.Refrigerador",
+          "detalle_factura": "Mantenimiento 2 a Equipos Eléctricos. Refrigerador",
+          "insumos_cup": 0.94,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -14271,7 +14387,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Rep Gral a Eq  Eléct:Caja de agua",
+          "detalle_factura": "Reparación General a Equipos Eléctricos: Caja de agua",
+          "insumos_cup": 0.96,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14376,7 +14493,8 @@
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Rep Media a Equip Eléct: Caja de agua",
+          "detalle_factura": "Reparación Media a Equipos Eléctricos: Caja de agua",
+          "insumos_cup": 1.22,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14481,7 +14599,8 @@
           "tiempo_estimado_minutos": 120,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Montaje de Equipos Eléctricos. Cajá de agua",
+          "detalle_factura": "Montaje de Equipos Eléctricos. Caja de agua",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14542,7 +14661,8 @@
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Mtto 2 a Equip Eléct.Caja de agua",
+          "detalle_factura": "Mantenimiento 2 a Equipos Eléctricos. Caja de agua",
+          "insumos_cup": 0.94,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -14561,7 +14681,8 @@
           "tiempo_estimado_minutos": 480,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Reparación General a Equipos  Eléctricos: Freezer.",
+          "detalle_factura": "Reparación General a Equipos Eléctricos: Freezer",
+          "insumos_cup": 0.96,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14667,6 +14788,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
           "detalle_factura": "Reparación Media a Equipos Eléctricos: Freezer",
+          "insumos_cup": 1.22,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14771,7 +14893,8 @@
           "tiempo_estimado_minutos": 240,
           "cantidad_tecnicos": 2,
           "id_propietario": 61,
-          "detalle_factura": "Mtto 2 a Equip Eléct.Freezer",
+          "detalle_factura": "Mantenimiento 2 a Equipos Eléctricos. Freezer",
+          "insumos_cup": 0.94,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -14790,7 +14913,8 @@
           "tiempo_estimado_minutos": 96,
           "cantidad_tecnicos": 2,
           "id_propietario": 28,
-          "detalle_factura": "Colocación de conductos o conductores adosados a s",
+          "detalle_factura": "Colocación de conductos o conductores adosados a superficies (Canales, tuberías, bandejas, cables, etcétera) hasta 10 metros",
+          "insumos_cup": 0.33,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -14809,7 +14933,8 @@
           "tiempo_estimado_minutos": 48,
           "cantidad_tecnicos": 2,
           "id_propietario": 28,
-          "detalle_factura": "Perf. d/orificio en paredes o cubiertas de edifica",
+          "detalle_factura": "Perforación de orificio en paredes o cubiertas de edificaciones (pases para conductos o conductores) 10 milímetros por 10 milímetros",
+          "insumos_cup": 0.3,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -14828,7 +14953,8 @@
           "tiempo_estimado_minutos": 60,
           "cantidad_tecnicos": 1,
           "id_propietario": 74,
-          "detalle_factura": "Corta distancia (hasta 30 Km)",
+          "detalle_factura": "Corta distancia (hasta 30 kilómetros)",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -14847,7 +14973,8 @@
           "tiempo_estimado_minutos": 60,
           "cantidad_tecnicos": 1,
           "id_propietario": 74,
-          "detalle_factura": "Larga  distancia (>  30 Km) x cada Km",
+          "detalle_factura": "Larga distancia (más de 30 kilómetros) por cada kilómetro",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -14867,6 +14994,7 @@
           "cantidad_tecnicos": 1,
           "id_propietario": 177,
           "detalle_factura": "Dictamen Técnico",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14907,7 +15035,8 @@
           "tiempo_estimado_minutos": 81,
           "cantidad_tecnicos": 3,
           "id_propietario": 170,
-          "detalle_factura": "Carga, Acarreo Mat con Transp Hasta una Dist 500 M",
+          "detalle_factura": "Carga y Acarreo de Materiales con Transportación Hasta una Distancia de 500 metros",
+          "insumos_cup": 0.67,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -14988,7 +15117,8 @@
           "tiempo_estimado_minutos": 78,
           "cantidad_tecnicos": 3,
           "id_propietario": 170,
-          "detalle_factura": "Carga, Acarreo Mat Manual Hasta una Dist 500 M",
+          "detalle_factura": "Carga y Acarreo de Materiales Manual (vagón) Hasta una Distancia de 50 metros",
+          "insumos_cup": 0.67,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -15069,7 +15199,8 @@
           "tiempo_estimado_minutos": 450,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación de 7,1 a 10 Tonelada (Cambio de Compres",
+          "detalle_factura": "Reparación de 7,1 a 10 Tonelada (Cambio de Compresor)",
+          "insumos_cup": 3.35,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15088,7 +15219,8 @@
           "tiempo_estimado_minutos": 630,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación de 10,1 a 15 Tonelada (Cambio de Compre",
+          "detalle_factura": "Reparación de 10,1 a 15 Tonelada (Cambio de Compresor)",
+          "insumos_cup": 3.35,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15107,7 +15239,8 @@
           "tiempo_estimado_minutos": 899,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación de 15.1 a 30 Tonelada (Cambio de Compre",
+          "detalle_factura": "Reparación de 15,1 a 30 Tonelada (Cambio de Compresor)",
+          "insumos_cup": 3.35,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15126,7 +15259,8 @@
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación mas 30 Tonelada (Cambio de Compresor)",
+          "detalle_factura": "Reparación más 30 Tonelada (Cambio de Compresor)",
+          "insumos_cup": 3.35,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15146,6 +15280,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reconstrucción eléctrica",
+          "insumos_cup": 0.22,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15165,6 +15300,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación eléctrica",
+          "insumos_cup": 0.22,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15183,7 +15319,8 @@
           "tiempo_estimado_minutos": 192,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Cambio de filtro secador,cuerpo de valvula solenoi",
+          "detalle_factura": "Cambio de filtro secador, cuerpo de válvula solenoide",
+          "insumos_cup": 0.06,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15202,7 +15339,8 @@
           "tiempo_estimado_minutos": 550,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Adaptacion de ( partes y piezas mecanicas o electr",
+          "detalle_factura": "Adaptación de (partes y piezas mecánicas o eléctricas o electrónicas)",
+          "insumos_cup": 3.1,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15221,7 +15359,8 @@
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Reconstrucción Eléctrica, Cambio de Paleta, Comple",
+          "detalle_factura": "Reconstrucción Eléctrica, Cambio de Paleta, Completamiento de refrigerante",
+          "insumos_cup": 3.11,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15241,6 +15380,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de Capilares",
+          "insumos_cup": 0.08,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15260,6 +15400,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación de araña de distribución",
+          "insumos_cup": 0.66,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15279,6 +15420,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Cambio de paleta de la unidad condensadora",
+          "insumos_cup": 0.08,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15298,6 +15440,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
           "detalle_factura": "Reparación de piezas Recuperadas",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15317,6 +15460,7 @@
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en reparación del Compresor",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15336,6 +15480,7 @@
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en reparación del Condensador",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15355,6 +15500,7 @@
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
           "detalle_factura": "Adaptación en reparación del Evaporador",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15373,7 +15519,8 @@
           "tiempo_estimado_minutos": 695,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Reparación hasta 2 Ton (Cambio de Compresor)",
+          "detalle_factura": "Reparación hasta 2 Tonelada (Cambio de Compresor)",
+          "insumos_cup": 3.11,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15392,7 +15539,8 @@
           "tiempo_estimado_minutos": 1140,
           "cantidad_tecnicos": 3,
           "id_propietario": 175,
-          "detalle_factura": "Rep de 2,1 a  7 Tonelada (Cambio de Compresor)",
+          "detalle_factura": "Reparación de 2,1 a 7 Tonelada (Cambio de Compresor)",
+          "insumos_cup": 3.11,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -15411,7 +15559,8 @@
           "tiempo_estimado_minutos": 78,
           "cantidad_tecnicos": 2,
           "id_propietario": 170,
-          "detalle_factura": "Cableado e inst de Interruptor Mag Térmico Modular",
+          "detalle_factura": "Cableado e instalación de Interruptor Magneto Térmico Modular",
+          "insumos_cup": 6.11,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -15521,7 +15670,8 @@
           "tiempo_estimado_minutos": 31077,
           "cantidad_tecnicos": 4,
           "id_propietario": 175,
-          "detalle_factura": "Inst compleja  Sistm Clima Req Espec o Inverter",
+          "detalle_factura": "Instalación compleja de un Sistema de Clima con Requerimientos Específicos o Inverter.",
+          "insumos_cup": 50.67,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -15801,7 +15951,8 @@
           "tiempo_estimado_minutos": 105,
           "cantidad_tecnicos": 1,
           "id_propietario": 61,
-          "detalle_factura": "Revisión y Diagnostico (Reparar)",
+          "detalle_factura": "Revisión y Diagnóstico (Reparar)",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -15853,6 +16004,7 @@
           "cantidad_tecnicos": 2,
           "id_propietario": 28,
           "detalle_factura": "Estudio previo para instalación",
+          "insumos_cup": 0.0,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -15908,7 +16060,8 @@
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo Hasta ",
+          "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo Hasta 5 Asientos",
+          "insumos_cup": 1.32,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -16037,7 +16190,8 @@
           "tiempo_estimado_minutos": 1800,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo de 6 H",
+          "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo de 6 Hasta 14 Asientos",
+          "insumos_cup": 1.32,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -16176,7 +16330,8 @@
           "tiempo_estimado_minutos": 2160,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo mayor ",
+          "detalle_factura": "Montaje Sistema Aire Acondicionado Vehículo mayor 14 Asientos",
+          "insumos_cup": 1.32,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -16315,7 +16470,8 @@
           "tiempo_estimado_minutos": 360,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Adaptación en Montaje Sistema Aire Acondicionado p",
+          "detalle_factura": "Adaptación en Montaje Sistema Aire Acondicionado para cualquier Vehículo",
+          "insumos_cup": 1.32,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -16394,7 +16550,8 @@
           "tiempo_estimado_minutos": 2160,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Sistema de Refrigeración Vehículo Hasta 9 ",
+          "detalle_factura": "Montaje Sistema de Refrigeración Vehículo Hasta 9 metros",
+          "insumos_cup": 1.32,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -16523,7 +16680,8 @@
           "tiempo_estimado_minutos": 2880,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Montaje Sistema de Refrigeración Vehículo más de 9",
+          "detalle_factura": "Montaje Sistema de Refrigeración Vehículo más de 9 metros",
+          "insumos_cup": 1.32,
           "poblacion_coincidencia": null,
           "procedimiento": {
             "fuente": {
@@ -16662,7 +16820,8 @@
           "tiempo_estimado_minutos": 540,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Media en el Condensador Vehículo hasta 5 Asie",
+          "detalle_factura": "Reparación Media en el Condensador Vehículo hasta 5 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16681,7 +16840,8 @@
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Media en el Condensador Vehículo de 6 hasta 1",
+          "detalle_factura": "Reparación Media en el Condensador Vehículo de 6 hasta 14 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16700,7 +16860,8 @@
           "tiempo_estimado_minutos": 810,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Media en el Condensador Vehículo mayor de 14 ",
+          "detalle_factura": "Reparación Media en el Condensador Vehículo mayor de 14 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16719,7 +16880,8 @@
           "tiempo_estimado_minutos": 720,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Mayor en el Condensador Vehículo hasta 5 Asie",
+          "detalle_factura": "Reparación Mayor en el Condensador Vehículo hasta 5 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16738,7 +16900,8 @@
           "tiempo_estimado_minutos": 810,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Mayor en el Condensador Vehículo de 6 hasta 1",
+          "detalle_factura": "Reparación Mayor en el Condensador Vehículo de 6 hasta 14 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16757,7 +16920,8 @@
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Mayor en el Condensador Vehículo mayor de 14 ",
+          "detalle_factura": "Reparación Mayor en el Condensador Vehículo mayor de 14 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16776,7 +16940,8 @@
           "tiempo_estimado_minutos": 1620,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Del Evaporador Vehículo hasta 5 Asientos",
+          "detalle_factura": "Reparación Del Evaporador Vehículo hasta 5 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16795,7 +16960,8 @@
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Del Evaporador Vehículo de 6 hasta 14 Asiento",
+          "detalle_factura": "Reparación Del Evaporador Vehículo de 6 hasta 14 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16814,7 +16980,8 @@
           "tiempo_estimado_minutos": 1350,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Del Evaporador Vehículo mayor de 14 Asientos",
+          "detalle_factura": "Reparación Del Evaporador Vehículo mayor de 14 Asientos",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16833,7 +17000,8 @@
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Menor del Condensador en cualquier  Vehículo",
+          "detalle_factura": "Reparación Menor del Condensador en cualquier Vehículo",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16852,7 +17020,8 @@
           "tiempo_estimado_minutos": 1080,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Media en el Condensador  de cualquier Vehícul",
+          "detalle_factura": "Reparación Media en el Condensador de cualquier Vehículo",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16871,7 +17040,8 @@
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Mayor en el Condensador de cualquier Vehículo",
+          "detalle_factura": "Reparación Mayor en el Condensador de cualquier Vehículo",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16890,7 +17060,8 @@
           "tiempo_estimado_minutos": 90,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Menor en el Evaporador para cualquier vehícul",
+          "detalle_factura": "Reparación Menor en el Evaporador para cualquier vehículo",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16909,7 +17080,8 @@
           "tiempo_estimado_minutos": 1440,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Media en el Evaporador para cualquier vehícul",
+          "detalle_factura": "Reparación Media en el Evaporador para cualquier vehículo",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16928,7 +17100,8 @@
           "tiempo_estimado_minutos": 1800,
           "cantidad_tecnicos": 2,
           "id_propietario": 175,
-          "detalle_factura": "Rep. Mayor en el Evaporador para cualquier vehícul",
+          "detalle_factura": "Reparación Mayor en el Evaporador para cualquier vehículo",
+          "insumos_cup": 0.78,
           "poblacion_coincidencia": null,
           "procedimiento": null
         }
@@ -16959,6 +17132,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Atención en el local del cliente",
+          "insumos_cup": 0,
           "poblacion_coincidencia": null,
           "procedimiento": null
         },
@@ -16978,6 +17152,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Dictamen Técnico",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -17019,6 +17194,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Levantamiento técnico-comercial",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
@@ -17037,7 +17213,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Traslado de materiales hasta una Distancia de 50 M",
+          "detalle_factura": "Traslado de materiales hasta una Distancia de 50 metros",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
@@ -17118,7 +17295,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Protocolo de Pruebas y Mediciones.",
+          "detalle_factura": "Protocolo de Pruebas y Mediciones",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -17186,7 +17364,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Revisión y Diagnóstico Simple equipos de clima y r",
+          "detalle_factura": "Revisión y Diagnóstico Simple equipos de clima y refrigeración",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -17285,7 +17464,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Revisión y Diagnóstico Complejo de equipos de clim",
+          "detalle_factura": "Revisión y Diagnóstico Complejo de equipos de clima y refrigeración",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_similar",
           "procedimiento": {
             "fuente": {
@@ -17385,6 +17565,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Instalación y Montaje de aire de ventana",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -17456,6 +17637,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Instalación y montaje de Split de pared",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -17604,7 +17786,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Instalación y montaje de Split piso techo hasta 3 ",
+          "detalle_factura": "Instalación y montaje de Split piso techo hasta 3 toneladas de refrigeración",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -17763,7 +17946,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Montaje Split más de 2.6 a 5 Toneladas",
+          "detalle_factura": "Montaje Split más de 2,6 a 5 Toneladas",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_similar",
           "procedimiento": {
             "fuente": {
@@ -17905,6 +18089,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Montaje Split de Cassette",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
@@ -18045,7 +18230,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Desmontaje Split hasta 2.5tr",
+          "detalle_factura": "Desmontaje Split hasta 2,5 toneladas de refrigeración",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -18186,7 +18372,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Desmontaje Split Mayor 2.5tr",
+          "detalle_factura": "Desmontaje Split Mayor 2,5 toneladas de refrigeración",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -18327,7 +18514,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Mtto. 1 split hasta 2tr",
+          "detalle_factura": "Mantenimiento 1 split hasta 2 toneladas de refrigeración",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -18473,7 +18661,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Mtto. 1 split mayor 2tr",
+          "detalle_factura": "Mantenimiento 1 split mayor 2 toneladas de refrigeración",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -18619,7 +18808,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Mtto. de Aire de Ventana 2",
+          "detalle_factura": "Mantenimiento de Aire de Ventana 2",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -18786,6 +18976,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación sencilla de aire ventana",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
@@ -18805,6 +18996,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Compleja de aire ventana",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
@@ -18824,6 +19016,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Compleja de Split Cassette",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": null
         },
@@ -18843,6 +19036,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación sencilla de Freezer",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
@@ -18948,6 +19142,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación compleja de Freezer",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "confirmado",
           "procedimiento": {
             "fuente": {
@@ -19053,6 +19248,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Revisión y Diagnóstico Línea Blanca",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -19129,6 +19325,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Mantenimiento Ligero a Línea Blanca",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -19218,7 +19415,8 @@
           "tiempo_estimado_minutos": null,
           "cantidad_tecnicos": null,
           "id_propietario": null,
-          "detalle_factura": "Mantenimiento Pesado a Línea Blanca ( solo a Lavad",
+          "detalle_factura": "Mantenimiento Pesado a Línea Blanca (solo a Lavadoras)",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -19330,6 +19528,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Ligera a Línea Blanca",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {
@@ -19400,6 +19599,7 @@
           "cantidad_tecnicos": null,
           "id_propietario": null,
           "detalle_factura": "Reparación Pesada a Línea Blanca",
+          "insumos_cup": 0,
           "poblacion_coincidencia": "nombre_igual",
           "procedimiento": {
             "fuente": {

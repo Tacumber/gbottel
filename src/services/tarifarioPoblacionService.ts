@@ -24,6 +24,8 @@ export interface PrestacionPoblacion {
   precioCUP: number;
   /** Código del servicio cuyo procedimiento técnico se muestra (el mismo servicio del Anexo), o null si no tiene. */
   procedimiento_de?: string | null;
+  /** Familia del tarifario oficial (subcategoría que se muestra en la pestaña Población). */
+  familia: string;
   coincidencia?: 'nombre_igual' | 'nombre_similar' | 'confirmado' | null;
 }
 
@@ -33,10 +35,10 @@ export type ItemTarifario = Servicio & { tarifa: TarifaServicio; clave: string; 
 
 /** Prestaciones con tarifa de Población, en el orden del tarifario original. */
 export const PRESTACIONES_POBLACION: PrestacionPoblacion[] = [...INDICE_MODELO.values()]
-  .map(({ serv }) => serv)
-  .filter((s) => s.tarifas.poblacion != null)
-  .sort((a, b) => (a.orden_poblacion ?? 0) - (b.orden_poblacion ?? 0))
-  .map((s) => ({
+  .filter(({ serv }) => serv.tarifas.poblacion != null)
+  .sort((a, b) => (a.serv.orden_poblacion ?? 0) - (b.serv.orden_poblacion ?? 0))
+  .map(({ cat, serv: s }) => ({
+    familia: cat.nombre_categoria,
     codigo: s.codigo,
     nombre: (s.nombre_poblacion ?? s.descripcion).trim(),
     unidad: String(s.unidad_medida ?? '').trim(),
@@ -91,9 +93,17 @@ export function aItemPoblacion(p: PrestacionPoblacion, indice: number): ItemTari
   };
 }
 
-/** Todas las prestaciones de Población como filas del Tarifario. */
-export function listarTarifaPoblacion(texto = ''): ItemTarifario[] {
-  const items = PRESTACIONES_POBLACION.map(aItemPoblacion);
+/** Subcategorías de Población (familias del tarifario oficial) con su número de prestaciones, en el orden del tarifario. */
+export const FAMILIAS_POBLACION: { familia: string; total: number }[] = (() => {
+  const m = new Map<string, number>();
+  for (const p of PRESTACIONES_POBLACION) m.set(p.familia, (m.get(p.familia) ?? 0) + 1);
+  return [...m].map(([familia, total]) => ({ familia, total }));
+})();
+
+/** Todas las prestaciones de Población como filas del Tarifario (opcionalmente solo una familia). */
+export function listarTarifaPoblacion(texto = '', familia?: string | null): ItemTarifario[] {
+  // El id negativo sale del índice en la lista COMPLETA, así que no cambia al filtrar por familia.
+  const items = PRESTACIONES_POBLACION.map(aItemPoblacion).filter((_, i) => !familia || PRESTACIONES_POBLACION[i].familia === familia);
   const palabras = normalizarTexto(texto).split(/\s+/).filter(Boolean);
   if (!palabras.length) return items;
   return items.filter((i) => {
