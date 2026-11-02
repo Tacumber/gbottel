@@ -50,37 +50,66 @@ async function migrarTecnicosAEsquemaActual(db: SQLite.SQLiteDatabase): Promise<
   const columnasAntiguas = ['tipoPago', 'salarioFijo', 'porcentajeComision', 'deducciones', 'aportesLegales'];
   if (!nombres.size || !columnasAntiguas.some((columna) => nombres.has(columna))) return;
 
-  // SDK 57 / SQLite: reconstruimos la tabla para eliminar las columnas
-  // antiguas de remuneración sin perder los datos que sí siguen siendo válidos.
-  // La tabla nueva es la estructura maestra definitiva del módulo Técnicos.
-  await db.execAsync(`
-    PRAGMA foreign_keys = OFF;
-    BEGIN;
-    DROP TABLE IF EXISTS tecnicos_nuevo;
-    CREATE TABLE tecnicos_nuevo (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre TEXT NOT NULL,
-      cargo TEXT NOT NULL DEFAULT '',
-      ci TEXT NOT NULL DEFAULT '',
-      telefono TEXT,
-      correo TEXT,
-      salarioBasico REAL NOT NULL DEFAULT 0,
-      aportesONAT REAL NOT NULL DEFAULT 0,
-      estado TEXT NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo','inactivo')),
-      creadoEn TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    INSERT INTO tecnicos_nuevo (id,nombre,cargo,ci,telefono,correo,salarioBasico,aportesONAT,estado,creadoEn)
-    SELECT id, COALESCE(nombre,''), COALESCE(cargo,''), COALESCE(ci,''), telefono, correo,
-           COALESCE(salarioBasico, salarioFijo, 0), COALESCE(aportesONAT,0),
-           CASE WHEN estado IN ('activo','inactivo') THEN estado ELSE 'activo' END,
-           COALESCE(creadoEn, datetime('now'))
-    FROM tecnicos;
-    DROP TABLE tecnicos;
-    ALTER TABLE tecnicos_nuevo RENAME TO tecnicos;
-    CREATE INDEX IF NOT EXISTS idx_ordenes_tecnico ON ordenes(tecnicoId);
-    COMMIT;
-    PRAGMA foreign_keys = ON;
-  `);
+  // Reconstrucción compatible con bases antiguas. Nunca asumimos que una
+  // columna histórica exista: se inspecciona primero y se usa un fallback.
+  // Además, foreign_keys siempre se restaura aunque una sentencia falle.
+  const expresion = (columna: string, fallback: string) =>
+    nombres.has(columna) ? `"${columna}"` : fallback;
+  const salario = nombres.has('salarioBasico')
+    ? `COALESCE("salarioBasico", ${nombres.has('salarioFijo') ? '"salarioFijo"' : '0'}, 0)`
+    : (nombres.has('salarioFijo') ? `COALESCE("salarioFijo", 0)` : '0');
+
+  await db.execAsync(`PRAGMA foreign_keys = OFF`);
+  try {
+    await db.execAsync(`BEGIN`);
+    await db.execAsync(`
+      DROP TABLE IF EXISTS tecnicos_nuevo;
+      CREATE TABLE tecnicos_nuevo (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        cargo TEXT NOT NULL DEFAULT '',
+        ci TEXT NOT NULL DEFAULT '',
+        telefono TEXT,
+        correo TEXT,
+        salarioBasico REAL NOT NULL DEFAULT 0,
+        aportesONAT REAL NOT NULL DEFAULT 0,
+        planMensualCUP REAL NOT NULL DEFAULT 0,
+        estado TEXT NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo','inactivo')),
+        creadoEn TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    await db.execAsync(`
+      INSERT INTO tecnicos_nuevo
+        (id,nombre,cargo,ci,telefono,correo,salarioBasico,aportesONAT,planMensualCUP,estado,creadoEn)
+      SELECT
+        ${expresion('id','NULL')},
+        COALESCE(${expresion('nombre',"''")}, ''),
+        COALESCE(${expresion('cargo',"''")}, ''),
+        COALESCE(${expresion('ci',"''")}, ''),
+        ${expresion('telefono','NULL')},
+        ${expresion('correo','NULL')},
+        ${salario},
+        COALESCE(${expresion('aportesONAT','0')}, 0),
+        COALESCE(${expresion('planMensualCUP','0')}, 0),
+        CASE WHEN ${expresion('estado',"'activo'")} IN ('activo','inactivo')
+             THEN ${expresion('estado',"'activo'")} ELSE 'activo' END,
+        COALESCE(${expresion('creadoEn',"datetime('now')")}, datetime('now'))
+      FROM tecnicos;
+    `);
+    await db.execAsync(`
+      DROP TABLE tecnicos;
+      ALTER TABLE tecnicos_nuevo RENAME TO tecnicos;
+      CREATE INDEX IF NOT EXISTS idx_ordenes_tecnico ON ordenes(tecnicoId);
+      COMMIT;
+    `);
+  } catch (error) {
+    try { await db.execAsync(`ROLLBACK`); } catch { /* la transacción puede no existir */ }
+    throw error;
+  } finally {
+    // Nunca dejamos la conexión con foreign_keys desactivado si una
+    // migración falla a mitad de camino.
+    await db.execAsync(`PRAGMA foreign_keys = ON`);
+  }
 }
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {

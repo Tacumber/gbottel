@@ -4,11 +4,13 @@ import * as Sharing from 'expo-sharing';
 
 import { getDatabase } from '../database/db';
 import type { OrdenDashboard } from './analyticsService';
-import { guardarOrdenCompleta, obtenerOrden } from './ordenesService';
+import { guardarOrdenCompletaEnTransaccion, obtenerOrden } from './ordenesService';
 import type { NuevoServicio, Servicio } from '../types/tarifario.types';
 import { importarServiciosDesdeJSON, listarServicios } from './tarifarioService';
+import { fechaHoyISO, formatearFecha } from '@/utils/fechas';
 
-const VERSION_RESPALDO = 2;
+const VERSION_RESPALDO = 3;
+const VERSIONES_COMPATIBLES = new Set([1, 2, 3]);
 
 interface RespaldoCompleto {
   version: number;
@@ -18,6 +20,7 @@ interface RespaldoCompleto {
     tecnicos: unknown[];
     configuracion: unknown[];
     ordenes: unknown[];
+    orden_equipos: unknown[];
     orden_materiales: unknown[];
     orden_servicios: unknown[];
     orden_tecnicos: unknown[];
@@ -25,7 +28,7 @@ interface RespaldoCompleto {
 }
 
 function nombreArchivoConFecha(prefijo: string, extension: string): string {
-  const fecha = new Date().toISOString().slice(0, 10);
+  const fecha = fechaHoyISO();
   return `${prefijo}-${fecha}.${extension}`;
 }
 
@@ -59,12 +62,13 @@ async function elegirYLeerArchivo(mimeTypes: string[]): Promise<string | null> {
 
 export async function exportarRespaldoCompleto(): Promise<void> {
   const db = await getDatabase();
-  const [servicios, tecnicos, configuracion, ordenes, orden_materiales, orden_servicios, orden_tecnicos] =
+  const [servicios, tecnicos, configuracion, ordenes, orden_equipos, orden_materiales, orden_servicios, orden_tecnicos] =
     await Promise.all([
       db.getAllAsync(`SELECT * FROM servicios`),
       db.getAllAsync(`SELECT * FROM tecnicos`),
       db.getAllAsync(`SELECT * FROM configuracion`),
       db.getAllAsync(`SELECT * FROM ordenes`),
+      db.getAllAsync(`SELECT * FROM orden_equipos`),
       db.getAllAsync(`SELECT * FROM orden_materiales`),
       db.getAllAsync(`SELECT * FROM orden_servicios`),
       db.getAllAsync(`SELECT * FROM orden_tecnicos`),
@@ -73,7 +77,7 @@ export async function exportarRespaldoCompleto(): Promise<void> {
   const respaldo: RespaldoCompleto = {
     version: VERSION_RESPALDO,
     exportadoEn: new Date().toISOString(),
-    tablas: { servicios, tecnicos, configuracion, ordenes, orden_materiales, orden_servicios, orden_tecnicos },
+    tablas: { servicios, tecnicos, configuracion, ordenes, orden_equipos, orden_materiales, orden_servicios, orden_tecnicos },
   };
 
   await compartirTexto(JSON.stringify(respaldo, null, 2), nombreArchivoConFecha('gbottel-respaldo', 'json'));
@@ -89,14 +93,28 @@ export async function importarRespaldoCompleto(): Promise<{ importado: boolean }
   if (contenido === null) return { importado: false };
 
   const datos = JSON.parse(contenido) as RespaldoCompleto;
-  const tablasEsperadas = ['servicios', 'tecnicos', 'configuracion', 'ordenes', 'orden_materiales', 'orden_servicios', 'orden_tecnicos'] as const;
+  const tablasEsperadas = ['servicios', 'tecnicos', 'configuracion', 'ordenes', 'orden_equipos', 'orden_materiales', 'orden_servicios', 'orden_tecnicos'] as const;
 
-  if (datos?.version !== VERSION_RESPALDO) {
-    throw new Error('Version de respaldo no compatible. Se esperaba ' + VERSION_RESPALDO + '.');
+  if (!VERSIONES_COMPATIBLES.has(datos?.version)) {
+    throw new Error('Versión de respaldo no compatible. Esta versión puede importar respaldos 1, 2 o 3.');
   }
 
-  if (!datos?.tablas || tablasEsperadas.some((tabla) => !Array.isArray(datos.tablas[tabla]))) {
-    throw new Error('El archivo no tiene el formato esperado de un respaldo de GBOTtel. Faltan tablas o alguna tabla no es valida.');
+  if (!datos?.tablas) {
+    throw new Error('El archivo no tiene el formato esperado de un respaldo de GBOTtel.');
+  }
+
+  // Respaldos antiguos pueden no traer la tabla de técnicos firmantes.
+  // Las demás tablas sí deben existir para evitar restauraciones ambiguas.
+  const tablas = {
+    ...datos.tablas,
+    orden_equipos: Array.isArray(datos.tablas.orden_equipos) ? datos.tablas.orden_equipos : [],
+    orden_tecnicos: Array.isArray(datos.tablas.orden_tecnicos) ? datos.tablas.orden_tecnicos : [],
+  };
+  const obligatorias = tablasEsperadas.filter(
+    (tabla) => tabla !== 'orden_tecnicos' && !(tabla === 'orden_equipos' && datos.version < 3),
+  );
+  if (obligatorias.some((tabla) => !Array.isArray(tablas[tabla]))) {
+    throw new Error('El archivo no tiene el formato esperado de un respaldo de GBOTtel. Faltan tablas obligatorias o alguna no es válida.');
   }
 
   const db = await getDatabase();
@@ -105,18 +123,20 @@ export async function importarRespaldoCompleto(): Promise<{ importado: boolean }
     await db.runAsync(`DELETE FROM orden_materiales`);
     await db.runAsync(`DELETE FROM orden_servicios`);
     await db.runAsync(`DELETE FROM orden_tecnicos`);
+    await db.runAsync(`DELETE FROM orden_equipos`);
     await db.runAsync(`DELETE FROM ordenes`);
     await db.runAsync(`DELETE FROM tecnicos`);
     await db.runAsync(`DELETE FROM servicios`);
     await db.runAsync(`DELETE FROM configuracion`);
 
-    await insertarFilas(db, 'servicios', datos.tablas.servicios);
-    await insertarFilas(db, 'tecnicos', datos.tablas.tecnicos);
-    await insertarFilas(db, 'configuracion', datos.tablas.configuracion);
-    await insertarFilas(db, 'ordenes', datos.tablas.ordenes);
-    await insertarFilas(db, 'orden_materiales', datos.tablas.orden_materiales);
-    await insertarFilas(db, 'orden_servicios', datos.tablas.orden_servicios);
-    await insertarFilas(db, 'orden_tecnicos', datos.tablas.orden_tecnicos);
+    await insertarFilas(db, 'servicios', tablas.servicios);
+    await insertarFilas(db, 'tecnicos', tablas.tecnicos);
+    await insertarFilas(db, 'configuracion', tablas.configuracion);
+    await insertarFilas(db, 'ordenes', tablas.ordenes);
+    await insertarFilas(db, 'orden_equipos', tablas.orden_equipos);
+    await insertarFilas(db, 'orden_materiales', tablas.orden_materiales);
+    await insertarFilas(db, 'orden_servicios', tablas.orden_servicios);
+    await insertarFilas(db, 'orden_tecnicos', tablas.orden_tecnicos);
   });
 
   return { importado: true };
@@ -204,6 +224,7 @@ const COLUMNAS_POR_TABLA: Record<string, Set<string>> = {
     'creadoEn',
     'actualizadoEn',
   ]),
+  orden_equipos: new Set(['id', 'ordenId', 'marca', 'modelo', 'nroSerie']),
   orden_materiales: new Set([
     'id',
     'ordenId',
@@ -343,7 +364,7 @@ function escaparHTML(valor: string): string {
 export async function exportarOrdenesCSV(ordenes: OrdenDashboard[]): Promise<void> {
   const encabezados = ['Folio', 'Cliente', 'Fecha', 'Estado', 'Total CUP', 'Total USD'];
   const filas = ordenes.map((o) => [
-    o.folio, o.cliente, o.fecha?.slice(0, 10) ?? '',
+    o.folio, o.cliente, formatearFecha(o.fecha),
     ETIQUETA_ESTADO[o.estado] ?? o.estado,
     String(o.totalCUP ?? 0), String(o.totalUSD ?? 0),
   ]);
@@ -357,7 +378,7 @@ export async function exportarOrdenesPDF(ordenes: OrdenDashboard[]): Promise<voi
       (o) => `<tr>
         <td>${escaparHTML(o.folio)}</td>
         <td>${escaparHTML(o.cliente)}</td>
-        <td>${escaparHTML(o.fecha?.slice(0, 10) ?? '')}</td>
+        <td>${escaparHTML(formatearFecha(o.fecha))}</td>
         <td>${escaparHTML(ETIQUETA_ESTADO[o.estado] ?? o.estado)}</td>
         <td style="text-align:right">${escaparHTML(moneda(o.totalCUP, 'CUP'))}</td>
         <td style="text-align:right">${escaparHTML(moneda(o.totalUSD, 'USD'))}</td>
@@ -375,7 +396,7 @@ export async function exportarOrdenesPDF(ordenes: OrdenDashboard[]): Promise<voi
     </style></head>
     <body>
       <h1>GBOTtel — Órdenes de Servicio</h1>
-      <div class="sub">Generado el ${new Date().toLocaleDateString('es-CU')} · ${ordenes.length} orden${ordenes.length === 1 ? '' : 'es'}</div>
+      <div class="sub">Generado el ${formatearFecha(fechaHoyISO())} · ${ordenes.length} orden${ordenes.length === 1 ? '' : 'es'}</div>
       <table>
         <thead><tr><th>Folio</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th>CUP</th><th>USD</th></tr></thead>
         <tbody>${filas}</tbody>
@@ -424,6 +445,7 @@ export async function exportarOrdenesJSON(ordenes: OrdenDashboard[]): Promise<vo
       materiales: completa.materiales.map(({ id, ordenId, ...m }) => m),
       servicios: completa.servicios.map(({ id, ordenId, ...s }) => s),
       tecnicos: completa.tecnicos.map(({ id, ordenId, ...t }) => t),
+      equipos: completa.equipos.map(({ id, ordenId, ...e }) => e),
     });
   }
   const payload = { version: 1, exportadoEn: new Date().toISOString(), ordenes: completas };
@@ -436,6 +458,12 @@ async function renumerarOrdenesPorFecha(): Promise<void> {
     `SELECT id, COALESCE(NULLIF(fechaReporte,''),creadoEn) fecha FROM ordenes ORDER BY fecha ASC, id ASC`
   );
   await db.withTransactionAsync(async () => {
+    // La columna numeroOrden es UNIQUE. No podemos renumerar directamente
+    // (000001 -> 000002 y 000002 -> 000003) porque las colisiones ocurren
+    // durante el propio UPDATE. Primero usamos valores temporales únicos.
+    for (const orden of todas) {
+      await db.runAsync(`UPDATE ordenes SET numeroOrden = ? WHERE id = ?`, `TMP-${orden.id}`, orden.id);
+    }
     for (let i = 0; i < todas.length; i++) {
       await db.runAsync(`UPDATE ordenes SET numeroOrden = ? WHERE id = ?`, String(i + 1).padStart(6, '0'), todas[i].id);
     }
@@ -486,27 +514,42 @@ export async function importarOrdenesJSON(mantenerNumeracion: boolean): Promise<
   porImportar.sort((a, b) => String(a.fechaReporte ?? '').localeCompare(String(b.fechaReporte ?? '')));
 
   let importadas = 0;
-  for (const o of porImportar) {
-    const { folioOrigen, tecnicoNombre, materiales, servicios, tecnicos, ...datosOrden } = o as Record<string, unknown> & {
-      folioOrigen?: string; tecnicoNombre?: string | null;
-      materiales?: Record<string, unknown>[]; servicios?: Record<string, unknown>[]; tecnicos?: Record<string, unknown>[];
-    };
-    const tecnicoId = tecnicoNombre ? idPorNombreTecnico.get(tecnicoNombre) ?? null : null;
-    await guardarOrdenCompleta(null, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      datos: { ...datosOrden, tecnicoId } as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      materiales: (materiales ?? []) as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      servicios: (servicios ?? []) as any,
-      tecnicos: (tecnicos ?? []).map((t) => ({
-        ...t,
-        tecnicoId: t.nombre ? idPorNombreTecnico.get(String(t.nombre)) ?? null : null,
+  await db.withTransactionAsync(async () => {
+    for (const o of porImportar) {
+      const { folioOrigen, tecnicoNombre, materiales, servicios, tecnicos, equipos, ...datosOrden } = o as Record<string, unknown> & {
+        folioOrigen?: string; tecnicoNombre?: string | null;
+        materiales?: Record<string, unknown>[]; servicios?: Record<string, unknown>[]; tecnicos?: Record<string, unknown>[]; equipos?: Record<string, unknown>[];
+      };
+      const tecnicoId = tecnicoNombre ? idPorNombreTecnico.get(tecnicoNombre) ?? null : null;
+      let equiposParaGuardar = equipos ?? [];
+      if (Number(datosOrden.modalidadMultiple) === 1 && equiposParaGuardar.length < 2) {
+        equiposParaGuardar = [
+          {
+            marca: datosOrden.equipoMarca ?? null,
+            modelo: datosOrden.equipoModelo ?? null,
+            nroSerie: datosOrden.equipoNroSerie ?? null,
+          },
+          { marca: null, modelo: null, nroSerie: null },
+        ];
+      }
+      await guardarOrdenCompletaEnTransaccion(db, null, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      })) as any,
-    });
-    importadas++;
-  }
+        datos: { ...datosOrden, tecnicoId } as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        equipos: equiposParaGuardar as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        materiales: (materiales ?? []) as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        servicios: (servicios ?? []) as any,
+        tecnicos: (tecnicos ?? []).map((t) => ({
+          ...t,
+          tecnicoId: t.nombre ? idPorNombreTecnico.get(String(t.nombre)) ?? null : null,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        })) as any,
+      });
+      importadas++;
+    }
+  });
 
   if (!mantenerNumeracion) {
     await renumerarOrdenesPorFecha();
